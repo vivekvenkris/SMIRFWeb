@@ -3,6 +3,7 @@ package service;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.JulianFields;
 
 import org.jastronomy.jsofa.JSOFA;
@@ -57,7 +58,6 @@ public class EphemService {
 		double gast, last;
 
 		gast = getGAST (mjd);
-		System.err.println(gast);
 		last  = gast + Constants.MolongloLongitudeRAD;
 
 		final double two_pi = 2.0 * Math.PI;
@@ -65,7 +65,23 @@ public class EphemService {
 		return ( w >= 0.0 ) ? w : w + two_pi;
 
 	}
-
+	
+	public static double getRadLMSTforMolonglo(String utcStr){
+		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"));
+		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
+		double last = EphemService.getRadLMSTforMolonglo(mjd);
+		return last;
+	}
+	
+	public static Angle getHA(Angle lst, Angle ra){
+		return new Angle(lst.getRadianValue() - ra.getRadianValue(), Angle.HHMMSS);
+	}
+	
+	public static Angle getRA(Angle lst, Angle ha){
+		return new Angle(lst.getRadianValue() - ha.getRadianValue(),Angle.HHMMSS);
+	}
+	
+	
 
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
 		LocalDateTime dateTime = LocalDateTime.now(Clock.systemUTC());

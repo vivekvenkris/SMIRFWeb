@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 class Point{
-	Double ra;
-	Double dec;
+	String ra;
+	String dec;
 	Double startFanBeam;
 	Double startNS;
 	Double endFanBeam;

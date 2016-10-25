@@ -8,10 +8,13 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
 import bean.CoordinateTO;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
+import service.EphemService;
 
 public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
@@ -25,7 +28,14 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 	}
 
-	public List<Point> generatePoints(double boresightHA, double boresightDEC, double thresholdPercent, Long totalSamples) throws EmptyCoordinatesException, CoordinateOverrideException {
+	public List<Point> generatePoints(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples) throws EmptyCoordinatesException, CoordinateOverrideException {
+
+		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utcStr),Angle.HHMMSS);
+		Angle ha = EphemService.getHA(lst, ra);
+
+		double boresightHA = ha.getRadianValue(); 
+		double boresightDEC = dec.getRadianValue();
+
 
 		List<Point> points = new LinkedList<Point>();
 		int sampleSteps = 20480;
@@ -85,7 +95,8 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				p.startFanBeam = p.endFanBeam = nfb;
 				p.startNS = p.endNS = nsNow;
 				p.uniq = false;
-
+				p.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
+				p.ra = EphemService.getRA(lst, new Angle(now.getRadHA(),Angle.HHMMSS)).toString();
 				if(!unwantedPoint){
 					if(lastPointMap ==null){
 						Long startSample = 0L;
@@ -144,25 +155,25 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
 		SMIRF_GetUniqStitches gus = new SMIRF_GetUniqStitches();
 		String utcStr = args[0];
-		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"));
-		
-		List<Point> points = gus.generatePoints(Double.parseDouble(args[0])*Constants.deg2Rad,Double.parseDouble(args[1])*Constants.deg2Rad,10,Math.round(900/Constants.tsamp)); 
+		Angle ra = new Angle(args[1], Angle.HHMMSS);
+		Angle dec = new Angle(args[2],Angle.DDMMSS);
+
+		List<Point> points = gus.generatePoints(utcStr,ra,dec ,10,Math.round(900/Constants.tsamp)); 
 		for(Point p: points){
-			List<Traversal> traversals = p.traversalMap.get(Integer.parseInt(args[2]));
-			if(traversals!=null) {
-				System.err.print( p.startFanBeam + " "+ p.endFanBeam + " "+ String.format("%7.5f", p.startNS*Constants.rad2Deg) + " "+ String.format("%7.5f", p.endNS*Constants.rad2Deg) + " ");
-				for(Traversal t: traversals){
-					System.err.print(t.fanbeam+ " " + String.format("%7.5f", t.ns) + " "+ t.startSample + " "+ t.numSamples + " "+ t.percent + " ");
+			//List<Traversal> traversals = p.traversalMap.get(Integer.parseInt(args[3]));
+			for(Entry<Integer, List<Traversal>> entry :p.traversalMap.entrySet()){
+				List<Traversal> traversals = entry.getValue();
+
+				if(traversals!=null) {
+					System.err.print(p.ra + " " + p.dec + " " + p.startFanBeam + " "+ p.endFanBeam + " "+ String.format("%7.5f", p.startNS*Constants.rad2Deg) + " "+ String.format("%7.5f", p.endNS*Constants.rad2Deg) + " ");
+					for(Traversal t: traversals){
+						System.err.print(t.fanbeam+ " " + String.format("%7.5f", t.ns) + " "+ t.startSample + " "+ t.numSamples + " "+ t.percent + " ");
+					}
+					System.err.println();
 				}
-				System.err.println();
 			}
 		}
-		//	for( double ha = -45; ha <= 45; ha = ha ++){
-		//	for(double dec = -66; dec <=20; dec++){
-		//	gus.generatePoints(ha*Constants.deg2Rad,dec*Constants.deg2Rad);
-		//	}
-		//	}
-		//launch(args);
+
 	}
 }
 
