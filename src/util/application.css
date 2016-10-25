@@ -1,14 +1,24 @@
 /* JavaFX CSS - Leave this comment until you have at least create one rule which uses -fx-Property */
-.default-color0.chart-symbol { /* hollow circle */
-    -fx-background-color: green, green;
-    -fx-background-insets: 0, 2;
-    -fx-background-radius: 5px;
-    -fx-padding: 5px;
+
+.chart-symbol{
+	    -fx-shape: "M1,0 L3,0 L4,2 L3,4 L1,4 L0,2 Z";
+	
 }
 
-.default-color1.chart-symbol { /* hollow circle */
-    -fx-background-color: #2ca25f, red;
+.default-color0.chart-symbol { 
+    -fx-background-color: rgba(255, 255, 0, .7), white;
     -fx-background-insets: 0, 2;
-    -fx-background-radius: 5px;
+    -fx-background-radius: 1px;
+    -fx-padding: 2px;
+}
+.default-color1.chart-symbol { 
+    -fx-background-color: rgba(255, 255, 0, .7), white;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 1px;
+    -fx-padding: 2px;
+}
+.default-color2.chart-symbol { /* hollow circle */
+    -fx-background-color: firebrick, firebrick;
+    -fx-background-radius: 100px;
     -fx-padding: 5px;
 }

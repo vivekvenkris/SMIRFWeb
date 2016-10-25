@@ -1,7 +1,6 @@
 package test;
 
 import java.io.IOException;
-import java.util.Set;
 
 import bean.CoordinateTO;
 import bean.Observation;
@@ -11,7 +10,6 @@ import exceptions.EmptyCoordinatesException;
 import exceptions.TCCException;
 import manager.MolongloCoordinateTransforms;
 import manager.ObservationManager;
-import service.CalibrationService;
 import util.Angle;
 import util.BackendConstants;
 

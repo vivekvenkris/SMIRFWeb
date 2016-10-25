@@ -1,4 +1,6 @@
 package util;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -141,6 +143,9 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 	}
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
 		SMIRF_GetUniqStitches gus = new SMIRF_GetUniqStitches();
+		String utcStr = args[0];
+		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"));
+		
 		List<Point> points = gus.generatePoints(Double.parseDouble(args[0])*Constants.deg2Rad,Double.parseDouble(args[1])*Constants.deg2Rad,10,Math.round(900/Constants.tsamp)); 
 		for(Point p: points){
 			List<Traversal> traversals = p.traversalMap.get(Integer.parseInt(args[2]));
