@@ -4,12 +4,14 @@ import java.io.IOException;
 
 import bean.CoordinateTO;
 import bean.Observation;
+import bean.TBSource;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import exceptions.TCCException;
 import manager.MolongloCoordinateTransforms;
 import manager.ObservationManager;
+import service.BackendService;
 import util.Angle;
 import util.BackendConstants;
 
@@ -39,17 +41,33 @@ public class Main {
 		Observation observation = new Observation();
 		observation.setName("J1644-4559");
 		observation.setAngleRA(new Angle("16:44:49.281", Angle.HHMMSS));
-		observation.setAngleDec(new Angle("-45:59:09.5",Angle.DDMMSS));
+		observation.setAngleDEC(new Angle("-45:59:09.5",Angle.DDMMSS));
 		observation.setTobs(900);
 		observation.setBackendType(BackendConstants.psrBackend);
 		observation.setObserver("VVK");
 		observation.setObsType(BackendConstants.tiedArrayFanBeam);
+		TBSource tbs1 = new TBSource();
+		tbs1.setAngleRA(new Angle("16:44:49.281", Angle.HHMMSS));
+		tbs1.setAngleDEC(new Angle("-45:59:09.5",Angle.DDMMSS));
+		tbs1.setPsrName("J1644-4559");
+		
+		TBSource tbs2 = new TBSource();
+		tbs2.setAngleRA(new Angle("16:44:49.281", Angle.HHMMSS));
+		tbs2.setAngleDEC(new Angle("-45:59:09.5",Angle.DDMMSS));
+		tbs2.setPsrName("J1644-4559");
+		tbs2.setDspsrParams(new TBSource.DSPSRParameters(10.0,0.2,-20.0));
 		System.err.println("starting observation...");
+		
+		observation.getTiedBeamSources().add(tbs1);
+		observation.getTiedBeamSources().add(tbs2);
 		
 		CoordinateTO coordinateTO = new CoordinateTO(observation);
 		MolongloCoordinateTransforms.skyToTel(coordinateTO);
 		
-		manager.observe(observation);
+		BackendService bs = BackendService.createBackendInstance();
+		bs.startBackend(observation);
+		
+		//manager.observe(observation);
 		
 //		System.err.println("After observation");
 //		Set<Thread> threadSet = Thread.getAllStackTraces().keySet();

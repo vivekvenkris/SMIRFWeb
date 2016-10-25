@@ -1,5 +1,6 @@
 package bean;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import service.EphemService;
@@ -9,13 +10,21 @@ import util.Constants;
 public class Observation {
 	String name;
 	Angle angleRA;
-	Angle angleDec;
+	Angle angleDEC;
 	Integer tobs;
 	String backendType;
 	String obsType;
 	String observer;
 	String utc;
 	List<TBSource> tiedBeamSources;
+	Integer nfb;
+	Angle fanbeamSpacing;
+	
+	public Observation() {
+		nfb = 352;
+		fanbeamSpacing = new Angle("0.01139601", Angle.DEG);
+		tiedBeamSources = new ArrayList<TBSource>();
+	}
 	
 	private double computeHAForMJD(double mjd){ 
 		double radLMST = EphemService.getRadLMSTforMolonglo(mjd);
@@ -49,14 +58,16 @@ public class Observation {
 		this.angleRA = angleRA;
 	}
 
-	public Angle getAngleDec() {
-		return angleDec;
+	
+
+
+	public Angle getAngleDEC() {
+		return angleDEC;
 	}
 
-	public void setAngleDec(Angle angleDec) {
-		this.angleDec = angleDec;
+	public void setAngleDEC(Angle angleDEC) {
+		this.angleDEC = angleDEC;
 	}
-
 
 	public Integer getTobs() {
 		return tobs;
@@ -113,6 +124,25 @@ public class Observation {
 	public void setUtc(String utc) {
 		this.utc = utc;
 	}
+
+	
+
+	public Integer getNfb() {
+		return nfb;
+	}
+
+	public void setNfb(Integer nfb) {
+		this.nfb = nfb;
+	}
+
+	public Angle getFanbeamSpacing() {
+		return fanbeamSpacing;
+	}
+
+	public void setFanbeamSpacing(Angle fanbeamSpacing) {
+		this.fanbeamSpacing = fanbeamSpacing;
+	}
+	
 
 	
 }

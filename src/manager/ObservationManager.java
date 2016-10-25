@@ -73,7 +73,7 @@ public class ObservationManager {
 			@Override
 			public Boolean call() throws TCCException, InterruptedException{
 				System.err.println("starting TCC..");
-				tccService.pointAndTrackSource(observation.getAngleRA().toHHMMSS(), observation.getAngleDec().toDDMMSS());
+				tccService.pointAndTrackSource(observation.getAngleRA().toHHMMSS(), observation.getAngleDEC().toDDMMSS());
 				System.err.println("started TCC..");
 				long maxSlewTime = TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000; // to milliseconds
 				System.err.println(" max slew time.." + maxSlewTime);
@@ -162,7 +162,7 @@ public class ObservationManager {
 			return false;
 		}
 
-		CoordinateTO coordsNow  = new CoordinateTO(HANow.getRadianValue(), observation.getAngleDec().getRadianValue(),null,null);
+		CoordinateTO coordsNow  = new CoordinateTO(HANow.getRadianValue(), observation.getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsNow);
 		System.err.println(coordsNow.getRadMD()*Constants.rad2Deg  + " " +coordsNow.getRadNS()*Constants.rad2Deg );
 		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD && coordsNow.getRadMD() > SMIRFConstants.maxRadMD) return false;
@@ -174,7 +174,7 @@ public class ObservationManager {
 		Angle HAend = observation.getHAAfter(totalSecs);
 		if(Math.abs(HAend.getDecimalHourValue())>6) return false;
 
-		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getAngleDec().getRadianValue(),null,null);
+		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsEnd);
 		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD && coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) return false;
 

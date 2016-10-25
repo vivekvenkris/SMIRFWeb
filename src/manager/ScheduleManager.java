@@ -20,7 +20,7 @@ public class ScheduleManager {
 		Observation observation = new Observation();
 		observation.setName("");
 		observation.setAngleRA(new Angle("", Angle.HHMMSS));
-		observation.setAngleDec(new Angle("",Angle.DDMMSS));
+		observation.setAngleDEC(new Angle("",Angle.DDMMSS));
 		observation.setTobs(30);
 		observation.setBackendType(BackendConstants.corrBackend);
 		observation.setObserver("VVK");
