@@ -43,9 +43,9 @@ public class Main {
 		observation.setAngleRA(new Angle("16:44:49.281", Angle.HHMMSS));
 		observation.setAngleDEC(new Angle("-45:59:09.5",Angle.DDMMSS));
 		observation.setTobs(900);
-		observation.setBackendType(BackendConstants.psrBackend);
+		observation.setBackendType(BackendConstants.correlation);
 		observation.setObserver("VVK");
-		observation.setObsType(BackendConstants.tiedArrayFanBeam);
+		observation.setObsType(BackendConstants.correlation);
 		TBSource tbs1 = new TBSource();
 		tbs1.setAngleRA(new Angle("16:44:49.281", Angle.HHMMSS));
 		tbs1.setAngleDEC(new Angle("-45:59:09.5",Angle.DDMMSS));
@@ -58,6 +58,10 @@ public class Main {
 		tbs2.setDspsrParams(new TBSource.DSPSRParameters(10.0,0.2,-20.0));
 		System.err.println("starting observation...");
 		
+		
+		
+		observation.getTiedBeamSources().add(tbs1);
+		observation.getTiedBeamSources().add(tbs2);		
 		observation.getTiedBeamSources().add(tbs1);
 		observation.getTiedBeamSources().add(tbs2);
 		

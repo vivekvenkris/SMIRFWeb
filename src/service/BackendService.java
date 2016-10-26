@@ -26,6 +26,7 @@ import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import bean.Observation;
+import bean.TBSource;
 import exceptions.BackendException;
 import exceptions.BackendInInvalidStateException;
 import exceptions.UnexpectedBackendReplyException;
@@ -59,49 +60,83 @@ public class BackendService implements BackendConstants {
 	}
 
 	private void setUpBackendForObservation(Observation observation) throws BackendException{
-
+		
+		String template = "";
+		template+=pfbParams;
+		template+=westArmParams;
+		template+=eastArmParams;
+		template+=boresightParams;
+		
 		defaultParams.put("tobs",observation.getTobs().toString());
 
 
 		defaultParams.put("observer","SMIRFWeb/"+ observation.getObserver());
-		defaultParams.put("project_id",SMIRFConstants.PID);
+		defaultParams.put("boresight_project_id",SMIRFConstants.PID);
 
-		defaultParams.put("source_name",observation.getName());
-		defaultParams.put("ra",observation.getAngleRA().toHHMMSS());
-		defaultParams.put("dec",observation.getAngleDec().toDDMMSS());
-		defaultParams.put("config",observation.getObsType());
+		defaultParams.put("boresight_source_name",observation.getName());
+		defaultParams.put("boresight_ra",observation.getAngleRA().toHHMMSS());
+		defaultParams.put("boresight_dec",observation.getAngleDEC().toDDMMSS());
+		defaultParams.put("boresight_proc_file","mopsr.aqdsp.gpu");
 
 
-		switch(observation.getBackendType()){
-		case corrBackend:
-			defaultParams.put("mode","CORR");
-			defaultParams.put("aq_proc_file","mopsr.aqdsp.unscaled.gpu");
-			defaultParams.put("bf_proc_file","mopsr.calib.pref16.gpu");
-			defaultParams.put("bp_proc_file","mopsr.null");
+		switch(observation.getObsType()){
+		case correlation:
+			defaultParams.put("corr_project_id",SMIRFConstants.PID);
+			defaultParams.put("corr_type", "FX");
+			
+			defaultParams.put("corr_proc_file","mopsr.calib.pref16.gpu");
+			template +=corrParams;
 			break;
-		case psrBackend:
-			defaultParams.put("mode","PSR");
-			defaultParams.put("aq_proc_file","mopsr.aqdsp.gpu");
-			defaultParams.put("bf_proc_file","mopsr.dspsr.cpu.cdd");
-			defaultParams.put("bp_proc_file","mopsr.null");
+		case tiedArrayFanBeam:
+			int index = 0;
+			for(TBSource tbs: observation.getTiedBeamSources()){
+				String tbParamStr = tbParams[index];
+				String tbStr = "tb"+index;
+				defaultParams.put(tbStr+"_project_id", tbs.getProjectID());
+				defaultParams.put(tbStr+"_mode", "PSR");
+				defaultParams.put(tbStr+"_proc_file","mopsr.dspsr.cpu.cdd");
+				defaultParams.put(tbStr+"_source_name", tbs.getPsrName());
+				defaultParams.put(tbStr+"_ra", tbs.getAngleRA().toHHMMSS());
+				defaultParams.put(tbStr+"_dec", tbs.getAngleDEC().toDDMMSS());
+				TBSource.DSPSRParameters dspsrParameters = tbs.getDspsrParams();
+				Map<String, String> map2 = new HashMap<String, String>();
+				StrSubstitutor dspsrSubstitutor  = new StrSubstitutor(map2);
 
-			switch(observation.getObsType()){
-			case tiedArrayFanBeam:
-				break;
-			case fanBeam:
-				break;
+				map2.put(tbStr + "DspsrParams", "");
+				if(dspsrParameters!=null){
+					String dspsrParamStr = dspsrParams[index];
+					Map<String, String> map = new HashMap<String, String>();
+					map.put(tbStr+"_dm", dspsrParameters.getDM().toString());
+					map.put(tbStr+"_period", dspsrParameters.getPeriodSecs().toString());
+					map.put(tbStr+"_acc", dspsrParameters.getAcceleration().toString());
+					StrSubstitutor paramSubstitutor  = new StrSubstitutor(map);
+					String dspsr = paramSubstitutor.replace(dspsrParamStr);
+					map2.put(tbStr + "DspsrParams", dspsr);
+					
+					
+				}
+				tbParamStr = dspsrSubstitutor.replace(tbParamStr);
+
+				template+=tbParamStr;
+				index ++;
 			}
+		case fanBeam:
+			defaultParams.put("fb_project_id", SMIRFConstants.PID);
+			defaultParams.put("fb_mode", "PSR");
+			defaultParams.put("fb_nbeams",observation.getNfb().toString());
+			defaultParams.put("fb_spacing", observation.getFanbeamSpacing().getDegreeValue().toString());
+			template+=fabBeamParams;
 			break;
 		}
 
-		prepareBackend();
+		prepareBackend(template);
 
 	}
 
-	private void prepareBackend() throws BackendException{
+	private void prepareBackend(String template) throws BackendException{
 		if(!isON()) throw new BackendException("Backend failed: Cause: Backend not ON "); 
 		try {
-			String response = this.sendCommand(prepare);
+			String response = this.sendCommand(prepare,template);
 			if(!response.equals(backendResponseSuccess)) throw new UnexpectedBackendReplyException(prepare, response);
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
@@ -114,8 +149,9 @@ public class BackendService implements BackendConstants {
 		if(!isON()) throw new BackendException("Backend failed: Cause: Backend not ON "); 
 
 		this.setUpBackendForObservation(observation);
+		
 		try {
-			String response = this.sendCommand(BackendService.start);
+			String response = this.sendCommand(BackendService.start,"");
 			if(response.equals("fail")) throw new UnexpectedBackendReplyException(start, response);
 			observation.setUtc(response);
 		}catch (ConnectException e) {
@@ -128,7 +164,7 @@ public class BackendService implements BackendConstants {
 		if(!isON()) throw new BackendException("Backend failed: Cause: Backend not ON "); 
 		if(isIdle()) return;
 		try{
-			String response = this.sendCommand(BackendService.stop);
+			String response = this.sendCommand(BackendService.stop,"");
 			if(!response.equals(backendResponseSuccess)) throw new UnexpectedBackendReplyException(stop, response);
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
@@ -138,7 +174,7 @@ public class BackendService implements BackendConstants {
 
 	public String getBackendStatus() throws BackendException {
 		try{
-			String response = this.sendCommand(BackendService.query);
+			String response = this.sendCommand(BackendService.query,"");
 			return response;
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
@@ -148,7 +184,7 @@ public class BackendService implements BackendConstants {
 
 	public Boolean isIdle() throws BackendException {
 		try{
-			String response = this.sendCommand(BackendService.query);
+			String response = this.sendCommand(BackendService.query,"");
 			return (response.equals(backendIdle) || response.contains(backendPrepared));
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
@@ -158,7 +194,7 @@ public class BackendService implements BackendConstants {
 
 	public boolean isON() throws BackendException{
 		try {
-			String response = this.sendCommand(BackendService.query);
+			String response = this.sendCommand(BackendService.query,"");
 			return true;
 		} catch (ConnectException e) {
 			return false;
@@ -181,28 +217,16 @@ public class BackendService implements BackendConstants {
 
 
 
-	public String sendCommand(String command) throws BackendException, ConnectException{
+	public String sendCommand(String command, String parameterTemplate) throws BackendException, ConnectException{
 		Map<String, String> messageMap = new HashMap<String, String>();
 		messageMap.put("command", command);
 		StrSubstitutor messageSubstitutor  = new StrSubstitutor(messageMap);
-		String message = "";
-		switch (command) {
-
-		case prepare:
-			StrSubstitutor paramSubstitutor  = new StrSubstitutor(defaultParams);
-			String params = paramSubstitutor.replace(paramTemplate);
-			messageMap.put("parameters", params);
-			break;
-		case query:
-		case start:
-		case stop:
-			messageMap.put("parameters", "");
-			break;
-		default:
-			throw new BackendException("Backend failed: Cause: invalid command ["+command+"] given." , ExceptionUtils.getStackTrace(new Exception()));
-		}
-		message = messageSubstitutor.replace(messageWrapper);
-		System.err.println(message);
+		
+		StrSubstitutor paramSubstitutor  = new StrSubstitutor(defaultParams);
+		String params = paramSubstitutor.replace(parameterTemplate);
+		messageMap.put("parameters", params);
+		
+		String message = messageSubstitutor.replace(messageWrapper);
 		String xmlResponseStr = talkToBackend(message);
 		String response = "";
 
@@ -352,14 +376,28 @@ public class BackendService implements BackendConstants {
 	}
 
 	static{
-		defaultParams.put("epoch","J2000");
+		defaultParams.put("boresight_source_epoch","J2000");
+		defaultParams.put("tb0_source_epoch","J2000");
+		defaultParams.put("tb1_source_epoch","J2000");
+		defaultParams.put("tb2_source_epoch","J2000");
+		defaultParams.put("tb3_source_epoch","J2000");
+
 		defaultParams.put("position_epoch","J2000");
 		defaultParams.put("position_error","0.000001");
-
 		defaultParams.put("position_error_units","degrees");
-		defaultParams.put("ra_units","hhmmss");
-		defaultParams.put("dec_units","ddmmss");
-
+		
+		defaultParams.put("boresight_ra_units","hh:mm:ss.s");
+		defaultParams.put("tb0_ra_units","hh:mm:ss.s");
+		defaultParams.put("tb1_ra_units","hh:mm:ss.s");
+		defaultParams.put("tb2_ra_units","hh:mm:ss.s");
+		defaultParams.put("tb3_ra_units","hh:mm:ss.s");
+		
+		defaultParams.put("boresight_dec_units","dd:mm:ss.s");
+		defaultParams.put("tb0_dec_units","dd:mm:ss.s");
+		defaultParams.put("tb1_dec_units","dd:mm:ss.s");
+		defaultParams.put("tb2_dec_units","dd:mm:ss.s");
+		defaultParams.put("tb3_dec_units","dd:mm:ss.s");
+		
 		defaultParams.put("nbits","8");
 		defaultParams.put("ndim","2");
 		defaultParams.put("npol","1");
@@ -378,14 +416,51 @@ public class BackendService implements BackendConstants {
 		defaultParams.put("resolution","1280");
 		defaultParams.put("resolution_units","bytes");
 
-		defaultParams.put("md_angle","0.0");
-		defaultParams.put("ns_tilt","0.0");
-		defaultParams.put("ns_tilt_units","degrees");
-		defaultParams.put("md_angle_units","degrees");
+		defaultParams.put("east_md_angle","0.0");
+		defaultParams.put("west_md_angle","0.0");
+		
+		defaultParams.put("east_ns_tilt","0.0");
+		defaultParams.put("west_ns_tilt","0.0");
 
-		defaultParams.put("obs_type","TRACKING");
+		defaultParams.put("east_ns_tilt_units","degrees");
+		defaultParams.put("west_ns_tilt_units","degrees");
 
+		defaultParams.put("east_md_angle_units","degrees");
+		defaultParams.put("west_md_angle_units","degrees");
 
+		defaultParams.put("west_tracking", "true");
+		defaultParams.put("east_tracking", "true");    
+		
+		defaultParams.put("corr_dump_time_units", "seconds");
+		defaultParams.put("corr_dump_time", "20");
+		
+		defaultParams.put("fb_spacing_units", "degrees");
+		
+		defaultParams.put("tb0_dm_units", "parsecs per cc");
+		defaultParams.put("tb1_dm_units", "parsecs per cc");
+		defaultParams.put("tb2_dm_units", "parsecs per cc");
+		defaultParams.put("tb3_dm_units", "parsecs per cc");
+		
+		defaultParams.put("tb0_period_units", "seconds");
+		defaultParams.put("tb1_period_units", "seconds");
+		defaultParams.put("tb2_period_units", "seconds");
+		defaultParams.put("tb3_period_units", "seconds");
+		
+		defaultParams.put("tb0_acc_units", "metres per second");
+		defaultParams.put("tb1_acc_units", "metres per second");
+		defaultParams.put("tb2_acc_units", "metres per second");
+		defaultParams.put("tb3_acc_units", "metres per second");
+		
+		defaultParams.put("rfi_mitigation", "true");
+		defaultParams.put("antenna_weights", "true");
+		defaultParams.put("delay_tracking", "true");
+		defaultParams.put("", "");
+		defaultParams.put("", "");
+		defaultParams.put("", "");
+		
+
+		
+		
 		//		defaultParams.put("mode","PSR");
 		//		defaultParams.put("tobs","120");
 		//		defaultParams.put("obs_type","TRACKING");
