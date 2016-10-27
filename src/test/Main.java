@@ -17,7 +17,6 @@ import exceptions.TCCException;
 import manager.MolongloCoordinateTransforms;
 import manager.ObservationManager;
 import manager.ScheduleManager;
-import service.BackendService;
 import util.BackendConstants;
 import util.SMIRFConstants;
 
