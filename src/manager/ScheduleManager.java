@@ -127,7 +127,7 @@ public class ScheduleManager implements SMIRFConstants {
 	}
 
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, IOException {
-		SMIRF_tileGalacticPlane.SMIRF_tileGalacticPlane();
+		//SMIRF_tileGalacticPlane.SMIRF_tileGalacticPlane();
 		System.err.println("tiled..");
 		System.in.read();
 		ScheduleManager sm = new ScheduleManager();

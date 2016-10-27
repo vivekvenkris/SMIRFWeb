@@ -71,7 +71,7 @@ public class DBService implements SMIRFConstants {
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction().begin();
 		@SuppressWarnings("unchecked")
-		List<Pointing> pointings = entityManager.createQuery("SELECT p FROM Pointing p where p.numObs=0 order by p.priority DESC ").getResultList();
+		List<Pointing> pointings = entityManager.createQuery("SELECT p FROM Pointing p where p.numObs= ( select min(q.numObs) from Pointing q ) order by p.priority DESC ").getResultList();
 		entityManager.getTransaction().commit();
 		entityManager.close();
 		return pointings;
