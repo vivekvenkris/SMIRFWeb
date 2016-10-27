@@ -16,6 +16,7 @@ import bean.Coords;
 import bean.Observation;
 import bean.Pointing;
 import bean.PointingTO;
+import bean.TBSource;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
@@ -26,7 +27,6 @@ import service.DBService;
 import service.EphemService;
 import util.BackendConstants;
 import util.SMIRFConstants;
-import util.SMIRF_tileGalacticPlane;
 
 public class ScheduleManager implements SMIRFConstants {
 
@@ -57,6 +57,37 @@ public class ScheduleManager implements SMIRFConstants {
 
 	}
 	
+	public void observeTestPSR(){
+		
+	}
+	
+	public void startScheduler(String utc, int obsDuration, int tobs, String observer) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException, BackendException, InterruptedException{
+		List<Coords> coordsList = this.getPointingsForSession(utc, obsDuration,tobs);
+		ObservationManager manager = new ObservationManager();		
+
+		for(Coords coords: coordsList){
+			PointingTO pointing = coords.getPointingTO();
+			DBService.incrementPointingObservations(coords.getPointingTO().getPointingID());
+			Observation observation = new Observation();
+			observation.setName(pointing.getPointingName());
+			observation.setAngleRA(pointing.getAngleRA());
+			observation.setAngleDEC(pointing.getAngleDEC());
+			observation.setBackendType(BackendConstants.psrBackend);
+			observation.setObsType(BackendConstants.tiedArrayFanBeam);
+			//* to do : add TB sources for this pointing */
+			List<TBSource> tbSources = new ArrayList<TBSource>();
+			observation.setTiedBeamSources(tbSources);
+			observation.setObserver(observer);
+			manager.observe(observation);
+		}
+		
+
+	}
+	
+	public List<TBSource> getTBSourcesForObservation(Coords coords){
+		List<TBSource> tbSources = new ArrayList<>();
+		return tbSources;
+	}
 	
 
 	public List<Coords> getPointingsForSession(String utc, int totalSeconds, int tobsSeconds) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException{

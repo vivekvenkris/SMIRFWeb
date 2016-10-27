@@ -1,6 +1,9 @@
 package test;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 
 import bean.Angle;
 import bean.CoordinateTO;
@@ -9,14 +12,25 @@ import bean.TBSource;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
+import exceptions.PointingException;
 import exceptions.TCCException;
 import manager.MolongloCoordinateTransforms;
 import manager.ObservationManager;
+import manager.ScheduleManager;
 import service.BackendService;
 import util.BackendConstants;
+import util.SMIRFConstants;
 
 public class Main {
-	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException {
+	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException {
+		
+		ScheduleManager scheduleManager = new ScheduleManager();
+		scheduleManager.Calibrate("CJXXXX_XXXX");
+		scheduleManager.observeTestPSR();
+		Instant instant = Instant.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT);
+		scheduleManager.startScheduler(formatter.format(instant).replaceAll("T", "-"), 900, SMIRFConstants.tobs, "VVK");
+		
 		
 		
 		ObservationManager manager = new ObservationManager();		
