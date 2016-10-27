@@ -21,6 +21,8 @@ public interface TCCConstants {
 	Double slewRateMD = 2.5/60;
 	Double slewRateNSFast = 4.8/60;
 	Double slewRateNSSlow = 1.0/60.0;
+	Double rampTime = 5.0;
+
 	
 	Double OnSourceThresholdRadNS = 0.005;
 	Double OnSourceThresholdRadMD = 0.005;

@@ -7,7 +7,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.javatuples.Pair;
 
 import exceptions.DriveBrokenException;
-import util.Angle;
 import util.TCCConstants;
 @XmlRootElement(name="tcc_status")
 public class TCCStatus {

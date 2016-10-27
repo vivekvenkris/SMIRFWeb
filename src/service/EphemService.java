@@ -8,11 +8,11 @@ import java.time.temporal.JulianFields;
 
 import org.jastronomy.jsofa.JSOFA;
 
+import bean.Angle;
 import bean.CoordinateTO;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
-import util.Angle;
 import util.Constants;
 
 public class EphemService {

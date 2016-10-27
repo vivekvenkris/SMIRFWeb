@@ -38,4 +38,15 @@ public class TCCManager {
 		return (int)(maxSlewTime + 2*rampTime);
 				
 	}
+	
+	public static Integer computeSlewTime(double radNS1, double radMD1, double radNS2, double radMD2){
+		
+		double slewTimeNS = Math.abs(radNS1 - radNS2)*Constants.rad2Deg/TCCConstants.slewRateNSSlow;		
+		double slewTimeMD = Math.abs(radMD1 - radMD2)*Constants.rad2Deg/TCCConstants.slewRateMD;
+		
+		
+		Double maxSlewTime = slewTimeNS > slewTimeMD ?slewTimeNS:slewTimeMD;
+		return (int)(maxSlewTime + 2*TCCConstants.rampTime);
+				
+	}
 }

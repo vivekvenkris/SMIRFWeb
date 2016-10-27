@@ -1,7 +1,5 @@
 package bean;
 
-import util.Angle;
-
 public class CoordinateTO {
 
 	private Double radHA;
@@ -18,15 +16,28 @@ public class CoordinateTO {
 	}
 	
 	public CoordinateTO(Angle HA, Angle Dec, Angle NS, Angle MD) {
-		this.radHA = HA.getRadianValue();
-		this.radDec = Dec.getRadianValue();
-		this.radNS = NS.getRadianValue();
-		this.radMD = MD.getRadianValue();
+		if(HA != null ) this.radHA = HA.getRadianValue();
+		if(Dec != null) this.radDec = Dec.getRadianValue();
+		if(NS != null ) this.radNS = NS.getRadianValue();
+		if(MD != null ) this.radMD = MD.getRadianValue();
 	}
 	public CoordinateTO(Observation observation){
 		this.radHA = observation.getHANow().getRadianValue();
 		this.radDec = observation.getAngleDEC().getRadianValue();
 		this.radMD = this.radNS = null;
+	}
+	
+	public Angle getAngleNS(){
+		return new Angle(this.radNS,Angle.DEG);
+	}
+	public Angle getAngleMD(){
+		return new Angle(this.radMD,Angle.DEG);
+	}
+	public Angle getAngleHA(){
+		return new Angle(this.radHA,Angle.HHMMSS);
+	}
+	public Angle getAngleDEC(){
+		return new Angle(this.radDec,Angle.DDMMSS);
 	}
 	
 	public boolean hasNullSky(){

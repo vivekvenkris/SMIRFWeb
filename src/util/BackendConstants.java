@@ -20,8 +20,8 @@ public interface BackendConstants {
 	String backendPrepared = "parsed correctly";
 	
 	String loadBackendScript="/home/dada/scripts/load_config.csh";
-	String psrBackend= "live_bfp_40chan_16ant_22pfb_352_beams";
-	String corrBackend= "live_corr_40chan_16ant_22pfb"; 
+	String psrBackend= "live_40chan_16ant_22pfb_352_beams";//"live_bfp_40chan_16ant_22pfb_352_beams";
+	String corrBackend= "live_40chan_16ant_22pfb_352_beams";//"live_corr_40chan_16ant_22pfb"; 
 	String otherBackends = "other";
 	String dadaAtLocalhost = "dada@localhost";
 	
@@ -62,6 +62,17 @@ public interface BackendConstants {
 					"<resolution units='${resolution_units}'>${resolution}</resolution>" +
 			"</pfb_parameters>";
 	
+	String signalParams = 
+			"<signal_parameters>" +
+					"<nchan>${nchan}</nchan>" +
+					"<nbit>${nbits}</nbit>" +
+					"<ndim>${ndim}</ndim>" +
+					"<npol>${npol}</npol>" +
+					"<nant>${nant}</nant>" +
+					"<bandwidth units='${bw_units}'>${bw}</bandwidth>" +
+					"<centre_frequency units='${cfreq_units}'>${cfreq}</centre_frequency>" +
+			"</signal_parameters>";
+	
 	String obsParams = 
 			"<observation_parameters>" +
 					"<observer>${observer}</observer>" +
@@ -87,7 +98,7 @@ public interface BackendConstants {
 				"<project_id>${tb0_project_id}</project_id>" +
 				"<mode>${tb0_mode}</mode>" +
 				"<processing_file>${tb0_proc_file}</processing_file>" +
-				"<name epoch='${tb0_source_epoch}'> ${tb0_source_name}</name>" +
+				"<name epoch='${tb0_source_epoch}'>${tb0_source_name}</name>" +
 				"<ra units='${tb0_ra_units}'>${tb0_ra}</ra>" +
 				"<dec units='${tb0_dec_units}'>${tb0_dec}</dec>" +
 				"${tb0DspsrParams}" +
@@ -105,7 +116,7 @@ public interface BackendConstants {
 				"<project_id>${tb1_project_id}</project_id>" +
 				"<mode>${tb1_mode}</mode>" +
 				"<processing_file>${tb1_proc_file}</processing_file>" +
-				"<name epoch='${tb1_source_epoch}'> ${tb1_source_name}</name>" +
+				"<name epoch='${tb1_source_epoch}'>${tb1_source_name}</name>" +
 				"<ra units='${tb1_ra_units}'>${tb1_ra}</ra>" +
 				"<dec units='${tb1_dec_units}'>${tb1_dec}</dec>" +
 				"${tb1DspsrParams}" +
@@ -123,7 +134,7 @@ public interface BackendConstants {
 				"<project_id>${tb2_project_id}</project_id>" +
 				"<mode>${tb2_mode}</mode>" +
 				"<processing_file>${tb2_proc_file}</processing_file>" +
-				"<name epoch='${tb2_source_epoch}'> ${tb2_source_name}</name>" +
+				"<name epoch='${tb2_source_epoch}'>${tb2_source_name}</name>" +
 				"<ra units='${tb2_ra_units}'>${tb2_ra}</ra>" +
 				"<dec units='${tb2_dec_units}'>${tb2_dec}</dec>" +
 				"${tb2DspsrParams}" +
@@ -141,7 +152,7 @@ public interface BackendConstants {
 				"<project_id>${tb3_project_id}</project_id>" +
 				"<mode>${tb3_mode}</mode>" +
 				"<processing_file>${tb3_proc_file}</processing_file>" +
-				"<name epoch='${tb3_source_epoch}'> ${tb3_source_name}</name>" +
+				"<name epoch='${tb3_source_epoch}'>${tb3_source_name}</name>" +
 				"<ra units='${tb3_ra_units}'>${tb3_ra}</ra>" +
 				"<dec units='${tb3_dec_units}'>${tb3_dec}</dec>" +
 				"${tb3DspsrParams}" +
@@ -166,12 +177,12 @@ public interface BackendConstants {
 				"<dump_time units='${corr_dump_time_units}'>${corr_dump_time}</dump_time>" +
 			"</correlation_parameters>";
 
-	String fabBeamParams = "<fanbeams_parameters>" +
+	String fabBeamParams = "<fan_beams_parameters>" +
 			"<project_id>${fb_project_id}</project_id>" +
 			"<mode>${fb_mode}</mode>" +
 			"<nbeams>${fb_nbeams}</nbeams>" +
 			"<beam_spacing units='${fb_spacing_units}'>${fb_spacing}</beam_spacing>" +
-			"</fanbeams_parameters>";
+			"</fan_beams_parameters>";
 	
 	
 	

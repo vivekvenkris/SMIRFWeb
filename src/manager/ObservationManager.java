@@ -1,5 +1,9 @@
 package manager;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -7,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import bean.Angle;
 import bean.CoordinateTO;
 import bean.Observation;
 import exceptions.BackendException;
@@ -17,7 +22,6 @@ import exceptions.TCCException;
 import service.BackendService;
 import service.TCCService;
 import service.TCCStatusService;
-import util.Angle;
 import util.Constants;
 import util.SMIRFConstants;
 
@@ -117,7 +121,8 @@ public class ObservationManager {
 		System.err.println("starting backend..");
 		backendService.startBackend(observation);
 		System.err.println("starting tracking..");
-		long startTime = System.currentTimeMillis();
+		long startTime = System.currentTimeMillis(); //LocalDateTime.parse(observation.getUtc(), DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss")).atZone(ZoneId.of("Australia/Melbourne")).toInstant().toEpochMilli();;
+
 		long obsTime = observation.getTobs()*1000; // in milliseconds
 		long elapsedTime = 0L;
 

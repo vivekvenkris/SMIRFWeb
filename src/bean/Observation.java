@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import service.EphemService;
-import util.Angle;
 import util.Constants;
 
 public class Observation {

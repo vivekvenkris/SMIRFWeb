@@ -8,9 +8,9 @@ import java.net.Socket;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.javatuples.Pair;
 
+import bean.Angle;
 import bean.TCCStatus;
 import exceptions.TCCException;
-import util.Angle;
 import util.TCCConstants;
 import util.Utilities;
 

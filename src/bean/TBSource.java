@@ -1,6 +1,5 @@
 package bean;
 
-import util.Angle;
 import util.SMIRFConstants;
 
 public class TBSource {

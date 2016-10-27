@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import bean.Angle;
 import bean.CoordinateTO;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;

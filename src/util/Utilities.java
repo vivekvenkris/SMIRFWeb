@@ -37,6 +37,8 @@ import manager.MolongloCoordinateTransforms;
 
 public class Utilities {
 	
+	public static String asq(String str){ return "'"+str +"'";}
+
 	public static double getFB(int totalFB, double boresightMD, double sourceMD){
 		return totalFB*( ( (sourceMD-boresightMD)*Constants.rad2Deg/ (2.0/Math.cos((boresightMD+sourceMD)/2.0) ) )+1)/2.0 + 1;
 	}

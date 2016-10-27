@@ -63,6 +63,8 @@ public class BackendService implements BackendConstants {
 		
 		String template = "";
 		template+=pfbParams;
+		template+=signalParams;
+		template+=obsParams;
 		template+=westArmParams;
 		template+=eastArmParams;
 		template+=boresightParams;
@@ -227,6 +229,7 @@ public class BackendService implements BackendConstants {
 		messageMap.put("parameters", params);
 		
 		String message = messageSubstitutor.replace(messageWrapper);
+		System.err.println("sending:" +message);
 		String xmlResponseStr = talkToBackend(message);
 		String response = "";
 
@@ -236,10 +239,12 @@ public class BackendService implements BackendConstants {
 
 			case query:
 				response = Utilities.getTextFromXpath(xmlResponseStr, "//response/mpsr_status");
+				System.err.println("query response:" + xmlResponseStr);
 				break;
 			case prepare:
 			case stop:
 				response = Utilities.getTextFromXpath(xmlResponseStr, "//reply");
+				System.err.println("response:" + xmlResponseStr);
 				break;
 			case start:
 				response  = Utilities.getTextFromXpath(xmlResponseStr, "//response");

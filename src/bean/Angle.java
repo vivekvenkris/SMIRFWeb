@@ -1,10 +1,16 @@
-package util;
+package bean;
 
-public class Angle {
+import javax.persistence.AttributeConverter;
+
+import util.Constants;
+
+public class Angle{
 	public static final String HHMMSS = "hhmmss";
 	public static final String DDMMSS = "ddmmss";
 	public static final String RAD = "rad";
 	public static final String DEG = "deg";
+	private static final Double SECONDS_IN_A_SIDEREAL_DAY = 23*3600+ 56*60+4.1;
+	private static final Double SECONDS_IN_A_SOLAR_DAY = 24*3600 + 0.0;
 	Double radValue; // always in radians
 	String toStringUnits;
 	
@@ -17,6 +23,20 @@ public class Angle {
 		this.toStringUnits = toStringUnits;
 	}
 	
+	public void addSolarSeconds(int seconds){
+		this.radValue = (this.getDecimalHourValue() + (seconds * SECONDS_IN_A_SOLAR_DAY / SECONDS_IN_A_SIDEREAL_DAY )/3600.0) * Constants.hrs2Rad;
+		
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		// TODO Auto-generated method stub
+		if(!(obj instanceof Angle)) return false;
+		Angle angle = (Angle)obj;
+		return this.radValue.equals(angle.getRadianValue());
+	}
+	
+		
 	public Angle(String value, String format){
 		this.toStringUnits = format;
 		switch(format){
@@ -134,6 +154,7 @@ public class Angle {
 		return null;
 				
 	}
+	
 	
 
 }
