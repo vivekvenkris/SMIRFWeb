@@ -15,14 +15,14 @@ public class Observation {
 	String obsType;
 	String observer;
 	String utc;
-	List<TBSource> tiedBeamSources;
+	List<TBSourceTO> tiedBeamSources;
 	Integer nfb;
 	Angle fanbeamSpacing;
 	
 	public Observation() {
 		nfb = 352;
 		fanbeamSpacing = new Angle("0.01139601", Angle.DEG);
-		tiedBeamSources = new ArrayList<TBSource>();
+		tiedBeamSources = new ArrayList<TBSourceTO>();
 	}
 	
 	private double computeHAForMJD(double mjd){ 
@@ -108,11 +108,13 @@ public class Observation {
 		this.observer = observer;
 	}
 
-	public List<TBSource> getTiedBeamSources() {
+	
+
+	public List<TBSourceTO> getTiedBeamSources() {
 		return tiedBeamSources;
 	}
 
-	public void setTiedBeamSources(List<TBSource> tiedBeamSources) {
+	public void setTiedBeamSources(List<TBSourceTO> tiedBeamSources) {
 		this.tiedBeamSources = tiedBeamSources;
 	}
 

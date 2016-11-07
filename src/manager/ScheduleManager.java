@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -16,7 +18,7 @@ import bean.Coords;
 import bean.Observation;
 import bean.Pointing;
 import bean.PointingTO;
-import bean.TBSource;
+import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
@@ -27,6 +29,7 @@ import service.DBService;
 import service.EphemService;
 import util.BackendConstants;
 import util.SMIRFConstants;
+import util.SMIRF_tileGalacticPlane;
 
 public class ScheduleManager implements SMIRFConstants {
 
@@ -66,6 +69,7 @@ public class ScheduleManager implements SMIRFConstants {
 		ObservationManager manager = new ObservationManager();		
 
 		for(Coords coords: coordsList){
+			
 			PointingTO pointing = coords.getPointingTO();
 			DBService.incrementPointingObservations(coords.getPointingTO().getPointingID());
 			Observation observation = new Observation();
@@ -75,7 +79,7 @@ public class ScheduleManager implements SMIRFConstants {
 			observation.setBackendType(BackendConstants.psrBackend);
 			observation.setObsType(BackendConstants.tiedArrayFanBeam);
 			//* to do : add TB sources for this pointing */
-			List<TBSource> tbSources = new ArrayList<TBSource>();
+			List<TBSourceTO> tbSources = new ArrayList<TBSourceTO>();
 			observation.setTiedBeamSources(tbSources);
 			observation.setObserver(observer);
 			manager.observe(observation);
@@ -84,8 +88,8 @@ public class ScheduleManager implements SMIRFConstants {
 
 	}
 	
-	public List<TBSource> getTBSourcesForObservation(Coords coords){
-		List<TBSource> tbSources = new ArrayList<>();
+	public List<TBSourceTO> getTBSourcesForObservation(Coords coords){
+		List<TBSourceTO> tbSources = new ArrayList<>();
 		return tbSources;
 	}
 	
@@ -112,7 +116,7 @@ public class ScheduleManager implements SMIRFConstants {
 					coordsList.add(coords);
 				}
 			}
-			Collections.sort(coordsList,Coords.compareNSMD);
+			Collections.sort(coordsList,Coords.compareMDNS);
 			lst.addSolarSeconds(minSlewTime);
 			//System.err.println(" at obs start: " +lst + " "+coordsList.size());
 			lst.addSolarSeconds(tobsSeconds );
@@ -158,21 +162,23 @@ public class ScheduleManager implements SMIRFConstants {
 	}
 
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, IOException {
-		//SMIRF_tileGalacticPlane.SMIRF_tileGalacticPlane();
+		SMIRF_tileGalacticPlane.SMIRF_tileGalacticPlane();
 		System.err.println("tiled..");
 		System.in.read();
 		ScheduleManager sm = new ScheduleManager();
 		DecimalFormat df = new DecimalFormat("00");
 		BufferedWriter bw = new BufferedWriter(new FileWriter("/Users/vkrishnan/Desktop/dustbin/blah2"));
+		LocalDateTime utc = LocalDateTime.parse("2016-11-01-13:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"));
 		for(int i=1;;i++){
-		List<Coords> coordsList = sm.getPointingsForSession("2016-11-"+df.format(i)+"-17:00:00", 24*60*60,900);
+		System.err.print("day:" +i +" " + utc.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"))+"\t" );
+		List<Coords> coordsList = sm.getPointingsForSession(utc.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss")), 24*60*60,900);
 		for(Coords c: coordsList)  {
 			DBService.incrementPointingObservations(c.getPointingTO().getPointingID());
 			bw.write(i + " " +c.getPointingTO().getAngleRA().getDegreeValue() + " " + c.getPointingTO().getAngleDEC().getDegreeValue() + "\n" );
 			bw.flush();
 		}
-		System.err.println("day:" +i);
 		System.in.read();
+		utc = utc.plusDays(1);
 		}
 		
 	}

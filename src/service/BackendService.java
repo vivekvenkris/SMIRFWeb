@@ -26,7 +26,7 @@ import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import bean.Observation;
-import bean.TBSource;
+import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.BackendInInvalidStateException;
 import exceptions.UnexpectedBackendReplyException;
@@ -91,7 +91,7 @@ public class BackendService implements BackendConstants {
 			break;
 		case tiedArrayFanBeam:
 			int index = 0;
-			for(TBSource tbs: observation.getTiedBeamSources()){
+			for(TBSourceTO tbs: observation.getTiedBeamSources()){
 				String tbParamStr = tbParams[index];
 				String tbStr = "tb"+index;
 				defaultParams.put(tbStr+"_project_id", tbs.getProjectID());
@@ -100,7 +100,7 @@ public class BackendService implements BackendConstants {
 				defaultParams.put(tbStr+"_source_name", tbs.getPsrName());
 				defaultParams.put(tbStr+"_ra", tbs.getAngleRA().toHHMMSS());
 				defaultParams.put(tbStr+"_dec", tbs.getAngleDEC().toDDMMSS());
-				TBSource.DSPSRParameters dspsrParameters = tbs.getDspsrParams();
+				TBSourceTO.DSPSRParameters dspsrParameters = tbs.getDspsrParams();
 				Map<String, String> map2 = new HashMap<String, String>();
 				StrSubstitutor dspsrSubstitutor  = new StrSubstitutor(map2);
 

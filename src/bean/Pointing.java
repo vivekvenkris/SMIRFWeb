@@ -39,11 +39,14 @@ public class Pointing{
 	@Convert(converter = Angle2DDMMSS.class)
 	@Column(name = "dec_dms")
 	private Angle angleDEC;
-	
+	@Column
 	private Integer priority= 10;
+	@Column
 	private String type = "G";
+	
 	@Column(name = "num_obs")
 	private Integer numObs = 0;
+	
 	public Pointing(){}
 	public Pointing(Angle lat, Angle lon) {
 		SphericalCoordinate sc = JSOFA.jauG2icrs(lon.getRadianValue(), lat.getRadianValue());

@@ -2,7 +2,7 @@ package bean;
 
 import util.SMIRFConstants;
 
-public class TBSource {
+public class TBSourceTO {
 	
 	public static class DSPSRParameters{
 		Double periodSecs;
@@ -41,7 +41,7 @@ public class TBSource {
 	String psrName;
 	String projectID;
 	
-	public TBSource() {
+	public TBSourceTO() {
 		projectID = SMIRFConstants.PID;
 	}
 	
