@@ -52,8 +52,11 @@ public class EphemService {
 	}
 
 
+	public static double getRadLMSTForMolongloNow(){
+		return getRadLMSTForMolonglo (getMJDNow());
+	}
 
-	public static double getRadLMSTforMolonglo (double mjd)
+	public static double getRadLMSTForMolonglo (double mjd)
 	{
 		double gast, last;
 
@@ -69,7 +72,7 @@ public class EphemService {
 	public static double getRadLMSTforMolonglo(String utcStr){
 		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"));
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
-		double last = EphemService.getRadLMSTforMolonglo(mjd);
+		double last = EphemService.getRadLMSTForMolonglo(mjd);
 		return last;
 	}
 	
@@ -88,7 +91,7 @@ public class EphemService {
 		double mjd = dateTime.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(dateTime.getHour()*3600+dateTime.getMinute()*60+dateTime.getSecond())/86400.0;
 		System.err.println("mopsr_getlst "+ dateTime.toString().replace("T", "-"));
 		System.err.println(mjd);
-		double last = EphemService.getRadLMSTforMolonglo(mjd);
+		double last = EphemService.getRadLMSTForMolonglo(mjd);
 
 		int HMSF[] = new int[4];
 		int NDP = 4;    // number of decimal places

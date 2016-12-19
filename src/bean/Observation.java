@@ -18,6 +18,7 @@ public class Observation {
 	List<TBSourceTO> tiedBeamSources;
 	Integer nfb;
 	Angle fanbeamSpacing;
+	Coords coords;
 	
 	public Observation() {
 		nfb = 352;
@@ -26,8 +27,8 @@ public class Observation {
 	}
 	
 	private double computeHAForMJD(double mjd){ 
-		double radLMST = EphemService.getRadLMSTforMolonglo(mjd);
-		double radRA = this.angleRA.getRadianValue();
+		double radLMST = EphemService.getRadLMSTForMolonglo(mjd);
+		double radRA = this.coords.getPointingTO().getAngleRA().getRadianValue();
 		double radHA = radLMST - radRA;
 		int sign = (radHA > 0)?1:-1;
 		if( Math.abs(radHA) > 12*Constants.hrs2Rad)
@@ -47,25 +48,6 @@ public class Observation {
 		double radHA =  computeHAForMJD(mjd);
 		Angle HA = new Angle(radHA,Angle.RAD);
 		return HA;
-	}
-
-	public Angle getAngleRA() {
-		return angleRA;
-	}
-
-	public void setAngleRA(Angle angleRA) {
-		this.angleRA = angleRA;
-	}
-
-	
-
-
-	public Angle getAngleDEC() {
-		return angleDEC;
-	}
-
-	public void setAngleDEC(Angle angleDEC) {
-		this.angleDEC = angleDEC;
 	}
 
 	public Integer getTobs() {
@@ -142,6 +124,14 @@ public class Observation {
 
 	public void setFanbeamSpacing(Angle fanbeamSpacing) {
 		this.fanbeamSpacing = fanbeamSpacing;
+	}
+
+	public Coords getCoords() {
+		return coords;
+	}
+
+	public void setCoords(Coords coords) {
+		this.coords = coords;
 	}
 	
 

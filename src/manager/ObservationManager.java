@@ -4,7 +4,9 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -13,7 +15,9 @@ import java.util.concurrent.Future;
 
 import bean.Angle;
 import bean.CoordinateTO;
+import bean.Coords;
 import bean.Observation;
+import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.DriveBrokenException;
@@ -24,6 +28,7 @@ import service.TCCService;
 import service.TCCStatusService;
 import util.Constants;
 import util.SMIRFConstants;
+import util.Utilities;
 
 public class ObservationManager {
 
@@ -77,7 +82,7 @@ public class ObservationManager {
 			@Override
 			public Boolean call() throws TCCException, InterruptedException{
 				System.err.println("starting TCC..");
-				tccService.pointAndTrackSource(observation.getAngleRA().toHHMMSS(), observation.getAngleDEC().toDDMMSS());
+				tccService.pointAndTrackSource(observation.getCoords().getPointingTO().getAngleRA().toHHMMSS(), observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
 				System.err.println("started TCC..");
 				long maxSlewTime = TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000; // to milliseconds
 				System.err.println(" max slew time.." + maxSlewTime);
@@ -118,6 +123,7 @@ public class ObservationManager {
 			}
 			e.printStackTrace();
 		}
+		
 		System.err.println("starting backend..");
 		backendService.startBackend(observation);
 		System.err.println("starting tracking..");
@@ -157,8 +163,33 @@ public class ObservationManager {
 
 	}
 
-
-
+	//* to do : add TB sources for this pointing */
+	public List<TBSourceTO> getTBSourcesForPointing(Coords coords) throws EmptyCoordinatesException, CoordinateOverrideException{
+		List<TBSourceTO> tbSources = PSRCATManager.getTbSources();
+		List<TBSourceTO> shortListed = new ArrayList<>();
+		
+		double radPTRA = coords.getPointingTO().getAngleRA().getRadianValue();
+		double radPTDEC = coords.getPointingTO().getAngleDEC().getRadianValue();
+		
+		coords.recomputeForNow();
+		/* first check if the source is within the 4 degree circle of the pointing centre in RA/DEC, if so, coordinate transform it and check if it is 
+		 	within the primary beam in NS/MD coordinates*/
+		for(TBSourceTO tbSourceTO: tbSources){
+			double radTBRA = tbSourceTO.getAngleRA().getRadianValue();
+			double radTBDEC = tbSourceTO.getAngleDEC().getRadianValue();
+			if( Utilities.isWithinCircle(radPTRA, radPTDEC, radTBRA, radTBDEC, Constants.RadMolongloNSBeamWidth)){
+				CoordinateTO tbCoordinateTO = new CoordinateTO(coords.getAngleHA(), coords.getPointingTO().getAngleDEC(), null, null);
+				MolongloCoordinateTransforms.skyToTel(tbCoordinateTO);
+				if (Utilities.isWithinEllipse(coords.getAngleNS().getRadianValue(), coords.getAngleMD().getRadianValue(), 
+						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), Constants.RadMolongloNSBeamWidth, Constants.RadMolongloMDBeamWidth))
+					shortListed.add(tbSourceTO);
+			}
+		}
+		
+		return shortListed;
+	}
+	
+	
 	public boolean observable(Observation observation) throws TCCException, EmptyCoordinatesException, CoordinateOverrideException{
 
 		Angle HANow = observation.getHANow();
@@ -167,7 +198,7 @@ public class ObservationManager {
 			return false;
 		}
 
-		CoordinateTO coordsNow  = new CoordinateTO(HANow.getRadianValue(), observation.getAngleDEC().getRadianValue(),null,null);
+		CoordinateTO coordsNow  = new CoordinateTO(HANow.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsNow);
 		System.err.println(coordsNow.getRadMD()*Constants.rad2Deg  + " " +coordsNow.getRadNS()*Constants.rad2Deg );
 		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD && coordsNow.getRadMD() > SMIRFConstants.maxRadMD) return false;
@@ -179,7 +210,7 @@ public class ObservationManager {
 		Angle HAend = observation.getHAAfter(totalSecs);
 		if(Math.abs(HAend.getDecimalHourValue())>6) return false;
 
-		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getAngleDEC().getRadianValue(),null,null);
+		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsEnd);
 		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD && coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) return false;
 

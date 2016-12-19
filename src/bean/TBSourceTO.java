@@ -8,6 +8,9 @@ public class TBSourceTO {
 		Double periodSecs;
 		Double DM;
 		Double acceleration;
+		public DSPSRParameters(){
+			
+		}
 		public DSPSRParameters(Double dm, Double periodSecs, Double acceleration) {
 			this.periodSecs = periodSecs;
 			this.DM = dm;
@@ -40,9 +43,13 @@ public class TBSourceTO {
 	DSPSRParameters dspsrParams;
 	String psrName;
 	String projectID;
-	
+	String ephemerides;
 	public TBSourceTO() {
 		projectID = SMIRFConstants.PID;
+	}
+	
+	public void addToEphemerides( String str){
+		this.ephemerides+=(str+"\n");
 	}
 	
 	public Angle getAngleRA() {
@@ -75,6 +82,7 @@ public class TBSourceTO {
 	public void setPsrName(String psrName) {
 		this.psrName = psrName;
 	}
+
 	
 	
 	

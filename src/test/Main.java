@@ -49,24 +49,25 @@ public class Main {
 //		CalibrationService service = new CalibrationService();
 //		service.Calibrate(observation.getUtc());
 		
+		// this will no  longer work as observation has coords which in turn has pointingTO
 		
-		Observation observation = new Observation();
-		observation.setName("J2144-3933");
-		observation.setAngleRA(new Angle("21:44:12.060404", Angle.HHMMSS));
-		observation.setAngleDEC(new Angle("-39:33:56.88504",Angle.DDMMSS));
-		observation.setTobs(900);
-		observation.setBackendType(BackendConstants.psrBackend);
-		observation.setObserver("VVK");
-		observation.setObsType(BackendConstants.tiedArrayFanBeam);
-		
-	
-		CoordinateTO coordinateTO = new CoordinateTO(observation);
-		MolongloCoordinateTransforms.skyToTel(coordinateTO);
+//		Observation observation = new Observation();
+//		observation.setName("J2144-3933");
+//		observation.setAngleRA(new Angle("21:44:12.060404", Angle.HHMMSS));
+//		observation.setAngleDEC(new Angle("-39:33:56.88504",Angle.DDMMSS));
+//		observation.setTobs(900);
+//		observation.setBackendType(BackendConstants.psrBackend);
+//		observation.setObserver("VVK");
+//		observation.setObsType(BackendConstants.tiedArrayFanBeam);
+//		
+//	
+//		CoordinateTO coordinateTO = new CoordinateTO(observation);
+//		MolongloCoordinateTransforms.skyToTel(coordinateTO);
+//		manager.observe(observation);
 		
 //		BackendService bs = BackendService.createBackendInstance();
 //		bs.startBackend(observation);
 //		
-		manager.observe(observation);
 		
 //		System.err.println("After observation");
 //		Set<Thread> threadSet = Thread.getAllStackTraces().keySet();

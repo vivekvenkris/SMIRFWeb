@@ -38,6 +38,9 @@ public interface Constants {
 	Double MolongloLongitude = 149.424658;
 	Double MolongloLongitudeRAD = MolongloLongitude*deg2Rad;
 	
+	Double RadMolongloNSBeamWidth = 4.64 * deg2Rad;
+	Double RadMolongloMDBeamWidth = 2.14 * deg2Rad;
+	
 	
 	
 	

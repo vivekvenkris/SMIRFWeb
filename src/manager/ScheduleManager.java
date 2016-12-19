@@ -38,8 +38,10 @@ public class ScheduleManager implements SMIRFConstants {
 
 		Observation observation = new Observation();
 		observation.setName("");
-		observation.setAngleRA(new Angle("", Angle.HHMMSS));
-		observation.setAngleDEC(new Angle("",Angle.DDMMSS));
+		/***
+		 * Should do a table for calibrators and add it to pointing list.
+		 */
+		observation.setCoords(new Coords(null, null));
 		observation.setTobs(30);
 		observation.setBackendType(BackendConstants.corrBackend);
 		observation.setObserver("VVK");
@@ -72,15 +74,13 @@ public class ScheduleManager implements SMIRFConstants {
 			
 			PointingTO pointing = coords.getPointingTO();
 			DBService.incrementPointingObservations(coords.getPointingTO().getPointingID());
+			
 			Observation observation = new Observation();
 			observation.setName(pointing.getPointingName());
-			observation.setAngleRA(pointing.getAngleRA());
-			observation.setAngleDEC(pointing.getAngleDEC());
 			observation.setBackendType(BackendConstants.psrBackend);
 			observation.setObsType(BackendConstants.tiedArrayFanBeam);
+			observation.setCoords(coords);
 			//* to do : add TB sources for this pointing */
-			List<TBSourceTO> tbSources = new ArrayList<TBSourceTO>();
-			observation.setTiedBeamSources(tbSources);
 			observation.setObserver(observer);
 			manager.observe(observation);
 		}
@@ -88,10 +88,6 @@ public class ScheduleManager implements SMIRFConstants {
 
 	}
 	
-	public List<TBSourceTO> getTBSourcesForObservation(Coords coords){
-		List<TBSourceTO> tbSources = new ArrayList<>();
-		return tbSources;
-	}
 	
 
 	public List<Coords> getPointingsForSession(String utc, int totalSeconds, int tobsSeconds) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException{

@@ -180,7 +180,22 @@ public class Utilities {
 		p.waitFor();
 		return str;
 	}
+	
+	public static boolean isWithinCircle(double x1, double y1, double x2, double y2, double radius){
 		
+		double xdist = Math.abs(x2 - x1);
+		double ydist = Math.abs(y2 - y1);
+		
+		return ( (xdist*xdist + ydist*ydist) <= radius);
+		
+	}
+	
+	public static boolean isWithinEllipse(double x1, double y1, double x2, double y2, double a, double b){
+		double xdist = Math.abs(x2 - x1);
+		double ydist = Math.abs(y2 - y1);
+		
+		return ( ( xdist*xdist/a + ydist*ydist/b) <= 1.0);
+	}
 		
 
 }

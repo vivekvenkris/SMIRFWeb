@@ -76,8 +76,8 @@ public class BackendService implements BackendConstants {
 		defaultParams.put("boresight_project_id",SMIRFConstants.PID);
 
 		defaultParams.put("boresight_source_name",observation.getName());
-		defaultParams.put("boresight_ra",observation.getAngleRA().toHHMMSS());
-		defaultParams.put("boresight_dec",observation.getAngleDEC().toDDMMSS());
+		defaultParams.put("boresight_ra",observation.getCoords().getPointingTO().getAngleRA().toHHMMSS());
+		defaultParams.put("boresight_dec",observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
 		defaultParams.put("boresight_proc_file","mopsr.aqdsp.gpu");
 
 

@@ -36,6 +36,15 @@ public class Coords {
 	 this.angleMD = cto.getAngleMD();
 	 
  }
+ 
+ public void recomputeForNow() throws EmptyCoordinatesException, CoordinateOverrideException{
+	 this.angleLST = new Angle(EphemService.getRadLMSTForMolongloNow(),Angle.RAD);
+	 this.angleHA = EphemService.getHA(angleLST, pointingTO.getAngleRA());
+	 CoordinateTO cto = new CoordinateTO(angleHA,pointingTO.getAngleDEC(), null,null);
+	 MolongloCoordinateTransforms.skyToTel(cto);
+	 this.angleNS = cto.getAngleNS();
+	 this.angleMD = cto.getAngleMD();
+ }
  @Override
 	public String toString() {
 		//return  "NS= " +this.angleNS + " MD= "+ this.angleMD + " " +this.pointingTO.getPointingID() + " " + this.pointingTO.getPointingName() +"\n";

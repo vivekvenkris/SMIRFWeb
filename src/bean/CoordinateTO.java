@@ -23,7 +23,7 @@ public class CoordinateTO {
 	}
 	public CoordinateTO(Observation observation){
 		this.radHA = observation.getHANow().getRadianValue();
-		this.radDec = observation.getAngleDEC().getRadianValue();
+		this.radDec = observation.getCoords().getPointingTO().getAngleDEC().getRadianValue();
 		this.radMD = this.radNS = null;
 	}
 	
