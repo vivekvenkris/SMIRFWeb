@@ -186,7 +186,7 @@ public class Utilities {
 		double xdist = Math.abs(x2 - x1);
 		double ydist = Math.abs(y2 - y1);
 		
-		return ( (xdist*xdist + ydist*ydist) <= radius);
+		return ( (xdist*xdist + ydist*ydist) <= radius*radius);
 		
 	}
 	
@@ -194,7 +194,7 @@ public class Utilities {
 		double xdist = Math.abs(x2 - x1);
 		double ydist = Math.abs(y2 - y1);
 		
-		return ( ( xdist*xdist/a + ydist*ydist/b) <= 1.0);
+		return ( ( xdist*xdist/(a*a) + ydist*ydist/(b*b)) <= 1.0);
 	}
 		
 

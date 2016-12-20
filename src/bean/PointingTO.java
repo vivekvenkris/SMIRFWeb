@@ -15,7 +15,10 @@ public class PointingTO {
 	private String type;
 	private Integer numObs = 0;
 
-	
+	@Override
+	public String toString() {
+		return this.pointingName + "ID: " + this.pointingID;
+	}
 	
 	public PointingTO(Pointing pointing) {
 		this.pointingID = pointing.getPointingID();

@@ -21,21 +21,26 @@ public class PSRCATManager implements PSRCATConstants{
 	public static  List<TBSourceTO> loadDB(){
 		for(String psrcatDB: psrcatDBs){
 			BufferedReader br = null;
+			int count = 0;
 			try {
 				br = new BufferedReader(new FileReader(psrcatDB));
 				String line = "";
 				TBSourceTO tbSourceTO = null;
+				count++;
 				while((line=br.readLine())!=null){
-
-					String name = line.substring(0, 8).trim();
-					String value = line.substring(9, 34).trim();
+					if(line.contains("#") || line.contains("@") || line.equals("")) continue;
+					String name = line.substring(0, endOfName).trim();
+					String value = line.substring(endOfName + 1, endofValue > line.length()? line.length() : endofValue ).trim();
 					if(name.equals(PSRJ)) {
-						if(tbSourceTO != null) tbSources.add(tbSourceTO);
+						if(tbSourceTO != null 
+								&& tbSourceTO.getAngleRA() !=null && tbSourceTO.getAngleDEC() !=null){
+								tbSources.add(tbSourceTO);
+						}
 						tbSourceTO = new TBSourceTO();
 						tbSourceTO.setPsrName(value);
 					}
 					else if(name.contains(RAJ))  tbSourceTO.setAngleRA(new Angle(value, Angle.HHMMSS));
-					else if(name.contains(DECJ))  tbSourceTO.setAngleRA(new Angle(value, Angle.DDMMSS));
+					else if(name.contains(DECJ))  tbSourceTO.setAngleDEC(new Angle(value, Angle.DDMMSS));
 					
 					
 
@@ -45,6 +50,7 @@ public class PSRCATManager implements PSRCATConstants{
 				}
 			} catch ( IOException e) {
 				e.printStackTrace();
+				System.err.println("line:" + count);
 			}
 			finally {
 				if(br!=null) {

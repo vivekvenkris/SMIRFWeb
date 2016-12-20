@@ -44,6 +44,14 @@ public class TBSourceTO {
 	String psrName;
 	String projectID;
 	String ephemerides;
+	Integer priority;
+	
+	
+	@Override
+	public String toString() {
+		return this.angleRA + " " + this.angleDEC;
+	}
+	
 	public TBSourceTO() {
 		projectID = SMIRFConstants.PID;
 	}
@@ -81,6 +89,22 @@ public class TBSourceTO {
 	}
 	public void setPsrName(String psrName) {
 		this.psrName = psrName;
+	}
+
+	public String getEphemerides() {
+		return ephemerides;
+	}
+
+	public void setEphemerides(String ephemerides) {
+		this.ephemerides = ephemerides;
+	}
+
+	public Integer getPriority() {
+		return priority;
+	}
+
+	public void setPriority(Integer priority) {
+		this.priority = priority;
 	}
 
 	

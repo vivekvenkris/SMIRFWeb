@@ -10,5 +10,7 @@ public interface PSRCATConstants {
 	String RAJ = "RAJ";
 	String DECJ = "DECJ";
 	String DM = "DM";
+	Integer endOfName=8;
+	Integer endofValue = 34;
 
 }

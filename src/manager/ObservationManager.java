@@ -123,7 +123,7 @@ public class ObservationManager {
 			}
 			e.printStackTrace();
 		}
-		
+		observation.setTiedBeamSources(getTBSourcesForPointing(observation.getCoords()));
 		System.err.println("starting backend..");
 		backendService.startBackend(observation);
 		System.err.println("starting tracking..");
@@ -172,16 +172,16 @@ public class ObservationManager {
 		double radPTDEC = coords.getPointingTO().getAngleDEC().getRadianValue();
 		
 		coords.recomputeForNow();
-		/* first check if the source is within the 4 degree circle of the pointing centre in RA/DEC, if so, coordinate transform it and check if it is 
+		/* first check if the source is within the 4 degree circle of the pointing center in RA/DEC, if so, coordinate transform it and check if it is 
 		 	within the primary beam in NS/MD coordinates*/
 		for(TBSourceTO tbSourceTO: tbSources){
 			double radTBRA = tbSourceTO.getAngleRA().getRadianValue();
 			double radTBDEC = tbSourceTO.getAngleDEC().getRadianValue();
-			if( Utilities.isWithinCircle(radPTRA, radPTDEC, radTBRA, radTBDEC, Constants.RadMolongloNSBeamWidth)){
+			if( Utilities.isWithinCircle(radPTRA, radPTDEC, radTBRA, radTBDEC, Constants.RadMolongloNSBeamWidth/2.0)){
 				CoordinateTO tbCoordinateTO = new CoordinateTO(coords.getAngleHA(), coords.getPointingTO().getAngleDEC(), null, null);
 				MolongloCoordinateTransforms.skyToTel(tbCoordinateTO);
 				if (Utilities.isWithinEllipse(coords.getAngleNS().getRadianValue(), coords.getAngleMD().getRadianValue(), 
-						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), Constants.RadMolongloNSBeamWidth, Constants.RadMolongloMDBeamWidth))
+						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), Constants.RadMolongloNSBeamWidth/2.0, Constants.RadMolongloMDBeamWidth/2.0))
 					shortListed.add(tbSourceTO);
 			}
 		}

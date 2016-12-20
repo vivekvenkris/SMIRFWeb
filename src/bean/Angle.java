@@ -89,13 +89,21 @@ public class Angle{
 	
 	public void fromHHMMSS(String hhmmss){
 		String[] hms = hhmmss.split(":");
-		radValue = (Integer.parseInt(hms[0]) + Integer.parseInt(hms[1])/60.0 + Double.parseDouble(hms[2])/3600.0)*15.0 *Constants.deg2Rad;
+		radValue = 0.0;
+		if(hms.length >=1) radValue +=  Integer.parseInt(hms[0])*15*Constants.deg2Rad;
+		if(hms.length >=2) radValue +=  Integer.parseInt(hms[1])*15*Constants.deg2Rad/60.0;
+		if(hms.length >=3) radValue +=  Double.parseDouble(hms[2])*15*Constants.deg2Rad/3600.0;
+		//radValue = (Integer.parseInt(hms[0]) + Integer.parseInt(hms[1])/60.0 + Double.parseDouble(hms[2])/3600.0)*15.0 *Constants.deg2Rad;
 	}
 	
 	public void fromDDMMSS(String ddmmss){
 		String[] dms = ddmmss.split(":");
 		int sign = (Integer.parseInt(dms[0])>0)? 1:-1;
-		radValue = (Integer.parseInt(dms[0]) + sign*Integer.parseInt(dms[1])/60.0 + sign*Double.parseDouble(dms[2])/3600.0)*Constants.deg2Rad;
+		radValue = 0.0;
+		if(dms.length >=1) radValue+= Integer.parseInt(dms[0])*Constants.deg2Rad; 
+		if(dms.length >=2) radValue+= sign*Integer.parseInt(dms[1])*Constants.deg2Rad/60.0;		
+		if(dms.length >=3) radValue+= sign*Double.parseDouble(dms[2])*Constants.deg2Rad/3600.0;
+		//radValue = (Integer.parseInt(dms[0]) + sign*Integer.parseInt(dms[1])/60.0 + sign*Double.parseDouble(dms[2])/3600.0)*Constants.deg2Rad;
 	}
 	public String toHHMMSS(){
 		double DegVal = Math.abs(getDegreeValue());

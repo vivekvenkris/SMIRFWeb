@@ -29,7 +29,7 @@ import service.DBService;
 import service.EphemService;
 import util.BackendConstants;
 import util.SMIRFConstants;
-import util.SMIRF_tileGalacticPlane;
+import util.SMIRFGalacticPlaneTiler;
 
 public class ScheduleManager implements SMIRFConstants {
 
@@ -67,12 +67,16 @@ public class ScheduleManager implements SMIRFConstants {
 	}
 	
 	public void startScheduler(String utc, int obsDuration, int tobs, String observer) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException, BackendException, InterruptedException{
+		System.err.println(utc + " for " + obsDuration + " seconds with tobs:" + tobs  + " by " + observer);
 		List<Coords> coordsList = this.getPointingsForSession(utc, obsDuration,tobs);
 		ObservationManager manager = new ObservationManager();		
 
 		for(Coords coords: coordsList){
 			
 			PointingTO pointing = coords.getPointingTO();
+			System.err.println("Observing pointing: "+ pointing);
+			System.err.println(manager.getTBSourcesForPointing(coords));
+			System.exit(0);
 			DBService.incrementPointingObservations(coords.getPointingTO().getPointingID());
 			
 			Observation observation = new Observation();
@@ -80,7 +84,6 @@ public class ScheduleManager implements SMIRFConstants {
 			observation.setBackendType(BackendConstants.psrBackend);
 			observation.setObsType(BackendConstants.tiedArrayFanBeam);
 			observation.setCoords(coords);
-			//* to do : add TB sources for this pointing */
 			observation.setObserver(observer);
 			manager.observe(observation);
 		}
@@ -94,12 +97,11 @@ public class ScheduleManager implements SMIRFConstants {
 		List<Pointing> pointings = DBService.getAllPointingsOrderByNumObs();
 		List<PointingTO> pointingTOs = new ArrayList<PointingTO>();
 		for(Pointing p : pointings) pointingTOs.add(new PointingTO(p));
-
 		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utc),Angle.HHMMSS);
 		LinkedList<Coords> pointingList = new LinkedList<>();
 		Integer minSlewTime = 0;
 
-		for(int s = tobsSeconds; s<totalSeconds; s+=tobsSeconds) {
+		for(int s = tobsSeconds; s<=totalSeconds; s+=tobsSeconds) {
 			List<Coords> coordsList = new ArrayList<>();
 			for(PointingTO pointingTO: pointingTOs) {
 				Coords coords = new Coords(pointingTO, lst);
@@ -114,7 +116,7 @@ public class ScheduleManager implements SMIRFConstants {
 			}
 			Collections.sort(coordsList,Coords.compareMDNS);
 			lst.addSolarSeconds(minSlewTime);
-			//System.err.println(" at obs start: " +lst + " "+coordsList.size());
+			//System.err.println("at obs start: " +lst + " "+coordsList.size());
 			lst.addSolarSeconds(tobsSeconds );
 			for(Iterator<Coords> coordsIterator = coordsList.iterator(); coordsIterator.hasNext();){
 				Coords coords = coordsIterator.next();
@@ -158,8 +160,9 @@ public class ScheduleManager implements SMIRFConstants {
 	}
 
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, IOException {
-		SMIRF_tileGalacticPlane.SMIRF_tileGalacticPlane();
+		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane();
 		System.err.println("tiled..");
+		System.exit(0);
 		System.in.read();
 		ScheduleManager sm = new ScheduleManager();
 		DecimalFormat df = new DecimalFormat("00");

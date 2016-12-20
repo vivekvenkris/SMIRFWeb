@@ -21,17 +21,22 @@ import util.SMIRFConstants;
 
 public class Main {
 	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException {
-		
+
 		ScheduleManager scheduleManager = new ScheduleManager();
-		scheduleManager.Calibrate("CJXXXX_XXXX");
-		scheduleManager.observeTestPSR();
+		//scheduleManager.Calibrate("CJXXXX_XXXX");
+		//scheduleManager.observeTestPSR();
 		Instant instant = Instant.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT);
-		scheduleManager.startScheduler(formatter.format(instant).replaceAll("T", "-"), 900, SMIRFConstants.tobs, "VVK");
+		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", ""));
+		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", "").charAt(19));
+		scheduleManager.startScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
 		
-		
-		
-		ObservationManager manager = new ObservationManager();		
+
+
+
+	}
+}
+//		ObservationManager manager = new ObservationManager();	
+
 //		Observation observation = new Observation();
 //		observation.setName("CJ1819-6345");
 //		observation.setAngleRA(new Angle("18:19:35.0", Angle.HHMMSS));
@@ -48,9 +53,9 @@ public class Main {
 //		manager.observe(observation);
 //		CalibrationService service = new CalibrationService();
 //		service.Calibrate(observation.getUtc());
-		
-		// this will no  longer work as observation has coords which in turn has pointingTO
-		
+
+// this will no  longer work as observation has coords which in turn has pointingTO
+
 //		Observation observation = new Observation();
 //		observation.setName("J2144-3933");
 //		observation.setAngleRA(new Angle("21:44:12.060404", Angle.HHMMSS));
@@ -64,14 +69,13 @@ public class Main {
 //		CoordinateTO coordinateTO = new CoordinateTO(observation);
 //		MolongloCoordinateTransforms.skyToTel(coordinateTO);
 //		manager.observe(observation);
-		
+
 //		BackendService bs = BackendService.createBackendInstance();
 //		bs.startBackend(observation);
 //		
-		
+
 //		System.err.println("After observation");
 //		Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
 //		
 //		for(Thread t: threadSet) System.err.println(t);
-	}
-}
+

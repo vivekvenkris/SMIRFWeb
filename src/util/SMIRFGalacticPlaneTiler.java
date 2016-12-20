@@ -9,7 +9,7 @@ import service.DBService;
 
 
 
-public class SMIRF_tileGalacticPlane implements SMIRFConstants{
+public class SMIRFGalacticPlaneTiler implements SMIRFConstants{
 	
 	public static void SMIRF_tileGalacticPlane() {
 		List<Pointing> gridPoints = new ArrayList<>();
