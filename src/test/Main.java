@@ -26,6 +26,7 @@ public class Main {
 		//scheduleManager.Calibrate("CJXXXX_XXXX");
 		//scheduleManager.observeTestPSR();
 		Instant instant = Instant.now();
+		instant = instant.plusSeconds(86400);
 		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", ""));
 		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", "").charAt(19));
 		scheduleManager.startScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");

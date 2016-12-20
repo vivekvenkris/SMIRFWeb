@@ -67,16 +67,13 @@ public class ScheduleManager implements SMIRFConstants {
 	}
 	
 	public void startScheduler(String utc, int obsDuration, int tobs, String observer) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException, BackendException, InterruptedException{
-		System.err.println(utc + " for " + obsDuration + " seconds with tobs:" + tobs  + " by " + observer);
 		List<Coords> coordsList = this.getPointingsForSession(utc, obsDuration,tobs);
 		ObservationManager manager = new ObservationManager();		
 
 		for(Coords coords: coordsList){
 			
 			PointingTO pointing = coords.getPointingTO();
-			System.err.println("Observing pointing: "+ pointing);
-			System.err.println(manager.getTBSourcesForPointing(coords));
-			System.exit(0);
+			
 			DBService.incrementPointingObservations(coords.getPointingTO().getPointingID());
 			
 			Observation observation = new Observation();

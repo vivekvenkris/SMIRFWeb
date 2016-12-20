@@ -26,7 +26,7 @@ public class EphemService {
 	}
 	public static double getMJDAfterOffset(int offsetSecsFromNow){
 		LocalDateTime dateTime =   LocalDateTime.now(Clock.systemUTC());
-		dateTime.plusSeconds(offsetSecsFromNow);
+		dateTime = dateTime.plusSeconds(offsetSecsFromNow);
 		return dateTime.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(dateTime.getHour()*3600+dateTime.getMinute()*60+dateTime.getSecond())/86400.0;
 
 	}
