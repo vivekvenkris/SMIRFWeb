@@ -1,4 +1,4 @@
-package util;
+package standalones;
 
 public class Traversal{
 	Double fanbeam;

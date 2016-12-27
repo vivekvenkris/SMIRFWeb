@@ -25,7 +25,10 @@ public class Coords {
 	 
 	 
 }
- 
+
+public Coords(PointingTO pointingTO){
+	 this.pointingTO = pointingTO;	 
+}
  
  public void recompute(Angle lst) throws EmptyCoordinatesException, CoordinateOverrideException{
 	 this.angleLST =lst;

@@ -26,6 +26,7 @@ import exceptions.TCCException;
 import service.BackendService;
 import service.TCCService;
 import service.TCCStatusService;
+import util.BackendConstants;
 import util.Constants;
 import util.SMIRFConstants;
 import util.Utilities;
@@ -109,7 +110,7 @@ public class ObservationManager {
 
 		Future<Boolean> backendReady =  executorService.submit(getBackendReady);
 		Future<Boolean> tccReady =  executorService.submit(getTCCReady);
-
+		
 		try {
 			Boolean backendResult = backendReady.get();
 			Boolean tccResult = tccReady.get();
@@ -123,7 +124,10 @@ public class ObservationManager {
 			}
 			e.printStackTrace();
 		}
-		observation.setTiedBeamSources(getTBSourcesForPointing(observation.getCoords()));
+		
+		if(!observation.getObsType().equals(BackendConstants.correlation)) {
+			observation.setTiedBeamSources(getTBSourcesForPointing(observation.getCoords()));
+		}
 		System.err.println("starting backend..");
 		backendService.startBackend(observation);
 		System.err.println("starting tracking..");

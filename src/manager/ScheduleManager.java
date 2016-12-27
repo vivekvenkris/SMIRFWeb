@@ -13,12 +13,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 import bean.Angle;
-import bean.CoordinateTO;
 import bean.Coords;
 import bean.Observation;
+import bean.PhaseCalibratorTO;
 import bean.Pointing;
 import bean.PointingTO;
-import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
@@ -27,36 +26,36 @@ import exceptions.TCCException;
 import service.CalibrationService;
 import service.DBService;
 import service.EphemService;
+import standalones.SMIRFGalacticPlaneTiler;
 import util.BackendConstants;
 import util.SMIRFConstants;
-import util.SMIRFGalacticPlaneTiler;
 
 public class ScheduleManager implements SMIRFConstants {
 
 
-	public boolean Calibrate(String name) throws TCCException, BackendException, InterruptedException, IOException, EmptyCoordinatesException, CoordinateOverrideException{
+	public boolean Calibrate(Integer calibratorID, Integer tobs, String observer) throws TCCException, BackendException, InterruptedException, IOException, EmptyCoordinatesException, CoordinateOverrideException{
 
+		PhaseCalibratorTO calibratorTO = new PhaseCalibratorTO(DBService.getCalibratorByID(calibratorID));
 		Observation observation = new Observation();
-		observation.setName("");
-		/***
-		 * Should do a table for calibrators and add it to pointing list.
-		 */
-		observation.setCoords(new Coords(null, null));
-		observation.setTobs(30);
+		observation.setName(calibratorTO.getSourceName());
+		PointingTO pointingTO = new PointingTO(calibratorTO);
+		
+		observation.setCoords(new Coords(pointingTO));
+		observation.setTobs(tobs);
 		observation.setBackendType(BackendConstants.corrBackend);
-		observation.setObserver("VVK");
+		observation.setObserver(observer);
 		observation.setObsType(BackendConstants.correlation);
 		System.err.println("starting observation...");
-
-		CoordinateTO coordinateTO = new CoordinateTO(observation);
-		MolongloCoordinateTransforms.skyToTel(coordinateTO);
+		
+		
 		ObservationManager manager = new ObservationManager();
 		manager.observe(observation);
+		
 
 		String utc = observation.getUtc();
 		System.err.println("utc:" + utc);
 		CalibrationService service = new CalibrationService();
-		return service.Calibrate(utc);
+		return service.Calibrate(utc, calibratorTO.getSourceName());
 
 
 
@@ -64,9 +63,17 @@ public class ScheduleManager implements SMIRFConstants {
 	
 	public void observeTestPSR(){
 		
+		/***
+		 *  Get where you are.
+		 *  Get nearest pulsar
+		 *  observe for x minutes
+		 *  save data somewhere with session ID
+		 *  
+		 */
+		
 	}
 	
-	public void startScheduler(String utc, int obsDuration, int tobs, String observer) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException, BackendException, InterruptedException{
+	public void startSMIRFScheduler(String utc, int obsDuration, int tobs, String observer) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException, BackendException, InterruptedException{
 		List<Coords> coordsList = this.getPointingsForSession(utc, obsDuration,tobs);
 		ObservationManager manager = new ObservationManager();		
 
@@ -83,6 +90,7 @@ public class ScheduleManager implements SMIRFConstants {
 			observation.setCoords(coords);
 			observation.setObserver(observer);
 			manager.observe(observation);
+			
 		}
 		
 

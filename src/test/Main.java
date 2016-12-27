@@ -29,7 +29,7 @@ public class Main {
 		instant = instant.plusSeconds(86400);
 		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", ""));
 		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", "").charAt(19));
-		scheduleManager.startScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
+		scheduleManager.startSMIRFScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
 		
 
 

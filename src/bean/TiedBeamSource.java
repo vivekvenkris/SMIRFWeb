@@ -19,17 +19,17 @@ public class TiedBeamSource {
 @Column(name = "source_id")
 private Integer sourceID;
 
-@Column(name = "pointing_name")
+@Column(name = "source_name")
 private String sourceName;
 
 @Column(name = "known_pulsar")
 private Boolean knownPSR;
 
-@Column(name = "ra_rad")
+@Column(name = "ra_hms")
 @Convert(converter = Angle2HHMMSS.class)
 private Angle angleRA;
 	
-@Column(name = "ra_rad")
+@Column(name = "dec_hms")
 @Convert(converter = Angle2DDMMSS.class)
 private Angle angleDEC;
 

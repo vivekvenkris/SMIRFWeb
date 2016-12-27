@@ -1,64 +1,65 @@
-package util;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+package standalones;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import bean.Angle;
 import bean.CoordinateTO;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
-import service.EphemService;
+import util.Constants;
+import util.SMIRFConstants;
+import util.Utilities;
 
-public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
+
+
+
+public class SMIRF_GetUniqStitches4 implements SMIRFConstants, Constants {
 
 	public Integer getServer(double startFB, double endFB){
 		Integer startServer = (int)Math.floor((startFB-1)/numBeamsPerServer);
 		Integer endServer = (int)Math.floor((endFB-1)/numBeamsPerServer);
-
+		
 		if(startServer != endServer ) return BF08;
-
+		
 		return startServer;
-
+		
 	}
 
-	public List<Point> generatePoints(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples) throws EmptyCoordinatesException, CoordinateOverrideException {
 
-		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utcStr),Angle.HHMMSS);
-		Angle ha = EphemService.getHA(lst, ra);
-
-		double boresightHA = ha.getRadianValue(); 
-		double boresightDEC = dec.getRadianValue();
-
-
+	public List<Point> generatePoints(double boresightHA, double boresightDEC) throws EmptyCoordinatesException, CoordinateOverrideException {
 		List<Point> points = new LinkedList<Point>();
+		int tobs = 900;
+		double tsamp = 655.36E-6;
+		long nsamples = (long)(tobs/tsamp); 
+		double thresholdPercent = 5;
 		int sampleSteps = 20480;
+		Double PercentTime = sampleSteps*100.0/nsamples;
 		int maxFBTraversal = 10;
 		Integer maxTraversals = 0;
 
 		double beamWidthNS = 2.0 * Constants.toRadians;
 		double beamWidthMD = 4.0 * Constants.toRadians;
-
 		int numFB = 352;
-
 		CoordinateTO boresight = new CoordinateTO(boresightHA,boresightDEC,null,null);
 		MolongloCoordinateTransforms.skyToTel(boresight);
 
+		double deltaMD = beamWidthMD/(Math.cos(boresight.getRadMD())*numFB);
 
+
+		
 		for(double nfb = 1; nfb <= numFB; nfb = nfb + 1){
 
 			double nfbNow = nfb;
-			double mdDistance = Utilities.getMDDistance(nfb, numFB, boresight.getRadMD());
+
+			double mdDistance = (nfb-(numFB/2 +1)) * deltaMD;
 			double mdNow = boresight.getRadMD() + mdDistance;
 			double nsDistance = -beamWidthNS/2.0;
-			Map<Integer, Long> lastPointMap = null;
+			Map<Integer, Double> lastPointMap = null;
 			while(nsDistance <= beamWidthNS/2.0){
 
 				double nsNow = boresight.getRadNS() + nsDistance;
@@ -67,10 +68,9 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				MolongloCoordinateTransforms.telToSky(now);
 
 				boolean unwantedPoint = false;
-				Map<Integer, Long> samplesInFB = new LinkedHashMap<Integer, Long>(maxFBTraversal);
+				Map<Integer, Double> samplesInFB = new LinkedHashMap<Integer, Double>(maxFBTraversal);
 
-				for(int n=0;n<totalSamples; n+=sampleSteps){
-
+				for(int n=0;n<nsamples; n+=sampleSteps){
 					double haBoresightLater = boresightHA + n * Constants.samples2secs * Constants.sec2Hrs * Constants.hrs2Deg * Constants.deg2Rad;
 					double decBoresightLater = boresightDEC;
 
@@ -86,95 +86,107 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 					Integer nfbLater = (int) Math.round(Utilities.getFB(numFB, boresightLater.getRadMD(), later.getRadMD()));
 					if(nfbLater <= 0 || nfbLater > numFB) unwantedPoint = true;
 
-					Long numSamples = samplesInFB.getOrDefault(nfbLater, 0L);
-					numSamples += sampleSteps;
-					samplesInFB.put(nfbLater, numSamples);
+					Double percent = samplesInFB.getOrDefault(nfbLater, 0.0);
+					percent += PercentTime;
+					samplesInFB.put(nfbLater, percent);
 
 				}
-
 				Point p = new Point();
 				p.startFanBeam = p.endFanBeam = nfb;
 				p.startNS = p.endNS = nsNow;
 				p.uniq = false;
-				p.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
-				p.ra = EphemService.getRA(lst, new Angle(now.getRadHA(),Angle.HHMMSS)).toString();
 				if(!unwantedPoint){
 					if(lastPointMap ==null){
 						Long startSample = 0L;
 						Integer server = getServer(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
 						List<Traversal> traversals = p.traversalMap.getOrDefault( server , new ArrayList<>());
-						for(Map.Entry<Integer, Long> entry: samplesInFB.entrySet()){
-							Long numSamples = entry.getValue();
-							Long numSamps = (startSample + numSamples) > totalSamples ? (totalSamples-startSample): numSamples;
-							Double percent =  100*(numSamples+0.0)/totalSamples;
-							traversals.add(new Traversal(entry.getKey()+0.0,nsDistance,startSample,numSamps,percent.intValue()));
-							startSample += numSamples;
+						for(Map.Entry<Integer, Double> entry: samplesInFB.entrySet()){
+							Double percent = entry.getValue();
+							traversals.add(new Traversal(entry.getKey()+0.0,nsDistance,startSample,(long)(percent*nsamples),percent.intValue()));
+							startSample +=(int)(percent*nsamples);
 						}
 						p.traversalMap.put(server, traversals);
 						if(maxTraversals < samplesInFB.size()) maxTraversals = samplesInFB.size();
 						p.uniq = true;
 					}
 					else{
-						for(Map.Entry<Integer, Long> previous : lastPointMap.entrySet()){
+						for(Map.Entry<Integer, Double> previous : lastPointMap.entrySet()){
 							Integer fb = previous.getKey();
-							Long numSamplesPrevious = previous.getValue();
-							Double  percent =  100*(numSamplesPrevious+0.0)/totalSamples;
-							Long numSamplesNow = samplesInFB.getOrDefault(fb, 0L);
-							Double percentNow = 100*(numSamplesNow + 0.0)/totalSamples;
+							Double  percent = previous.getValue();
 
-							if(Math.abs(percent - percentNow) > thresholdPercent){
+							Double percent_now = samplesInFB.getOrDefault(fb, 0.0);
+
+							if(Math.abs(percent - percent_now) > thresholdPercent){
 								Point lastPoint = points.get(points.size()-1);
 								lastPoint.endFanBeam = nfb;
 								lastPoint.endNS = nsNow;
 								Long startSample = 0L;
 								Integer server = getServer(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
 								List<Traversal> traversals = p.traversalMap.getOrDefault( server , new ArrayList<>());
-								for(Map.Entry<Integer, Long> entry: samplesInFB.entrySet()){
-									Long numSamples = entry.getValue();
-									Long numSamps = (startSample + numSamples) > totalSamples ? (totalSamples-startSample): numSamples;
-									Double pc =  100*(numSamples+0.0)/totalSamples;
-									traversals.add(new Traversal(entry.getKey()+0.0,nsDistance,startSample,numSamps,pc.intValue()));
-									startSample += numSamples;
+								for(Map.Entry<Integer, Double> entry: samplesInFB.entrySet()){
+									 Double pc = entry.getValue();
+									 traversals.add(new Traversal(entry.getKey()+0.0,nsNow,startSample, startSample+ (Long)Math.round(percent*nsamples/100.0),pc.intValue()));
+									startSample += (int)Math.round(percent*nsamples);
+
 								}
 								p.traversalMap.put(server, traversals);
 								if(maxTraversals < samplesInFB.size()) maxTraversals = samplesInFB.size();
-								p.uniq = true;
+								p.uniq = true;								
 								break;
 							}
+
+
+
 						}
+
+
 					}
 					if(p.uniq) {
 						lastPointMap = samplesInFB;
 						points.add(p);
 					}
+
 				}
+				
+
+
 				nsDistance += 23*Constants.arcSec2Deg*Constants.deg2Rad;
+
+
+
 			}
+
+
 		}
+
+		//System.err.println(boresightHA*Constants.rad2Deg + " " + boresightDEC*Constants.rad2Deg + " " + maxTraversals);
 		return points;
 	}
+
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
-		SMIRF_GetUniqStitches gus = new SMIRF_GetUniqStitches();
-		String utcStr = args[0];
-		Angle ra = new Angle(args[1], Angle.HHMMSS);
-		Angle dec = new Angle(args[2],Angle.DDMMSS);
-
-		List<Point> points = gus.generatePoints(utcStr,ra,dec ,10,Math.round(900/Constants.tsamp)); 
+		SMIRF_GetUniqStitches4 gus = new SMIRF_GetUniqStitches4();
+		List<Point> points = gus.generatePoints(Double.parseDouble(args[0])*Constants.deg2Rad,Double.parseDouble(args[1])*Constants.deg2Rad); 
 		for(Point p: points){
-			//List<Traversal> traversals = p.traversalMap.get(Integer.parseInt(args[3]));
-			for(Entry<Integer, List<Traversal>> entry :p.traversalMap.entrySet()){
-				List<Traversal> traversals = entry.getValue();
-
-				if(traversals!=null) {
-					System.err.print(p.ra + " " + p.dec + " " + p.startFanBeam + " "+ p.endFanBeam + " "+ String.format("%7.5f", p.startNS*Constants.rad2Deg) + " "+ String.format("%7.5f", p.endNS*Constants.rad2Deg) + " ");
-					for(Traversal t: traversals){
-						System.err.print(t.fanbeam+ " " + String.format("%7.5f", t.ns) + " "+ t.startSample + " "+ t.numSamples + " "+ t.percent + " ");
-					}
-					System.err.println();
+			for(Map.Entry<Integer, List<Traversal>> traversalEntry : p.traversalMap.entrySet()) {
+				for(Traversal t: traversalEntry.getValue()){
+					System.err.println(   p.startFanBeam + " "+ p.endFanBeam + " "+ String.format("%7.5f", p.startNS*Constants.rad2Deg)
+					+ " "+ String.format("%7.5f", p.endNS*Constants.rad2Deg) + " "+ t.fanbeam+ " " + String.format("%7.5f", t.ns) + " "+ t.startSample 
+					+ " "+ t.numSamples + " "+ t.percent);
 				}
 			}
+			
 		}
+		
+//		for( double ha = -45; ha <= 45; ha = ha ++){
+//			for(double dec = -66; dec <=20; dec++){
+//				gus.generatePoints(ha*Constants.deg2Rad,dec*Constants.deg2Rad);
+//			}
+//		}
 
+
+
+		//launch(args);
 	}
-}
 
+
+}

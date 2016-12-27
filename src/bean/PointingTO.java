@@ -1,6 +1,10 @@
 package bean;
 
+import org.jastronomy.jsofa.JSOFA;
+import org.jastronomy.jsofa.JSOFA.SphericalCoordinate;
 
+import service.EphemService;
+import util.SMIRFConstants;
 
 public class PointingTO {
 	
@@ -30,6 +34,22 @@ public class PointingTO {
 		this.priority = pointing.getPriority();
 		this.type = pointing.getType();
 
+	}
+	
+	public PointingTO(PhaseCalibratorTO calibratorTO){
+		this.pointingID = calibratorTO.getSourceID();
+		this.pointingName = calibratorTO.getSourceName();
+		this.angleRA = calibratorTO.getAngleRA();
+		this.angleDEC = calibratorTO.getAngleDEC();
+		this.type = "Calibration";
+		this.priority = SMIRFConstants.highestPriority;
+		/**
+		 * Check this coordinate conversion. - 1950 and J2000 shit.
+		 */
+		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
+		this.angleLAT = new Angle(sc.alpha, Angle.DDMMSS);
+		this.angleLON = new Angle(sc.delta, Angle.DDMMSS);
+		
 	}
 	
 	

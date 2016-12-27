@@ -11,8 +11,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
-import org.eclipse.jdt.internal.compiler.batch.Main;
-
+import bean.PhaseCalibrator;
 import bean.Pointing;
 import util.SMIRFConstants;
 import util.Utilities;
@@ -28,7 +27,6 @@ public class DBService implements SMIRFConstants {
 		entityManager.getTransaction().commit();
 		entityManager.close();
 	}
-
 	public static Pointing getPointingByID(Integer pointingID){
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction().begin();
@@ -38,6 +36,14 @@ public class DBService implements SMIRFConstants {
 		return pointing;
 	}
 	
+	public static PhaseCalibrator getCalibratorByID(Integer calibratorID){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		PhaseCalibrator calibrator = entityManager.find(PhaseCalibrator.class, calibratorID);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		return calibrator;
+	}
 	public static Pointing incrementPointingObservations(Integer pointingID){
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction().begin();

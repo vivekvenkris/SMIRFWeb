@@ -1,4 +1,4 @@
-package util;
+package standalones;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,7 @@ import java.util.List;
 import bean.Angle;
 import bean.Pointing;
 import service.DBService;
+import util.SMIRFConstants;
 
 
 

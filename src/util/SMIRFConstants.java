@@ -33,6 +33,8 @@ public interface SMIRFConstants {
 	String PASS = "tcsmysqlpwd";
 //	String USER = "vivek";
 //	String PASS = "4&.S1kz5";
+	
+	Integer highestPriority=1;
 	   
 
 
