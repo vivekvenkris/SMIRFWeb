@@ -66,11 +66,9 @@ public String sendCommand(String command) throws TCCException{
 		break;
 	}
 	message = messageSubstitutor.replace(messageWrapper);
-	System.err.println(message);
 	try {
 		response = talkToAnansi(message);
 	} catch (TCCException e) {
-		// TODO Auto-generated catch block
 		e.printStackTrace();
 		throw new TCCException("TCCservice failed: Cause:"+ e.getMessage(), ExceptionUtils.getStackTrace(e));
 	}

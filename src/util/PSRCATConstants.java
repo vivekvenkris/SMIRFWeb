@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public interface PSRCATConstants {
-	List<String> psrcatDBs = Arrays.asList("/Users/vkrishnan/Desktop/psrcat_tar/psrcat.db");
+	List<String> psrcatDBs = Arrays.asList("/Users/vkrishnan/softwares/psrcat_tar_new_jan10/self.db");
 	
 	String PSRJ = "PSRJ";
 	String RAJ = "RAJ";

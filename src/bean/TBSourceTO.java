@@ -1,5 +1,6 @@
 package bean;
 
+import manager.PSRCATManager;
 import util.SMIRFConstants;
 
 public class TBSourceTO {
@@ -46,14 +47,25 @@ public class TBSourceTO {
 	String ephemerides;
 	Integer priority;
 	
+	@Override
+	public boolean equals(Object obj) {
+		if( obj instanceof TBSourceTO) return ((TBSourceTO)obj).psrName.equals(psrName);
+		return false;
+	}
+	
 	
 	@Override
 	public String toString() {
-		return this.angleRA + " " + this.angleDEC;
+		return psrName;
 	}
+	
 	
 	public TBSourceTO() {
 		projectID = SMIRFConstants.PID;
+	}
+	public TBSourceTO(String jname){
+		this();
+		psrName = jname;
 	}
 	
 	public void addToEphemerides( String str){

@@ -1,6 +1,6 @@
 package bean;
 
-public class PhaseCalibratorTO {
+public class PhaseCalibratorTO  {
 	
 	private Integer sourceID;
 	private String sourceName;
@@ -16,6 +16,17 @@ public class PhaseCalibratorTO {
 		this.angleRA = calibrator.getAngleRA();
 		this.angleDEC = calibrator.getAngleDEC();
 		this.fluxJY = calibrator.getFluxJY();
+	}
+	
+	@Override
+	public String toString() {
+		return this.sourceName;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof PhaseCalibratorTO && ((PhaseCalibratorTO) obj).sourceName.equals(sourceName) ) return true;
+		return false;
 	}
 
 	public Integer getSourceID() {

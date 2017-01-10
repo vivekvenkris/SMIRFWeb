@@ -11,6 +11,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
+import bean.FluxCalibrator;
 import bean.PhaseCalibrator;
 import bean.Pointing;
 import util.SMIRFConstants;
@@ -57,11 +58,24 @@ public class DBService implements SMIRFConstants {
 	// still under development
 	public static Pointing getPointingByUniqueName(String pointingName){
 		EntityManager entityManager = emFactory.createEntityManager( );
-		TypedQuery<Pointing> query = entityManager.createQuery("FROM mpsr_ksp_survey.pointings t where t.pointing_name =?",Pointing.class);
+		TypedQuery<Pointing> query = entityManager.createQuery("FROM Pointing t where t.pointingName =?1",Pointing.class);
 		Pointing result = query.setParameter(1, pointingName).getSingleResult();
 		return result;
 	}
-
+	
+	public static PhaseCalibrator getPhaseCalibratorByName(String name){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		TypedQuery<PhaseCalibrator> query = entityManager.createQuery("select t from PhaseCalibrator t where t.sourceName =?1",PhaseCalibrator.class);
+		PhaseCalibrator result = query.setParameter(1, name).getSingleResult();
+		return result;
+	}
+	
+	public static FluxCalibrator getFluxCalibratorByName(String name){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		TypedQuery<FluxCalibrator> query = entityManager.createQuery("select t from FluxCalibrator t where t.sourceName =?1",FluxCalibrator.class);
+		FluxCalibrator result = query.setParameter(1, name).getSingleResult();
+		return result;
+	}
 	public static List<Pointing> getAllPointings(){
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction().begin();
@@ -73,12 +87,58 @@ public class DBService implements SMIRFConstants {
 	
 	}
 	
-	public static List<Pointing> getAllPointingsOrderByNumObs(){
+	public static List<PhaseCalibrator> getAllPhaseCalibrators(){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		@SuppressWarnings("unchecked")
+		List<PhaseCalibrator> phaseCalibrators = entityManager.createQuery("SELECT p FROM PhaseCalibrator p").getResultList();
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		return phaseCalibrators;
+	
+	}
+	
+	public static List<PhaseCalibrator> getAllPhaseCalibratorsOrderByFluxDesc(){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		@SuppressWarnings("unchecked")
+		List<PhaseCalibrator> phaseCalibrators = entityManager.createQuery("SELECT p FROM PhaseCalibrator p order by p.fluxJY DESC ").getResultList();
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		return phaseCalibrators;
+	
+	}
+	
+	
+	public static List<FluxCalibrator> getAllFluxCalibrators(){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		@SuppressWarnings("unchecked")
+		List<FluxCalibrator> fluxCalibrators = entityManager.createQuery("SELECT p FROM FluxCalibrator p").getResultList();
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		return fluxCalibrators;
+	
+	}
+	
+	public static List<FluxCalibrator> getAllFluxCalibratorsOrderByDMDesc(){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		@SuppressWarnings("unchecked")
+		List<FluxCalibrator> fluxCalibrators = entityManager.createQuery("SELECT p FROM FluxCalibrator p order by p.dm desc").getResultList();
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		return fluxCalibrators;
+	
+	}
+	
+	public static List<Pointing> getAllUnobservedPointingsOrderByPriority(){
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction().begin();
 		@SuppressWarnings("unchecked")
 		List<Object> minObs = entityManager.createQuery("select min(q.numObs) from Pointing q  ").getResultList();
 		System.err.println("survey number:" + ((Integer)minObs.get(0)+1));
+		@SuppressWarnings("unchecked")
 		List<Pointing> pointings = entityManager.createQuery("SELECT p FROM Pointing p where p.numObs= ( select min(q.numObs) from Pointing q ) order by p.priority DESC ").getResultList();
 		entityManager.getTransaction().commit();
 		entityManager.close();
@@ -90,7 +150,7 @@ public class DBService implements SMIRFConstants {
 
 	public static void main(String[] args) {
 		
-		System.err.println(getAllPointingsOrderByNumObs());
+		System.err.println(getAllUnobservedPointingsOrderByPriority());
 	}
 
 

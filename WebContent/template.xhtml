@@ -6,4 +6,16 @@
 	xmlns:h="http://java.sun.com/jsf/html"
 	xmlns:p="http://primefaces.org/ui"
 	xmlns:ui="http://java.sun.com/jsf/facelets">
-	</html>
+	<h:head>
+	<SCRIPT type="text/javascript" src="assets/js/jquery.min.js"></SCRIPT>
+	
+	</h:head>
+<h:body>
+<h:form>
+	<h:outputText id="txt_count" value="#{schedulerMB.num}" />
+	<p:poll interval="3" listener="#{schedulerMB.increment}"
+		update="txt_count" />
+</h:form>
+</h:body>
+
+</html>

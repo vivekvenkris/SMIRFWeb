@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public interface BackendConstants {
-	
-	String backendIP = "172.17.228.204";
+
+	String backendIP = (SMIRFConstants.simulate)? "127.0.0.1":"172.17.228.204";
 	int   backendPort = 38010;
 	String query = "query";
 	String prepare = "prepare";
@@ -14,6 +14,8 @@ public interface BackendConstants {
 	String bootUp = "startMopsr();";
 	String shutDown = "stopMopsr();";
 	int maxIter = 5;
+	Integer maximumNumberOfTB = 4;
+
 	
 	String backendResponseSuccess = "ok";
 	String backendIdle = "Idle";

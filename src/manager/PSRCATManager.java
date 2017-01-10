@@ -18,6 +18,11 @@ public class PSRCATManager implements PSRCATConstants{
 		loadDB();
 	}
 	
+	public static TBSourceTO getTBSouceByName(String jname){
+		int index = tbSources.indexOf(new TBSourceTO(jname));
+		return index == -1 ? null : tbSources.get(index);
+	}
+	
 	public static  List<TBSourceTO> loadDB(){
 		for(String psrcatDB: psrcatDBs){
 			BufferedReader br = null;
@@ -39,11 +44,10 @@ public class PSRCATManager implements PSRCATConstants{
 						tbSourceTO = new TBSourceTO();
 						tbSourceTO.setPsrName(value);
 					}
-					else if(name.contains(RAJ))  tbSourceTO.setAngleRA(new Angle(value, Angle.HHMMSS));
-					else if(name.contains(DECJ))  tbSourceTO.setAngleDEC(new Angle(value, Angle.DDMMSS));
+					else if(name.equals(RAJ))  tbSourceTO.setAngleRA(new Angle(value, Angle.HHMMSS));
+					else if(name.equals(DECJ))  tbSourceTO.setAngleDEC(new Angle(value, Angle.DDMMSS));
 					
 					
-
 					tbSourceTO.addToEphemerides(line);
 
 
@@ -76,6 +80,10 @@ public class PSRCATManager implements PSRCATConstants{
 
 	public static void setTbSources(List<TBSourceTO> tbSources) {
 		PSRCATManager.tbSources = tbSources;
+	}
+	
+	public static void main(String[] args) {
+		System.err.println(tbSources.size());
 	}
 	
 }

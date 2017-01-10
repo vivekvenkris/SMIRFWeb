@@ -67,7 +67,7 @@ public interface TCCConstants {
 	String pingCommand = "<?xml version=1.0 encoding=ISO-8859-1?>"
 			+ "<tcc_request>"
 			+ "<user_info>"
-				+ "<name>Automatic_Mode</name>"
+				+ "<name>SMIRFWeb</name>"
 				+ "<comment></comment>"
 			+ "</user_info>"
 			+ "<server_command>"

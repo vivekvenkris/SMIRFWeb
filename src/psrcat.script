@@ -1,0 +1,6 @@
+
+#!/bin.csh
+foreach pulsar ( `cat pulsars.list` )
+	echo "#############" >> self.db
+	psrcat -E2 $pulsar >> self.db
+	end

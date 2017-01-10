@@ -4,6 +4,8 @@
 		<class>bean.Pointing</class>
 		<class>converters.Angle2DDMMSS</class>
 		<class>converters.Angle2HHMMSS</class>
+		<class>bean.PhaseCalibrator</class>
+		<class>bean.FluxCalibrator</class>
 		 <properties>
          <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/mpsr_ksp_survey"/>
          <property name="javax.persistence.jdbc.user" value="root"/>

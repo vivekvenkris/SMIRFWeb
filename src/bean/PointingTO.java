@@ -41,7 +41,23 @@ public class PointingTO {
 		this.pointingName = calibratorTO.getSourceName();
 		this.angleRA = calibratorTO.getAngleRA();
 		this.angleDEC = calibratorTO.getAngleDEC();
-		this.type = "Calibration";
+		this.type = "P";
+		this.priority = SMIRFConstants.highestPriority;
+		/**
+		 * Check this coordinate conversion. - 1950 and J2000 shit.
+		 */
+		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
+		this.angleLAT = new Angle(sc.alpha, Angle.DDMMSS);
+		this.angleLON = new Angle(sc.delta, Angle.DDMMSS);
+		
+	}
+	
+	public PointingTO(FluxCalibratorTO calibratorTO){
+		this.pointingID = calibratorTO.getSourceID();
+		this.pointingName = calibratorTO.getSourceName();
+		this.angleRA = calibratorTO.getAngleRA();
+		this.angleDEC = calibratorTO.getAngleDEC();
+		this.type = "F";
 		this.priority = SMIRFConstants.highestPriority;
 		/**
 		 * Check this coordinate conversion. - 1950 and J2000 shit.

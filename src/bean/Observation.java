@@ -3,8 +3,10 @@ package bean;
 import java.util.ArrayList;
 import java.util.List;
 
+import exceptions.ObservationException;
 import service.EphemService;
 import util.Constants;
+import util.SMIRFConstants;
 
 public class Observation {
 	String name;
@@ -24,7 +26,18 @@ public class Observation {
 		nfb = 352;
 		fanbeamSpacing = new Angle("0.01139601", Angle.DEG);
 		tiedBeamSources = new ArrayList<TBSourceTO>();
+		name = "";
+		observer = "";
+		
 	}
+	
+	public Observation(Coords coords, Integer tobs){
+		this();
+		this.coords = coords;
+		this.tobs = tobs;
+	}
+	
+	
 	
 	private double computeHAForMJD(double mjd){ 
 		double radLMST = EphemService.getRadLMSTForMolonglo(mjd);
@@ -42,6 +55,21 @@ public class Observation {
 		Angle HA = new Angle(radHA,Angle.RAD);
 		return HA;
 	}
+	
+	public Angle getHAForUTC(String utcStr){
+		double mjd = EphemService.getMJDForUTC(utcStr);
+		double radHA =  computeHAForMJD(mjd);
+		Angle HA = new Angle(radHA,Angle.RAD);
+		return HA;
+	}
+	public Angle getHAForUTCPlusOffset(String utcStr, int offsetSecondsFromUTC){
+		double mjd = EphemService.getMJDForUTC(utcStr, offsetSecondsFromUTC);
+		double radHA =  computeHAForMJD(mjd);
+		Angle HA = new Angle(radHA,Angle.RAD);
+		return HA;
+	}
+	
+	
 	
 	public Angle getHAAfter(int offsetSecsFromNow){
 		double mjd = EphemService.getMJDAfterOffset(offsetSecsFromNow);
@@ -108,8 +136,6 @@ public class Observation {
 		this.utc = utc;
 	}
 
-	
-
 	public Integer getNfb() {
 		return nfb;
 	}
@@ -134,6 +160,56 @@ public class Observation {
 		this.coords = coords;
 	}
 	
-
+	public boolean isGalacticPointing() throws ObservationException{
+		try{
+			return this.coords.getPointingTO().getType().equals(SMIRFConstants.galacticPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
 	
+	public boolean isSMCPointing() throws ObservationException{
+		try{
+			return this.coords.getPointingTO().getType().equals(SMIRFConstants.smcPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	
+	public boolean isLMCPointing() throws ObservationException{
+		try{
+			return this.coords.getPointingTO().getType().equals(SMIRFConstants.lmcPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isPhaseCalPointing() throws ObservationException{
+		try{
+			return this.coords.getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isFluxCalPointing() throws ObservationException{
+		try{
+			return this.coords.getPointingTO().getType().equals(SMIRFConstants.fluxCalibratorSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isCandidatePointing() throws ObservationException{
+		try{
+			return this.coords.getPointingTO().getType().equals(SMIRFConstants.candidatePointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isSurveyPointing() throws ObservationException{
+		try{
+			String type = this.coords.getPointingTO().getType();
+			return (SMIRFConstants.smcPointingSymbol + SMIRFConstants.lmcPointingSymbol + SMIRFConstants.galacticPointingSymbol).contains(type);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
 }

@@ -1,6 +1,5 @@
 package manager;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -9,7 +8,6 @@ import org.javatuples.Pair;
 import bean.Observation;
 import bean.TCCStatus;
 import exceptions.TCCException;
-import service.TCCService;
 import service.TCCStatusService;
 import util.Constants;
 import util.TCCConstants;
@@ -49,4 +47,10 @@ public class TCCManager {
 		return (int)(maxSlewTime + 2*TCCConstants.rampTime);
 				
 	}
+	
+		
+		
+		
+		
+		
 }

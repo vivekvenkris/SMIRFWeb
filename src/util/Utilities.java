@@ -10,7 +10,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
@@ -30,10 +29,9 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import bean.CoordinateTO;
+import bean.Angle;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
-import manager.MolongloCoordinateTransforms;
 
 public class Utilities {
 	
@@ -84,7 +82,6 @@ public class Utilities {
 	public static String getTextFromXpath(String xmlString, String xpathExpr) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException{
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();  
 		DocumentBuilder builder;  
-
 
 		builder = factory.newDocumentBuilder();  
 		Document document = builder.parse( new InputSource( new StringReader( xmlString ) ) ); 
@@ -195,6 +192,17 @@ public class Utilities {
 		double ydist = Math.abs(y2 - y1);
 		
 		return ( ( xdist*xdist/(a*a) + ydist*ydist/(b*b)) <= 1.0);
+	}
+	
+	public static double distance(double x1, double y1, double x2, double y2){
+		double xdist = Math.abs(x2 - x1);
+		double ydist = Math.abs(y2 - y1);
+		
+		return Math.sqrt(xdist*xdist + ydist*ydist);
+	}
+	
+	public static double distance( Angle RA1, Angle DEC1, Angle RA2, Angle DEC2){
+		return distance(RA1.getRadianValue(), DEC1.getRadianValue(), RA2.getRadianValue(), DEC2.getRadianValue());
 	}
 		
 

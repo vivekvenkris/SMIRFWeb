@@ -26,7 +26,7 @@ public class PhaseCalibrator {
 	@Convert(converter = Angle2HHMMSS.class)
 	private Angle angleRA;
 		
-	@Column(name = "dec_hms")
+	@Column(name = "dec_dms")
 	@Convert(converter = Angle2DDMMSS.class)
 	private Angle angleDEC;
 	

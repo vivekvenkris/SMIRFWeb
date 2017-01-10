@@ -112,8 +112,11 @@ public class TCCStatusService implements TCCConstants {
 		}
 	}
 	
-	public static void main(String[] args) {
-		 final String s = "<?xml version='1.0' encoding='ISO-8859-1'?> "
+	public static void main(String[] args) throws TCCException {
+		TCCStatusService service = new TCCStatusService();
+		TCCStatus status = service.getTelescopeStatus();
+		System.exit(0);
+		 final String s = "<?xml version='1.0' encoding='ISO-8859-1'?>"
 	        		+" <tcc_status> "
 	        		+"   <overview> "
 	        		+"     <error_string>blah</error_string> "
@@ -170,7 +173,6 @@ public class TCCStatusService implements TCCConstants {
 	        		+"   </md> "
 	        		+" </tcc_status> ";
 		 
-		 TCCStatusService service = new TCCStatusService();
 		 try {
 			service.getStatusObj(s);
 		} catch (TCCException e) {

@@ -103,7 +103,7 @@ public class BackendService implements BackendConstants {
 				TBSourceTO.DSPSRParameters dspsrParameters = tbs.getDspsrParams();
 				Map<String, String> map2 = new HashMap<String, String>();
 				StrSubstitutor dspsrSubstitutor  = new StrSubstitutor(map2);
-
+				
 				map2.put(tbStr + "DspsrParams", "");
 				if(dspsrParameters!=null){
 					String dspsrParamStr = dspsrParams[index];
@@ -121,6 +121,7 @@ public class BackendService implements BackendConstants {
 
 				template+=tbParamStr;
 				index ++;
+				if(index >= BackendConstants.maximumNumberOfTB -1 ) break;
 			}
 		case fanBeam:
 			defaultParams.put("fb_project_id", SMIRFConstants.PID);
@@ -139,7 +140,7 @@ public class BackendService implements BackendConstants {
 		if(!isON()) throw new BackendException("Backend failed: Cause: Backend not ON "); 
 		try {
 			String response = this.sendCommand(prepare,template);
-			if(!response.equals(backendResponseSuccess)) throw new UnexpectedBackendReplyException(prepare, response);
+			if(!response.equals(backendPrepared)) throw new UnexpectedBackendReplyException(prepare, response);
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
 		}
@@ -229,7 +230,6 @@ public class BackendService implements BackendConstants {
 		messageMap.put("parameters", params);
 		
 		String message = messageSubstitutor.replace(messageWrapper);
-		System.err.println("sending:" +message);
 		String xmlResponseStr = talkToBackend(message);
 		String response = "";
 
@@ -239,12 +239,10 @@ public class BackendService implements BackendConstants {
 
 			case query:
 				response = Utilities.getTextFromXpath(xmlResponseStr, "//response/mpsr_status");
-				System.err.println("query response:" + xmlResponseStr);
 				break;
 			case prepare:
 			case stop:
 				response = Utilities.getTextFromXpath(xmlResponseStr, "//reply");
-				System.err.println("response:" + xmlResponseStr);
 				break;
 			case start:
 				response  = Utilities.getTextFromXpath(xmlResponseStr, "//response");

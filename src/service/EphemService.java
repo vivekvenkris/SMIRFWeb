@@ -1,6 +1,7 @@
 package service;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,6 +22,11 @@ public class EphemService {
 		return  LocalDateTime.now(Clock.systemUTC());
 	}
 	
+	public static String getUtcStringNow(){
+		Instant instant = Instant.now();
+		return instant.toString().replaceAll("T", "-").replaceAll("Z", "");
+	}
+	
 	public static  double getMJDNow(){
 		return getMJDAfterOffset(0);
 	}
@@ -29,6 +35,19 @@ public class EphemService {
 		dateTime = dateTime.plusSeconds(offsetSecsFromNow);
 		return dateTime.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(dateTime.getHour()*3600+dateTime.getMinute()*60+dateTime.getSecond())/86400.0;
 
+	}
+	
+	public static double getMJDForUTC(String utcStr){
+		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss.SSS"));
+		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
+		return mjd;
+	}
+	
+	public static double getMJDForUTC(String utcStr, int offsetSecondsFromUTC){
+		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss.SSS"));
+		utc = utc.plusSeconds(offsetSecondsFromUTC);
+		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
+		return mjd;
 	}
 	
 	
@@ -71,6 +90,12 @@ public class EphemService {
 	
 	public static double getRadLMSTforMolonglo(String utcStr){
 		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss.SSS"));
+		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
+		double last = EphemService.getRadLMSTForMolonglo(mjd);
+		return last;
+	}
+	
+	public static double getRadLMSTforMolonglo(LocalDateTime utc){
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
 		double last = EphemService.getRadLMSTForMolonglo(mjd);
 		return last;
