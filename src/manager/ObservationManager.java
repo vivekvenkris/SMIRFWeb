@@ -36,138 +36,177 @@ import util.Utilities;
 public class ObservationManager {
 	ExecutorService executorService = null;
 
-	public synchronized void  startObserving(Observation observation) throws TCCException, BackendException, InterruptedException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
-		if(!observable(observation)) {
-			System.err.println("not observable.");
-			throw new ObservationException("cant observe this source. Source not visible.");
-		}
+	public synchronized void startObserving(Observation observation) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException{
+		startObserving(observation, true, true);
+	}
 
-		TCCService       tccService =     TCCService.createTccInstance();
-		TCCStatusService tccStatusService = new TCCStatusService();
-		BackendService   backendService = BackendService.createBackendInstance();
-		BackendService   backendStatus =  BackendService.createBackendStatusInstance();
-
-		CoordinateTO coordinates = new CoordinateTO(observation);
-		MolongloCoordinateTransforms.skyToTel(coordinates);
-
-		Callable<Boolean> getBackendReady = new Callable<Boolean>() {
-
-			@Override
-			public Boolean call() throws BackendException {
-
-				if(SMIRFConstants.simulate) return true;
-
-				boolean isON = backendStatus.isON();
-				if(isON){
-					System.err.println("backend is ON");
-					boolean isidle = backendStatus.isIdle();
-					if(!isidle) backendService.stopBackend();
-				}
-				String currentBackend;
-				currentBackend = backendService.getCurrentBackend();
-				System.err.println("Current Backend:" + currentBackend);
-				System.err.println("Required backend:" + observation.getBackendType());
-				if(!currentBackend.equals(observation.getBackendType())){
-					System.err.println("backend change needed..");
-					if(isON) {
-						backendService.shutDownBackend();
-					}
-					backendService.changeBackendConfig(observation.getBackendType());
-				}
-				System.err.println("Booting backend..");
-				backendService.bootUpBackend();
-				System.err.println("backend booted..");
-				return true;
-			}
-		};
-
-		Callable<Boolean> getTCCReady = new Callable<Boolean>() {
-
-			@Override
-			public Boolean call() throws TCCException, InterruptedException{
-				System.err.println("starting TCC..");
-				tccService.pointAndTrackSource(observation.getCoords().getPointingTO().getAngleRA().toHHMMSS(), observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
-				System.err.println("started TCC..");
-				long maxSlewTime = TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000; // to milliseconds
-				System.err.println(" max slew time.." + maxSlewTime);
-				long startTime = System.currentTimeMillis();
-				long elapsedTime = 0L;
-				Thread.sleep(5000);
-				while(true){
-					if(!tccStatusService.getTelescopeStatus().isTelescopeDriving()) break;
-					elapsedTime = (new Date()).getTime() - startTime;
-					System.err.print("\rslewing for the past "+ elapsedTime/1000.0 + " seconds");
-					if(elapsedTime > maxSlewTime) {
-						throw new DriveBrokenException("Drive taking longer than expected to go to source.");
-					}
-					Thread.sleep(2000);
-				}
-				System.err.println("TCC reached..");
-				return true;
-			}
-
-
-		};
+	public synchronized void  startObserving(Observation observation, boolean tccEnabled, boolean backendEnabled) throws TCCException, BackendException, InterruptedException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
 
 		executorService = Executors.newFixedThreadPool(4);
+		Future<Boolean> backendReady = null;
+		Future<Boolean> tccReady = null;
 
-		Future<Boolean> backendReady =  executorService.submit(getBackendReady);
-		Future<Boolean> tccReady =  executorService.submit(getTCCReady);
 
-		try {
-			Boolean backendResult = backendReady.get();
-			Boolean tccResult = tccReady.get();
-		} catch (InterruptedException | ExecutionException e) {
-			Throwable t = e.getCause();
-			if(t instanceof BackendException){
-				throw (BackendException)t;
+		if(tccEnabled) {
+			if( !observable(observation)) {
+				System.err.println("not observable.");
+				throw new ObservationException("cant observe this source. Source not visible." + observation.getCoords().getAngleHA() + " " 
+						+ observation.getCoords().getAngleNS() + " "+ observation.getCoords().getAngleMD());
 			}
-			else if(t instanceof TCCException){
-				throw (TCCException)t;
-			}
-			e.printStackTrace();
+
+			TCCService       tccService =     TCCService.createTccInstance();
+			TCCStatusService tccStatusService = new TCCStatusService();
+
+			CoordinateTO coordinates = new CoordinateTO(observation);
+			MolongloCoordinateTransforms.skyToTel(coordinates);
+
+			Callable<Boolean> getTCCReady = new Callable<Boolean>() {
+
+				@Override
+				public Boolean call() throws TCCException, InterruptedException{
+					System.err.println("starting TCC..");
+					tccService.pointAndTrackSource(observation.getCoords().getPointingTO().getAngleRA().toHHMMSS(), observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
+					System.err.println("started TCC..");
+					long maxSlewTime = TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000; // to milliseconds
+					System.err.println(" max slew time.." + maxSlewTime);
+					long startTime = System.currentTimeMillis();
+					long elapsedTime = 0L;
+					Thread.sleep(5000);
+					while(true){
+						if(!tccStatusService.getTelescopeStatus().isTelescopeDriving()) break;
+						elapsedTime = (new Date()).getTime() - startTime;
+						System.err.print("\rslewing for the past "+ elapsedTime/1000.0 + " seconds");
+						if(elapsedTime > maxSlewTime) {
+							throw new DriveBrokenException("Drive taking longer than expected to go to source.");
+						}
+						Thread.sleep(2000);
+					}
+					System.err.println("TCC reached..");
+					return true;
+				}
+
+
+			};
+
+			tccReady =  executorService.submit(getTCCReady);
+
+
 		}
+
+		if(backendEnabled) {
+			BackendService   backendService = BackendService.createBackendInstance();
+			BackendService   backendStatus =  BackendService.createBackendStatusInstance();
+
+			Callable<Boolean> getBackendReady = new Callable<Boolean>() {
+
+				@Override
+				public Boolean call() throws BackendException {
+
+					if(SMIRFConstants.simulate) return true;
+
+					boolean isON = backendStatus.isON();
+					if(isON){
+						System.err.println("backend is ON");
+						boolean isidle = backendStatus.isIdle();
+						if(!isidle) backendService.stopBackend();
+					}
+					//				String currentBackend;
+					//				currentBackend = backendService.getCurrentBackend();
+					//				System.err.println("Current Backend:" + currentBackend);
+					//				System.err.println("Required backend:" + observation.getBackendType());
+					//				if(!currentBackend.equals(observation.getBackendType())){
+					//					System.err.println("backend change needed..");
+					//					if(isON) {
+					//						backendService.shutDownBackend();
+					//					}
+					//					backendService.changeBackendConfig(observation.getBackendType());
+					//				}
+					//				System.err.println("Booting backend..");
+					//				backendService.bootUpBackend();
+					//				System.err.println("backend booted..");
+					return true;
+				}
+			};
+			backendReady = executorService.submit(getBackendReady);
+		}
+
+		if(backendEnabled) {
+			try {
+				Boolean backendResult = backendReady.get();
+			} catch (InterruptedException | ExecutionException e) {
+				Throwable t = e.getCause();
+				if(t instanceof BackendException){
+					throw (BackendException)t;
+				}
+				e.printStackTrace();
+			}
+		}
+
+		if(tccEnabled)  { 
+			try {
+				Boolean tccResult = tccReady.get();
+			} catch (InterruptedException | ExecutionException e) {
+				Throwable t = e.getCause();
+				if(t instanceof TCCException){
+					throw (TCCException)t;
+				}
+				e.printStackTrace();
+			}
+		}
+		
 		executorService.shutdown();
+		
 		if(!observation.getCoords().getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol)) {
 			observation.setTiedBeamSources(getTBSourcesForObservation(observation));
 		}
 		System.err.println(observation.getTiedBeamSources());
-		System.err.println("starting backend..");
+		if(backendEnabled) {
+			System.err.println("starting backend..");
+		BackendService   backendService = BackendService.createBackendInstance();
 		backendService.startBackend(observation);
-		System.err.println("starting tracking..");
+		}
+		System.err.println("starting observing..");
 	}
 
-
-
 	public boolean stopObserving() throws TCCException, BackendException, InterruptedException{
+		return stopObserving(true, true);
+	}
+
+	public boolean stopObserving(boolean tccEnabled, boolean backendEnabled) throws TCCException, BackendException, InterruptedException{
 
 		TCCService       tccService =     TCCService.createTccInstance();
 		TCCStatusService tccStatusService = new TCCStatusService();
 		BackendService   backendService = BackendService.createBackendInstance();
 
-
+		if(tccEnabled) {
+			try{
+				tccService.stopTelescope();
+				System.err.println("all success!");
+				int i=0;
+				while(tccStatusService.getTelescopeStatus().isTelescopeDriving()){
+					Thread.sleep(1000);
+					if(i++ >5) throw new TCCException("TCC doesn't stop after a stop command");
+				};
+	
+			}catch (TCCException  e) {
+				backendService.stopBackend();
+				throw e;
+			}catch (InterruptedException e) {
+				backendService.stopBackend();
+				tccService.stopTelescope();
+				throw e;
+			}
+		}
+		if(backendEnabled) {
 		try{
 			backendService.stopBackend();
-			tccService.stopTelescope();
-			System.err.println("all success!");
-			int i=0;
-			while(tccStatusService.getTelescopeStatus().isTelescopeDriving()){
-				Thread.sleep(1000);
-				if(i++ >5) throw new TCCException("TCC doesn't stop after a stop command");
-			};
-
-			return true;
 		}catch (BackendException e) {
 			tccService.stopTelescope();
 			throw e;
-		}catch (TCCException  e) {
-			backendService.stopBackend();
-			throw e;
-		}catch (InterruptedException e) {
-			backendService.stopBackend();
-			tccService.stopTelescope();
-			throw e;
 		}
+		}
+		return true;
+		
 	}
 
 	@Deprecated
@@ -238,15 +277,16 @@ public class ObservationManager {
 				if (Utilities.isWithinEllipse(coords.getAngleNS().getRadianValue(), coords.getAngleMD().getRadianValue(), 
 						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), 
 						Constants.RadMolongloNSBeamWidth/2.0, Constants.RadMolongloMDBeamWidth/2.0)){
-					
+
 					if(!shortListed.contains(tbSourceTO)) shortListed.add(tbSourceTO);
 				}
 			}
 		}
-		
+
 
 		return shortListed.subList(0, Math.min(BackendConstants.maximumNumberOfTB, shortListed.size()));
 	}
+
 
 	@Deprecated
 	public static boolean observable(Observation observation) throws TCCException, EmptyCoordinatesException, CoordinateOverrideException{
@@ -260,7 +300,7 @@ public class ObservationManager {
 		CoordinateTO coordsNow  = new CoordinateTO(HANow.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsNow);
 		//System.err.println( "*************" +observation.getCoords().getPointingTO().getPointingName() +" " +coordsNow.getRadMD()*Constants.rad2Deg  + " " +coordsNow.getRadNS()*Constants.rad2Deg );
-		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD && coordsNow.getRadMD() > SMIRFConstants.maxRadMD) return false;
+		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD || coordsNow.getRadMD() > SMIRFConstants.maxRadMD) return false;
 
 		int slewTime = TCCManager.computeSlewTime(coordsNow.getRadNS(), coordsNow.getRadMD());
 		int obsTime = observation.getTobs();
@@ -271,7 +311,7 @@ public class ObservationManager {
 
 		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsEnd);
-		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD && coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) return false;
+		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD || coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) return false;
 
 		return true;
 	}
@@ -286,7 +326,7 @@ public class ObservationManager {
 		CoordinateTO coordsNow  = new CoordinateTO(HANow.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsNow);
 		//System.err.println( "*************" +observation.getCoords().getPointingTO().getPointingName() +" " +coordsNow.getRadMD()*Constants.rad2Deg  + " " +coordsNow.getRadNS()*Constants.rad2Deg );
-		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD && coordsNow.getRadMD() > SMIRFConstants.maxRadMD) return false;
+		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD || coordsNow.getRadMD() > SMIRFConstants.maxRadMD) return false;
 
 		int slewTime = TCCManager.computeSlewTime(coordsNow.getRadNS(), coordsNow.getRadMD());
 		int obsTime = observation.getTobs();
@@ -297,7 +337,7 @@ public class ObservationManager {
 
 		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsEnd);
-		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD && coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) return false;
+		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD || coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) return false;
 
 		return true;
 	}

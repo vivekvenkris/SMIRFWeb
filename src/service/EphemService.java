@@ -14,6 +14,7 @@ import bean.CoordinateTO;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
+import util.BackendConstants;
 import util.Constants;
 
 public class EphemService {
@@ -38,13 +39,13 @@ public class EphemService {
 	}
 	
 	public static double getMJDForUTC(String utcStr){
-		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss.SSS"));
+		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
 		return mjd;
 	}
 	
 	public static double getMJDForUTC(String utcStr, int offsetSecondsFromUTC){
-		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss.SSS"));
+		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 		utc = utc.plusSeconds(offsetSecondsFromUTC);
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
 		return mjd;
@@ -89,7 +90,7 @@ public class EphemService {
 	}
 	
 	public static double getRadLMSTforMolonglo(String utcStr){
-		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss.SSS"));
+		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
 		double last = EphemService.getRadLMSTForMolonglo(mjd);
 		return last;

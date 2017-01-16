@@ -1,11 +1,14 @@
 package bean;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
 import service.EphemService;
+import util.BackendConstants;
 
 public class Coords {
  PointingTO pointingTO;
@@ -13,6 +16,7 @@ public class Coords {
  Angle angleHA;
  Angle angleNS;
  Angle angleMD;
+ String utc;
  
  public Coords(PointingTO pointingTO, Angle lst) throws EmptyCoordinatesException, CoordinateOverrideException {
 	 this.angleLST = lst; 
@@ -27,7 +31,11 @@ public class Coords {
 }
 
 public Coords(PointingTO pointingTO){
-	 this.pointingTO = pointingTO;	 
+	this.pointingTO = pointingTO;	 
+}
+public Coords(PointingTO pointingTO, LocalDateTime utcTime) throws EmptyCoordinatesException, CoordinateOverrideException{
+	this(pointingTO, new Angle(EphemService.getRadLMSTforMolonglo(utcTime), Angle.HHMMSS));
+	utc = utcTime.format(DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 }
  
  public void recompute(Angle lst) throws EmptyCoordinatesException, CoordinateOverrideException{
@@ -102,6 +110,14 @@ public static Comparator<Coords> compareMDNS = new Comparator<Coords>() {
 
  
 
+
+public String getUtc() {
+	return utc;
+}
+
+public void setUtc(String utc) {
+	this.utc = utc;
+}
 
 public PointingTO getPointingTO() {
 	return pointingTO;

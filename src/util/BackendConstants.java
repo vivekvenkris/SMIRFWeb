@@ -1,5 +1,6 @@
 package util;
 
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,8 +23,8 @@ public interface BackendConstants {
 	String backendPrepared = "parsed correctly";
 	
 	String loadBackendScript="/home/dada/scripts/load_config.csh";
-	String psrBackend= "live_40chan_16ant_22pfb_352_beams";//"live_bfp_40chan_16ant_22pfb_352_beams";
-	String corrBackend= "live_40chan_16ant_22pfb_352_beams";//"live_corr_40chan_16ant_22pfb"; 
+	String psrBackend= "live_320chan_8ant_44pfb_352_beams";//"live_bfp_40chan_16ant_22pfb_352_beams";
+	String corrBackend= "live_320chan_8ant_44pfb_352_beams";//"live_corr_40chan_16ant_22pfb"; 
 	String otherBackends = "other";
 	String dadaAtLocalhost = "dada@localhost";
 	
@@ -36,8 +37,19 @@ public interface BackendConstants {
 	String updateDelays = "/home/dada/linux_64/share/update_delays_snr.csh calib.delays";
 	
 	
+	
+	
+	/* for simple date format */
+	String backendUTCFormat = "yyyy-MM-dd-HH:mm:ss.SSS";
+	String backendUTCFormatOfPattern="yyyy-MM-dd-kk:mm:ss.SSS";
+	
+	
+	/* xml message constants*/
+	
 	String invalidInstance = "Invalid instance. This instance can only check the status."
 			+ "It cannot start or stop backend. Please use createBackendInstance() to manipulate the backend. ";
+	
+	
 	
 	String command = "<command>${command}</command>";
 	

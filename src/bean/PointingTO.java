@@ -1,5 +1,8 @@
 package bean;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jastronomy.jsofa.JSOFA;
 import org.jastronomy.jsofa.JSOFA.SphericalCoordinate;
 
@@ -21,7 +24,8 @@ public class PointingTO {
 
 	@Override
 	public String toString() {
-		return this.pointingName + "ID: " + this.pointingID;
+		if(!this.type.equals(SMIRFConstants.phaseCalibratorSymbol) && ! this.type.equals(SMIRFConstants.fluxCalibratorSymbol)) return "("+this.pointingID+") "+this.pointingName;
+		 return "("+this.type+") "+this.pointingName;
 	}
 	
 	public PointingTO(Pointing pointing) {
@@ -33,6 +37,7 @@ public class PointingTO {
 		this.angleDEC = pointing.getAngleDEC();
 		this.priority = pointing.getPriority();
 		this.type = pointing.getType();
+		this.numObs = pointing.getNumObs();
 
 	}
 	
@@ -41,7 +46,7 @@ public class PointingTO {
 		this.pointingName = calibratorTO.getSourceName();
 		this.angleRA = calibratorTO.getAngleRA();
 		this.angleDEC = calibratorTO.getAngleDEC();
-		this.type = "P";
+		this.type = SMIRFConstants.phaseCalibratorSymbol;
 		this.priority = SMIRFConstants.highestPriority;
 		/**
 		 * Check this coordinate conversion. - 1950 and J2000 shit.
@@ -57,7 +62,7 @@ public class PointingTO {
 		this.pointingName = calibratorTO.getSourceName();
 		this.angleRA = calibratorTO.getAngleRA();
 		this.angleDEC = calibratorTO.getAngleDEC();
-		this.type = "F";
+		this.type = SMIRFConstants.fluxCalibratorSymbol;
 		this.priority = SMIRFConstants.highestPriority;
 		/**
 		 * Check this coordinate conversion. - 1950 and J2000 shit.
@@ -66,6 +71,18 @@ public class PointingTO {
 		this.angleLAT = new Angle(sc.alpha, Angle.DDMMSS);
 		this.angleLON = new Angle(sc.delta, Angle.DDMMSS);
 		
+	}
+	
+	public static List<PointingTO> getFluxCalPointingList( List<FluxCalibratorTO> fluxCalibratorTOs){
+		List<PointingTO> pointingTOs = new ArrayList<>();
+		for(FluxCalibratorTO fto: fluxCalibratorTOs) pointingTOs.add(new PointingTO(fto));
+		return pointingTOs;
+	}
+	
+	public static List<PointingTO> getPhaseCalPointingList( List<PhaseCalibratorTO> phaseCalibratorTOs){
+		List<PointingTO> pointingTOs = new ArrayList<>();
+		for(PhaseCalibratorTO pto: phaseCalibratorTOs) pointingTOs.add(new PointingTO(pto));
+		return pointingTOs;
 	}
 	
 	

@@ -43,6 +43,7 @@
 								<ul>
 									<li ><a href="index.xhtml">Home</a></li>
 									<li class="current"><a href="scheduler.xhtml">Scheduler</a></li>
+									<li><a href="single.xhtml">Single</a></li>
 									<li>
 										<a href="#">Dropdown</a>
 										<ul>
@@ -62,7 +63,6 @@
 									</li>
 									<li><a href="logs.html">Logs</a></li>
 									<li><a href="right-sidebar.html">Right Sidebar</a></li>
-									<li><a href="no-sidebar.html">No Sidebar</a></li>
 									<li><a href="no-sidebar.html">No Sidebar</a></li>
 								</ul>
       								<form id="clock" name="clock" style="font-size: larger;">
@@ -132,7 +132,18 @@
 											</p:selectOneButton>
 										</p:column>
 									</p:row>
-									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Order by?"></p:outputLabel>
+										</p:column>
+										<p:column colspan="2">
+										<p:selectOneButton id="order" value="#{schedulerMB.orderMDNS}"  required="true" requiredMessage="Choose scheduling order">
+										    <f:converter converterId="javax.faces.Boolean"></f:converter>
+											<f:selectItem itemLabel="MD major" itemValue="true" />
+											<f:selectItem itemLabel="NS major" itemValue="false" />
+										</p:selectOneButton>
+										</p:column>
+									</p:row>
 									<p:row>
 										<p:column>
 											<p:outputLabel value="phase calibrate at start?"></p:outputLabel>
@@ -161,13 +172,12 @@
 										</p:column>
 										<p:column>
 											<p:selectOneMenu value="#{schedulerMB.fluxCalibrator}" style="width: 100%">
-												<f:selectItem itemLabel="Choose automatically" itemValue="auto"></f:selectItem>
+												<f:selectItem itemLabel="Choose automatically" itemValue="auto" ></f:selectItem>
 												<f:selectItems value="#{schedulerMB.fluxCalibrators}"></f:selectItems>
 												<f:converter converterId="converters.FluxCalibratorConverter"/>
 											</p:selectOneMenu>
 										</p:column>
 									</p:row>
-									
 									<p:row>
 										<p:column>
 											<p:outputLabel value="flux calibrate whenever?"></p:outputLabel>
@@ -176,47 +186,64 @@
 											<p:selectBooleanButton value="#{schedulerMB.fluxCalWhenever}"  onLabel="Yes" offLabel="No" />
 										</p:column>
 										<p:column>
-										<p:commandButton styleClass="button icon fa-arrow-circle-right"  style="background: #cccccc; color: white;" value="Show schedule"  update="scheduleGroup,growl" actionListener="#{schedulerMB.showSchedule}"></p:commandButton>
+										<p:commandButton styleClass="button icon fa-arrow-circle-right"  style="background: #cccccc; color: white;" value="Show schedule"  update="scheduleGroup,growl,glanceChart" actionListener="#{schedulerMB.showSchedule}"></p:commandButton>
 										</p:column>
 									</p:row>
 									
 								</p:panelGrid>		
-								<h:panelGroup id="scheduleGroup">							
+								<h:panelGroup id="scheduleGroup">		
+								<h:outputText value="#{schedulerMB.coordsList.size()} pointings in total." rendered="#{ not empty  schedulerMB.coordsList}"></h:outputText>					
 								<p:dataTable id="scheduleList" var="coord" value = "#{schedulerMB.coordsList}"  rendered="#{ not empty  schedulerMB.coordsList}"  
-								paginator="true" rows = "5" paginatorTemplate="{CurrentPageReport}  {PreviousPageLink} {PageLinks} {NextPageLink}" selection="#{schedulerMB.selectedCoord}" selectionMode="single" rowKey="#{coord.pointingTO.pointingName}">
+								paginator="true" rows = "5" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink}" selection="#{schedulerMB.selectedCoord}" selectionMode="single" rowKey="#{coord.pointingTO.pointingName}">
+								<p:column headerText=" UTC ">
+									<p:outputLabel value="#{coord.utc}"></p:outputLabel>
+								</p:column>
 								<p:column headerText="Pointing name">
 									<p:outputLabel value="#{coord.pointingTO.pointingName}"></p:outputLabel>
 								</p:column>
-								 <p:column headerText="GL (dd:mm:ss)">
+								 <p:column headerText="GB (dd:mm:ss)">
 									<p:outputLabel value="#{coord.pointingTO.angleLAT}"></p:outputLabel>
 								</p:column>
-								<p:column headerText=" GB (dd:mm:ss) ">
+								<p:column headerText=" GL (dd:mm:ss) ">
 									<p:outputLabel value="#{coord.pointingTO.angleLON}"></p:outputLabel>
-								</p:column>
-									<p:column headerText="RA (hhmm:ss)">
-									<p:outputLabel value="#{coord.pointingTO.angleRA}"></p:outputLabel>
-								</p:column>
-								<p:column headerText="DEC (dd:mm:ss)">
-									<p:outputLabel value="#{coord.pointingTO.angleDEC}"></p:outputLabel>
 								</p:column>
 								
 								<p:column headerText=" Type ">
-									<p:outputLabel value="#{coord.pointingTO.type}"></p:outputLabel>
+									<p:outputLabel value="#{coord.pointingTO.type}" >
+									<f:converter converterId="converters.PointingTypeConverter"></f:converter>
+									</p:outputLabel>
 								</p:column>
 							
 								</p:dataTable>
 								
+								 <p:spacer height="50"></p:spacer>
+											 <h:panelGroup id="glanceChart">
+											 <p:chart  type="line" model="#{schedulerMB.glanceEq}" rendered="#{not empty schedulerMB.coordsList}" widgetVar="glanceEq"/>
+											 <p:commandButton type="button" value="Reset" icon="ui-icon-cancel" onclick="PF('glanceEq').resetZoom()" rendered="#{not empty schedulerMB.coordsList}"/>
+											 
+											 <p:chart  type="line" model="#{schedulerMB.glanceGal}" rendered="#{not empty schedulerMB.coordsList}" widgetVar="glanceGal"/>
+											 <p:commandButton type="button" value="Reset" icon="ui-icon-cancel" onclick="PF('glanceGal').resetZoom()" rendered="#{not empty schedulerMB.coordsList}"/>
+											 
+											 <p:chart  type="line" model="#{schedulerMB.glanceTel}" rendered="#{not empty schedulerMB.coordsList}" widgetVar="glanceTel"/>
+											 <p:commandButton type="button" value="Reset" icon="ui-icon-cancel" onclick="PF('glanceTel').resetZoom()" rendered="#{not empty schedulerMB.coordsList}"/>
+											 </h:panelGroup>	
 								<p:panelGrid id="buttonPanel" styleClass="panelgrid"  rendered="#{ not empty  schedulerMB.coordsList}" style="float: right;">
 								<p:row>
-									
 								<p:column colspan="2">
-								<p:commandButton styleClass="button  icon fa-play-circle"  style="background: #99CC99; color: white;" value="start"  update="growl scheduleList" actionListener="#{schedulerMB.startSchedule}"></p:commandButton>
+								<p:commandButton styleClass="button  icon fa-play-circle"  style="background: #99CC99; color: white;" value="test"  update="growl scheduleGroup" actionListener="#{schedulerMB.test}"></p:commandButton>
+								</p:column>	
+								<p:column colspan="2">
+								<p:commandButton styleClass="button  icon fa-play-circle"  style="background: #99CC99; color: white;" value="start"  update="growl scheduleGroup" actionListener="#{schedulerMB.startSchedule}"></p:commandButton>
 								</p:column>
 								<p:column colspan="2">
-									<p:commandButton styleClass="button icon fa-stop" style="background: #993300; color: white;" value="stop"  update="growl scheduleList" actionListener="#{schedulerMB.stopSchedule}"></p:commandButton>
-									</p:column>
+									<p:commandButton styleClass="button icon fa-stop" style="background: #f7fcb9; color: white;" value="finish"  update="growl scheduleGroup" actionListener="#{schedulerMB.finishSchedule}"></p:commandButton>
+								</p:column>
+								<p:column colspan="2">
+									<p:commandButton styleClass="button icon fa-stop" style="background: #993300; color: white;" value="terminate"  update="growl scheduleGroup" actionListener="#{schedulerMB.terminateSchedule}"></p:commandButton>
+								</p:column>
 								</p:row></p:panelGrid>
 								</h:panelGroup>
+								
 								
 								
 								
@@ -224,7 +251,7 @@
 								<p:growl id="growl" life="2000" />
 								<p:contextMenu for="scheduleList">
 							       	<p:menuitem value="View" update="viewRow" icon="ui-icon-search" oncomplete="PF('pointingDialog').show()"/>
-							        <p:menuitem value="Delete" update="scheduleList" icon="ui-icon-close" actionListener="#{schedulerMB.deleteRow}"/>
+							        <p:menuitem value="Delete" update="scheduleList,glanceChart" icon="ui-icon-close" actionListener="#{schedulerMB.deleteRow}"/>
 							    </p:contextMenu>
 								<p:dialog id="viewRow" header="Pointing information" widgetVar="pointingDialog" modal="true" showEffect="fade" hideEffect="fade" resizable="false">
 								<p:panelGrid styleClass="panelgrid" columns="2">
@@ -243,12 +270,15 @@
 									<p:outputLabel value="Pointing priority(0-31):"> </p:outputLabel>
 									<p:outputLabel value="#{schedulerMB.selectedCoord.pointingTO.priority}"></p:outputLabel>									
 									<p:outputLabel value="Pointing type:"> </p:outputLabel>
-									<p:outputLabel value="#{schedulerMB.selectedCoord.pointingTO.type}"></p:outputLabel>									
+									<p:outputLabel value="#{schedulerMB.selectedCoord.pointingTO.type}">
+											<f:converter converterId="converters.PointingTypeConverter"></f:converter>
+									</p:outputLabel>									
 									<p:outputLabel value="number of prev. obs.:"> </p:outputLabel>
 									<p:outputLabel value="#{schedulerMB.selectedCoord.pointingTO.numObs}"></p:outputLabel>																	
 								
 								</p:panelGrid>
-								 </p:dialog>											
+								 </p:dialog>	
+								
 								</h:form>
 					
 			

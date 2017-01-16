@@ -59,7 +59,7 @@ public class Pointing{
 	
 	@Override
 	public String toString() {
-		return this.angleLAT + " "+ this.angleLON + " " + this.angleRA + " "+ this.angleDEC + "\n";
+		return this.angleLAT.getDegreeValue() + " "+ this.angleLON.getDegreeValue() + " " + this.angleRA + " "+ this.angleDEC + "\n";
 	}
 
 

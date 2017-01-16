@@ -26,6 +26,10 @@ public class TCCStatus {
 		md = new Drive(TCCConstants.MD);
 	}
 	
+	public Boolean isTelescopeIdle(){
+		return !(this.ns.getEast().getDriving() || this.ns.getWest().getDriving() || this.md.getEast().getDriving() || this.md.getWest().getDriving());
+	}
+	
 	public Boolean isTelescopeDriving() throws DriveBrokenException{
 		boolean isEastNSDriving = this.ns.getEast().getDriving();
 		

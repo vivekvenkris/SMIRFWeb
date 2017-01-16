@@ -1,37 +1,27 @@
 package test;
 
 import java.io.IOException;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
+import java.net.InetAddress;
 
-import bean.Angle;
-import bean.CoordinateTO;
-import bean.Observation;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import exceptions.PointingException;
 import exceptions.TCCException;
-import manager.MolongloCoordinateTransforms;
-import manager.ObservationManager;
-import manager.ScheduleManager;
-import util.BackendConstants;
-import util.SMIRFConstants;
 
 public class Main {
 	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException {
 
-		ScheduleManager scheduleManager = new ScheduleManager();
-		//scheduleManager.Calibrate("CJXXXX_XXXX");
-		//scheduleManager.observeTestPSR();
-		Instant instant = Instant.now();
-		instant = instant.plusSeconds(86400);
-		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", ""));
-		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", "").charAt(19));
-		scheduleManager.startSMIRFScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
+//		ScheduleManager scheduleManager = new ScheduleManager();
+//		//scheduleManager.Calibrate("CJXXXX_XXXX");
+//		//scheduleManager.observeTestPSR();
+//		Instant instant = Instant.now();
+//		instant = instant.plusSeconds(86400);
+//		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", ""));
+//		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", "").charAt(19));
+//		scheduleManager.startSMIRFScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
+		System.err.println(InetAddress.getLocalHost().getHostName());
 		
-
 
 
 	}

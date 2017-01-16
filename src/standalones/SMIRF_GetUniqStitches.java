@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 
 import bean.Angle;
 import bean.CoordinateTO;
+import bean.Observation;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
@@ -30,6 +31,10 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 		return startServer;
 
+	}
+	
+	public List<Point> generatePoints(Observation observation) throws EmptyCoordinatesException, CoordinateOverrideException{
+		return generatePoints(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), observation.getCoords().getPointingTO().getAngleDEC(), SMIRFConstants.thresholdPercent, Math.round(observation.getTobs()/Constants.tsamp));
 	}
 
 	public List<Point> generatePoints(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples) throws EmptyCoordinatesException, CoordinateOverrideException {
@@ -158,9 +163,9 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 	}
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
 		SMIRF_GetUniqStitches gus = new SMIRF_GetUniqStitches();
-		String utcStr = args[0];
-		Angle ra = new Angle(args[1], Angle.HHMMSS);
-		Angle dec = new Angle(args[2],Angle.DDMMSS);
+		String utcStr = EphemService.getUtcStringNow();
+		Angle ra = new Angle("22:41:00", Angle.HHMMSS);
+		Angle dec = new Angle("-52:36:00",Angle.DDMMSS);
 
 		List<Point> points = gus.generatePoints(utcStr,ra,dec ,10,Math.round(900/Constants.tsamp)); 
 		for(Point p: points){

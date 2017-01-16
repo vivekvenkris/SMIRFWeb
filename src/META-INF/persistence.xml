@@ -8,14 +8,14 @@
 		<class>bean.FluxCalibrator</class>
 		 <properties>
          <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/mpsr_ksp_survey"/>
-         <property name="javax.persistence.jdbc.user" value="root"/>
-         <property name="javax.persistence.jdbc.password" value="tcsmysqlpwd"/>
          <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
          
          <property name="eclipselink.logging.parameters" value="false"/>
          
         <!--  <property name="eclipselink.logging.level" value="FINE"/> -->
-         <property name="eclipselink.ddl-generation" value="create-tables"/> 
+         <property name="eclipselink.ddl-generation" value="create-tables"/>
+         <property name="javax.persistence.jdbc.user" value="vivek"/>
+         <property name="javax.persistence.jdbc.password" value="4&amp;.S1kz5"/> 
       </properties>
 	</persistence-unit>
 </persistence>

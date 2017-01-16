@@ -1,10 +1,15 @@
 package bean;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import exceptions.ObservationException;
 import service.EphemService;
+import util.BackendConstants;
 import util.Constants;
 import util.SMIRFConstants;
 
@@ -17,6 +22,7 @@ public class Observation {
 	String obsType;
 	String observer;
 	String utc;
+	Date utcDate;
 	List<TBSourceTO> tiedBeamSources;
 	Integer nfb;
 	Angle fanbeamSpacing;
@@ -77,6 +83,17 @@ public class Observation {
 		Angle HA = new Angle(radHA,Angle.RAD);
 		return HA;
 	}
+	
+	public void setUTCDateAndString(String utc) throws ParseException{
+		this.utc = utc;
+		SimpleDateFormat sdf = new SimpleDateFormat(BackendConstants.backendUTCFormat);
+		sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+		utcDate = sdf.parse(utc+".000");
+	}
+	
+	public String getUtc() {
+		return utc;
+	}
 
 	public Integer getTobs() {
 		return tobs;
@@ -128,14 +145,7 @@ public class Observation {
 		this.tiedBeamSources = tiedBeamSources;
 	}
 
-	public String getUtc() {
-		return utc;
-	}
-
-	public void setUtc(String utc) {
-		this.utc = utc;
-	}
-
+	
 	public Integer getNfb() {
 		return nfb;
 	}
@@ -160,6 +170,31 @@ public class Observation {
 		this.coords = coords;
 	}
 	
+	
+	public Angle getAngleRA() {
+		return angleRA;
+	}
+
+	public void setAngleRA(Angle angleRA) {
+		this.angleRA = angleRA;
+	}
+
+	public Angle getAngleDEC() {
+		return angleDEC;
+	}
+
+	public void setAngleDEC(Angle angleDEC) {
+		this.angleDEC = angleDEC;
+	}
+
+	public Date getUtcDate() {
+		return utcDate;
+	}
+
+	public void setUtcDate(Date utcDate) {
+		this.utcDate = utcDate;
+	}
+
 	public boolean isGalacticPointing() throws ObservationException{
 		try{
 			return this.coords.getPointingTO().getType().equals(SMIRFConstants.galacticPointingSymbol);

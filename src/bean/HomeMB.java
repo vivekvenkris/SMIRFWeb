@@ -23,6 +23,7 @@ public class HomeMB {
 	private String TCCStatus;
 	private String SMIRFStatus;
 	private Integer timeElapsedPercent;
+	
 
 	private TCCStatusService tccService = new TCCStatusService();
 	private BackendService backendStatusService = BackendService.createBackendStatusInstance();
@@ -65,23 +66,24 @@ public class HomeMB {
 		this.observation = ScheduleManager.getCurrentObservation();
 		try {
 			this.backendStatus = backendStatusService.getBackendStatus();
-			if(tccService.getTelescopeStatus().isTelescopeDriving())this.TCCStatus =  "driving";
-			if(tccService.getTelescopeStatus().isTelescopeTracking())this.TCCStatus =  "tracking";
-			else this.TCCStatus = "idle";
-		} catch (BackendException | TCCException e) {
+			TCCStatus tccStatus = tccService.getTelescopeStatus();
+			if(tccStatus.isTelescopeIdle()) this.TCCStatus = "Idle";
+			else if(tccStatus.isTelescopeDriving())this.TCCStatus =  "driving";
+			else if(tccStatus.isTelescopeTracking())this.TCCStatus =  "tracking";
+			else this.TCCStatus = "Idle";
+		} catch (TCCException e) {
+			this.TCCStatus =  "slacking";
 			e.printStackTrace();
-
+		}catch(BackendException e){
+			this.backendStatus="problem";
+			e.printStackTrace();
+			
 		}
 	}
 	
 	public void updateTimeElapsed(){
-		try {
-			if(this.observation == null || this.observation.getUtc() == null) return;
-			this.timeElapsedPercent = (int) ((new Date().getTime() - new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss.SSS").parse(observation.getUtc()).getTime())*100/(observation.getTobs()*1000));
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		
+			if(this.observation == null || this.observation.getUtc() == null || observation.getUtcDate() == null) return;
+			this.timeElapsedPercent = (int) ((new Date().getTime() - observation.getUtcDate().getTime())*100/(observation.getTobs()*1000));
 	}
 
 }

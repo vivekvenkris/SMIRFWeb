@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html [
     <!ENTITY nbsp "&#160;"> 
-    <!ENTITY copy "&#169;"> 
+    <!ENTITY copy "&#169;">
+    <!ENTITY box  "&#9644;"> 
 ]>
 <html xmlns="http://www.w3.org/1999/xhtml"
 	xmlns:f="http://java.sun.com/jsf/core"
@@ -10,18 +11,20 @@
 	xmlns:ui="http://java.sun.com/jsf/facelets">
 
 <h:head>
-	<title>SMIRFWeb</title>
+	<title>SMIRFWeb/Scheduler</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<link rel="stylesheet" href="assets/css/main.css" />
+	
 	<style>
 		.panelgrid.ui-panelgrid>*>tr, .panelgrid.ui-panelgrid .ui-panelgrid-cell{
 		    border-style: none;
 		    border: none; 
 		}
+		
 	</style>
 	
 </h:head>
-<h:body class="homepage">
+<h:body class="homepage" >
 <div id="page-wrapper">
 
 			<!-- Header -->
@@ -38,9 +41,9 @@
 						<!-- Nav -->
 							<nav id="nav">
 								<ul>
-									<li class="current"><a href="index.xhtml">Home</a></li>
+									<li ><a href="index.xhtml">Home</a></li>
 									<li ><a href="scheduler.xhtml">Scheduler</a></li>
-									<li><a href="single.xhtml">Single</a></li>
+									<li class="current"><a href="single.xhtml">Single</a></li>
 									<li>
 										<a href="#">Dropdown</a>
 										<ul>
@@ -74,113 +77,139 @@
 
 					</header>
 				</div>
-
 			<!-- Banner -->
 				<div id="banner-wrapper">
 					<div id="banner" class="box container">
-						<div class="row">
-						<div class="5u 12u(medium)">
-								<p:graphicImage value="images/pic01.jpg"></p:graphicImage>
-							</div>
-									<div class="7u 12u(medium)">
-								<h:form>
-								<h:panelGroup id="statusGrid" >
-								<h:outputLabel style="font-size: xx-large;" rendered="#{homeMB.observation == null}" value="SMIRF is currently IDLE"></h:outputLabel>
-								<p:panelGrid styleClass="panelgrid"  rendered="#{homeMB.observation!=null}">
-								
-								<p:row>
+						<div class="row" >
+								<h:form id="schedule">
+									<p:outputLabel value="Scheduler"></p:outputLabel>
+									<p:panelGrid  styleClass="panelgrid" >
+									<p:row>
+										<p:column>
+											<p:outputLabel value="UTC" ></p:outputLabel>
+										</p:column>
 									<p:column>
-										<p:outputLabel value="start UTC:"></p:outputLabel>
+										<p:selectOneButton id="utcChoice" value="#{singleMB.utc}"  required="true" requiredMessage="Select Now/UTC">
+											<f:ajax listener="#{singleMB.toggleUTCInput}" event="change" render="@form" />
+											<f:selectItem itemLabel="now" itemValue="now" />
+											<f:selectItem itemLabel="enter utc" itemValue="utc" />
+										</p:selectOneButton>
 									</p:column>
-									<p:column rendered="#{homeMB.observation.utc  != null}">
-										<p:outputLabel value="#{homeMB.observation.utc}"></p:outputLabel>
+									<p:column id= "utcInput" >
+										<p:inputMask mask="9999-99-99-99:99:99"  value="#{singleMB.enteredUTC}"  rendered="#{singleMB.utcRendered}" slotChar="*" style="width:100%;" required="true" requiredMessage="type in UTC"></p:inputMask>
 									</p:column>
-									<p:column rendered="#{homeMB.observation.utc == null}">
-										<p:outputLabel value="Waiting for UTC..."></p:outputLabel>
-									</p:column>
-								</p:row>
-								
-								<p:row>
-									<p:column>
-										<p:outputLabel value="Pointing ID:"></p:outputLabel>
-									</p:column>
-									<p:column>
-										<p:outputLabel value="#{homeMB.observation.coords.pointingTO.pointingID}"></p:outputLabel>
-									</p:column>
-								</p:row>
-								
-								<p:row>
-									<p:column>
-										<p:outputLabel value="Pointing Name:"></p:outputLabel>
-									</p:column>
-									<p:column>
-										<p:outputLabel value="#{homeMB.observation.coords.pointingTO.pointingName}"></p:outputLabel>
-									</p:column>
-								</p:row>
-								
-								<p:row>
-									<p:column>
-										<p:outputLabel value="Boresight (RA, DEC) :"></p:outputLabel>
-									</p:column>
-									<p:column style="whitespace: nowrap;">
-										<p:outputLabel value="( #{homeMB.observation.coords.pointingTO.angleRA}, #{homeMB.observation.coords.pointingTO.angleDEC} )"></p:outputLabel>
-									</p:column>
-								</p:row>
-								
-								<p:row>
-									<p:column>
-										<p:outputLabel value="Boresight (GL, GB) :"></p:outputLabel>
-									</p:column>
-									<p:column style="whitespace: nowrap;">
-										<p:outputLabel value="( #{homeMB.observation.coords.pointingTO.angleLON}, #{homeMB.observation.coords.pointingTO.angleLAT} )"></p:outputLabel>
-										
-									</p:column>
-								</p:row>
-								
-								<p:row rendered="#{ not empty homeMB.observation.tiedBeamSources}">
-									<p:column>
-										<p:outputLabel value="Tied beams on: "></p:outputLabel>
-									</p:column>
-									<p:column>
-										<p:outputLabel value="#{homeMB.observation.tiedBeamSources}"></p:outputLabel>
-									</p:column>
-								</p:row>
 									
-								<p:row>
-									<p:column>
-										<p:outputLabel value="Tobs (seconds) : "></p:outputLabel>
-									</p:column>
-									<p:column>
-										<p:outputLabel value="#{homeMB.observation.tobs}"></p:outputLabel>
-									</p:column>
 								</p:row>
+									<p:row>
+										<p:column>
+											<p:outputLabel value="tobs per pointing"></p:outputLabel>
+										</p:column>
+										<p:column>
+											<p:inputText value="#{singleMB.tobs}" style="width: 100%"></p:inputText>
+										</p:column>
+										<p:column>
+											<p:selectOneButton value="#{singleMB.tobsUnits}" converter="javax.faces.Integer" style="width: 100%">
+													<f:selectItem itemLabel="seconds" itemValue="1"></f:selectItem>
+													<f:selectItem itemLabel="minutes" itemValue="60"></f:selectItem>
+													<f:selectItem itemLabel="hours" itemValue="3600"></f:selectItem>
+											</p:selectOneButton>
+										</p:column>
+									</p:row>
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Select pointing type"></p:outputLabel>
+										</p:column>
+										<p:column>
+										<p:selectOneMenu value="#{singleMB.selectedPointingType}" style="width: 100%" >
+												<p:ajax listener="#{singleMB.pointingTypeSelected}" update="pointingSelect"  />
+												<f:selectItem itemLabel="All" itemValue="All"></f:selectItem>
+												<f:selectItems value="#{singleMB.pointingTypes}"></f:selectItems>
+												<f:converter converterId="converters.PointingTypeConverter"/>
+											</p:selectOneMenu>
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Select pointing"></p:outputLabel>
+										</p:column>
+										<p:column >
+										<p:selectOneMenu  id="pointingSelect" value="#{singleMB.selectedPointingName}" style="width: 100%" >
+												<p:ajax listener="#{singleMB.pointingSelected}" update="@form"  />
+												<f:selectItem noSelectionOption="true"></f:selectItem>
+												<f:selectItems value="#{singleMB.pointings}" var="pointing" itemLabel="#{pointing}" itemValue="#{pointing.pointingName}" ></f:selectItems>
+											</p:selectOneMenu>
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Enable Backend ?"></p:outputLabel>
+										</p:column>
+										<p:column >
+										<p:selectBooleanButton offLabel="No" onLabel="Yes" value="#{singleMB.backendEnabled}"></p:selectBooleanButton>
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Enable TCC ?"></p:outputLabel>
+										</p:column>
+										<p:column >
+										<p:selectBooleanButton offLabel="No" onLabel="Yes" value="#{singleMB.tccEnabled}"></p:selectBooleanButton>
+										</p:column>
+									</p:row>
 								
-								<p:row>
-									<p:column>
-										<p:outputLabel value="Progress : "></p:outputLabel>
-									</p:column>
-									<p:column>
-									     <p:progressBar id="timeElapsed" widgetVar="pbClient" style="width:300px; " value="#{homeMB.timeElapsedPercent}"/>
-									</p:column>
-								</p:row>
+								</p:panelGrid>		
+								<p:separator/>
+								<h:panelGroup id="pointingInfo">		 
+									<p:panelGrid   styleClass="panelgrid"  rendered="#{ singleMB.selectedPointing!=null }"  columns="2" style="align: center;">
+									<p:outputLabel value="Pointing ID:"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.pointingID}"></p:outputLabel>
+									<p:outputLabel value="Pointing Name:"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.pointingName}"></p:outputLabel>
+									<p:outputLabel value="Pointing RA(hh:mm:ss):"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.angleRA}"></p:outputLabel>									
+									<p:outputLabel value="Pointing DEC(dd:mm:ss):"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.angleDEC}"></p:outputLabel>									
+									<p:outputLabel value="Pointing GB(dd:mm:ss):"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.angleLAT}"></p:outputLabel>									
+									<p:outputLabel value="Pointing GL(dd:mm:ss):"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.angleLON}"></p:outputLabel>									
+									<p:outputLabel value="Pointing priority(0-31):"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.priority}"></p:outputLabel>									
+									<p:outputLabel value="Pointing type:"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.type}">
+											<f:converter converterId="converters.PointingTypeConverter"></f:converter>
+									</p:outputLabel>									
+									<p:outputLabel value="number of prev. obs.:"> </p:outputLabel>
+									<p:outputLabel value="#{singleMB.selectedPointing.numObs}"></p:outputLabel>																	
+								
 								</p:panelGrid>
+								 <p:spacer height="50"></p:spacer>
+											
+								<p:panelGrid id="buttonPanel" styleClass="panelgrid"  rendered="#{ singleMB.selectedPointing!=null }" style="float: right;">
+								<p:row>
+								<p:column colspan="2">
+								<p:commandButton styleClass="button  icon fa-play-circle"  style="background: #99CC99; color: white;" value="start"  update="growl" actionListener="#{singleMB.startObservation}"></p:commandButton>
+								</p:column>
+								<p:column colspan="2">
+									<p:commandButton styleClass="button icon fa-stop" style="background: #993300; color: white;" value="terminate"  update="growl" actionListener="#{singleMB.terminateObservation}"></p:commandButton>
+								</p:column>
+								</p:row></p:panelGrid>
 								</h:panelGroup>
-								<p:poll interval="3" listener="#{homeMB.updateObs}" update="statusGrid, status" />
-								<p:poll interval="1" listener="#{homeMB.updateTimeElapsed}" update="timeElapsed" />
+								
+								
+								
+								
+								
+								<p:growl id="growl" life="2000" />
+								
+								
 								</h:form>
+					
+			
 							</div>
-							
-						</div>
-						<div class="row" style="text-align: justify;">
-						<h:panelGroup  id="status">
-						 <h:outputLabel value="Backend status: &nbsp;&nbsp;#{homeMB.backendStatus}&nbsp;&nbsp;"></h:outputLabel> 
-						 <h:outputLabel value="TCC status:&nbsp;&nbsp;#{homeMB.TCCStatus}&nbsp;&nbsp;"></h:outputLabel>
-						 <h:outputLabel value="SMIRF status:&nbsp;&nbsp;#{homeMB.SMIRFStatus}&nbsp;&nbsp;"></h:outputLabel>
-						 </h:panelGroup>
-						</div>
-						<div class="row">
-<!-- 						<p:chart type="line" model="" ></p:chart>
- -->						</div>
 					</div>
 				</div>
 
@@ -362,7 +391,11 @@
 
 		<!-- Scripts -->
 
-			
+			<!-- <script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script> -->
 			<script type="text/javascript"  src='js/sidereal.js'></script>
 			
 </h:body>

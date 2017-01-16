@@ -7,6 +7,8 @@ import bean.FluxCalibrator;
 import bean.FluxCalibratorTO;
 import bean.PhaseCalibrator;
 import bean.PhaseCalibratorTO;
+import bean.Pointing;
+import bean.PointingTO;
 import service.DBService;
 
 public class DBManager {
@@ -33,6 +35,36 @@ public class DBManager {
 		for(FluxCalibrator entity: DBService.getAllFluxCalibratorsOrderByDMDesc()) toList.add(new FluxCalibratorTO(entity));
 		return toList;
 	}
+	
+	public static List<PointingTO> getAllPointings(){
+		List<PointingTO> toList = new ArrayList<>();		
+		for(Pointing entity: DBService.getAllPointings()) toList.add(new PointingTO(entity));
+		return toList;
+	}
+	
+	public static List<String> getAllPointingTypes(){
+		return DBService.getAllPointingTypes();
+	}
+	
+	
+	public static PointingTO getPointingByUniqueName(String pointingName){
+		return new PointingTO(DBService.getPointingByUniqueName(pointingName));
+	}
+	
+	public static PointingTO getFluxCalByUniqueName(String name){
+		return new PointingTO(new FluxCalibratorTO(DBService.getFluxCalByUniqueName(name)));
+	}
+	public static PointingTO getPhaseCalByUniqueName(String name){
+		return new PointingTO(new PhaseCalibratorTO(DBService.getPhaseCalByUniqueName(name)));
+	}
+	
+	public static List<PointingTO> getAllPointingsForPointingType(String pointingType){
+		List<PointingTO> toList = new ArrayList<>();		
+		for(Pointing entity: DBService.getAllPointingsForPointingType(pointingType)) toList.add(new PointingTO(entity));
+		return toList;
+	}
+	
+	
 	
 	public static PhaseCalibratorTO getPhaseCalibratorByName(String name){
 		return new PhaseCalibratorTO(DBService.getPhaseCalibratorByName(name));

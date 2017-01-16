@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,17 +69,17 @@ public class BackendService implements BackendConstants {
 		template+=westArmParams;
 		template+=eastArmParams;
 		template+=boresightParams;
-		
+		populateDefaultParameters();
 		defaultParams.put("tobs",observation.getTobs().toString());
 
 
-		defaultParams.put("observer","SMIRFWeb/"+ observation.getObserver());
+		defaultParams.put("observer","SMIRFWeb-"+ observation.getObserver());
 		defaultParams.put("boresight_project_id",SMIRFConstants.PID);
 
 		defaultParams.put("boresight_source_name",observation.getName());
 		defaultParams.put("boresight_ra",observation.getCoords().getPointingTO().getAngleRA().toHHMMSS());
 		defaultParams.put("boresight_dec",observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
-		defaultParams.put("boresight_proc_file","mopsr.aqdsp.gpu");
+		defaultParams.put("boresight_proc_file","mopsr.aqdsp.hires.gpu");
 
 
 		switch(observation.getObsType()){
@@ -86,7 +87,7 @@ public class BackendService implements BackendConstants {
 			defaultParams.put("corr_project_id",SMIRFConstants.PID);
 			defaultParams.put("corr_type", "FX");
 			
-			defaultParams.put("corr_proc_file","mopsr.calib.pref16.gpu");
+			defaultParams.put("corr_proc_file","mopsr.calib.hires.pref16.gpu");
 			template +=corrParams;
 			break;
 		case tiedArrayFanBeam:
@@ -96,7 +97,7 @@ public class BackendService implements BackendConstants {
 				String tbStr = "tb"+index;
 				defaultParams.put(tbStr+"_project_id", tbs.getProjectID());
 				defaultParams.put(tbStr+"_mode", "PSR");
-				defaultParams.put(tbStr+"_proc_file","mopsr.dspsr.cpu.cdd");
+				defaultParams.put(tbStr+"_proc_file","mopsr.dspsr.cpu");
 				defaultParams.put(tbStr+"_source_name", tbs.getPsrName());
 				defaultParams.put(tbStr+"_ra", tbs.getAngleRA().toHHMMSS());
 				defaultParams.put(tbStr+"_dec", tbs.getAngleDEC().toDDMMSS());
@@ -140,7 +141,7 @@ public class BackendService implements BackendConstants {
 		if(!isON()) throw new BackendException("Backend failed: Cause: Backend not ON "); 
 		try {
 			String response = this.sendCommand(prepare,template);
-			if(!response.equals(backendPrepared)) throw new UnexpectedBackendReplyException(prepare, response);
+			if(!response.equals(backendPrepared)) throw new UnexpectedBackendReplyException(prepare,backendPrepared, response);
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
 		}
@@ -152,14 +153,17 @@ public class BackendService implements BackendConstants {
 		if(!isON()) throw new BackendException("Backend failed: Cause: Backend not ON "); 
 
 		this.setUpBackendForObservation(observation);
-		
+		String response = "";
 		try {
-			String response = this.sendCommand(BackendService.start,"");
+			response = this.sendCommand(BackendService.start,"");
 			if(response.equals("fail")) throw new UnexpectedBackendReplyException(start, response);
-			observation.setUtc(response);
+			observation.setUTCDateAndString(response);
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
+		}catch (ParseException e) {
+			throw new BackendException("Backend failed: Cause: could not parse UTC = "+response+" from backend." , ExceptionUtils.getStackTrace(e));  
 		}
+		
 	}
 
 	public void stopBackend() throws BackendException{
@@ -240,11 +244,12 @@ public class BackendService implements BackendConstants {
 			case query:
 				response = Utilities.getTextFromXpath(xmlResponseStr, "//response/mpsr_status");
 				break;
-			case prepare:
 			case stop:
 				response = Utilities.getTextFromXpath(xmlResponseStr, "//reply");
 				break;
+			case prepare:
 			case start:
+				System.err.println(message);
 				response  = Utilities.getTextFromXpath(xmlResponseStr, "//response");
 				break;
 			}
@@ -285,7 +290,7 @@ public class BackendService implements BackendConstants {
 			webClient.getCookieManager().setCookiesEnabled(false);
 			webClient.waitForBackgroundJavaScript(60000);
 			webClient.getCache().clear();
-			HtmlPage page = webClient.getPage("http://localhost/mopsr/control.lib.php?single=true");
+			HtmlPage page = webClient.getPage("http://localhost:80/mopsr/control.lib.php?single=true");
 			ScriptResult result = page.executeJavaScript(command);
 
 			Page newPage = result.getNewPage();
@@ -378,7 +383,8 @@ public class BackendService implements BackendConstants {
 		}
 	}
 
-	static{
+	public void populateDefaultParameters(){ 
+		defaultParams.clear();
 		defaultParams.put("boresight_source_epoch","J2000");
 		defaultParams.put("tb0_source_epoch","J2000");
 		defaultParams.put("tb1_source_epoch","J2000");
@@ -404,19 +410,19 @@ public class BackendService implements BackendConstants {
 		defaultParams.put("nbits","8");
 		defaultParams.put("ndim","2");
 		defaultParams.put("npol","1");
-		defaultParams.put("nant","16");
-		defaultParams.put("nchan","40");
+		defaultParams.put("nant","8");
+		defaultParams.put("nchan","320");
 		defaultParams.put("bw","31.25");
 		defaultParams.put("bw_units","MHz");
-		defaultParams.put("cfreq","834.765625");
+		defaultParams.put("cfreq","835.5957031");
 		defaultParams.put("cfreq_units","MHz");
-		defaultParams.put("foff","0.78125");
+		defaultParams.put("foff","0.09765625");
 		defaultParams.put("foff_units","MHz");
-		defaultParams.put("tsamp","1.28");
+		defaultParams.put("tsamp","10.24");
 		defaultParams.put("tsamp_units","microseconds");
 		defaultParams.put("oversampling_ratio","1");
 		defaultParams.put("dual_sideband","1");
-		defaultParams.put("resolution","1280");
+		defaultParams.put("resolution","5120");
 		defaultParams.put("resolution_units","bytes");
 
 		defaultParams.put("east_md_angle","0.0");

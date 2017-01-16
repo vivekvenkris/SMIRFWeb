@@ -35,7 +35,7 @@ public interface Constants {
 	Double cosLat = Math.cos(MolongloLatitude);
 	Double sinLat = Math.sin(MolongloLatitude);
 	
-	Double MolongloLongitude = 149.424658;
+	Double MolongloLongitude = SMIRFConstants.simulate? 40 : 149.424658;
 	Double MolongloLongitudeRAD = MolongloLongitude*deg2Rad;
 	
 	Double RadMolongloNSBeamWidth = 4.64 * deg2Rad;

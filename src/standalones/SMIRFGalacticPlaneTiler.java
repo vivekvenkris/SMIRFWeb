@@ -30,12 +30,15 @@ public class SMIRFGalacticPlaneTiler implements SMIRFConstants{
 				String name = "SMIRF_"+raStr + decStr;
 				grid.setPointingName(name);
 				gridPoints.add(grid);
-
+				System.err.print(grid);
 
 			}
 		}
 		
 		DBService.addPointingsToDB(gridPoints);
+	}
+	public static void main(String[] args) {
+		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane();
 	}
 
 }
