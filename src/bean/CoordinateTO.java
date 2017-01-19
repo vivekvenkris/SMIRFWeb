@@ -21,7 +21,7 @@ public class CoordinateTO {
 		if(NS != null ) this.radNS = NS.getRadianValue();
 		if(MD != null ) this.radMD = MD.getRadianValue();
 	}
-	public CoordinateTO(Observation observation){
+	public CoordinateTO(ObservationTO observation){
 		this.radHA = observation.getHANow().getRadianValue();
 		this.radDec = observation.getCoords().getPointingTO().getAngleDEC().getRadianValue();
 		this.radMD = this.radNS = null;

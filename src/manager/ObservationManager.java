@@ -17,7 +17,7 @@ import java.util.concurrent.Future;
 import bean.Angle;
 import bean.CoordinateTO;
 import bean.Coords;
-import bean.Observation;
+import bean.ObservationTO;
 import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
@@ -36,11 +36,11 @@ import util.Utilities;
 public class ObservationManager {
 	ExecutorService executorService = null;
 
-	public synchronized void startObserving(Observation observation) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException{
+	public synchronized void startObserving(ObservationTO observation) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException{
 		startObserving(observation, true, true);
 	}
 
-	public synchronized void  startObserving(Observation observation, boolean tccEnabled, boolean backendEnabled) throws TCCException, BackendException, InterruptedException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
+	public synchronized void  startObserving(ObservationTO observation, boolean tccEnabled, boolean backendEnabled) throws TCCException, BackendException, InterruptedException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
 
 		executorService = Executors.newFixedThreadPool(4);
 		Future<Boolean> backendReady = null;
@@ -210,7 +210,7 @@ public class ObservationManager {
 	}
 
 	@Deprecated
-	public boolean stopObserving2(Observation observation) throws TCCException, BackendException, InterruptedException{
+	public boolean stopObserving2(ObservationTO observation) throws TCCException, BackendException, InterruptedException{
 
 		TCCService       tccService =     TCCService.createTccInstance();
 		TCCStatusService tccStatusService = new TCCStatusService();
@@ -254,7 +254,7 @@ public class ObservationManager {
 
 
 	//* to do : add TB sources for this pointing */
-	public List<TBSourceTO> getTBSourcesForObservation(Observation observation) throws EmptyCoordinatesException, CoordinateOverrideException{
+	public List<TBSourceTO> getTBSourcesForObservation(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException{
 		System.err.println("Getting TB sources for observation");
 		List<TBSourceTO> tbSources = PSRCATManager.getTbSources();
 		List<TBSourceTO> shortListed = new ArrayList<>();
@@ -289,7 +289,7 @@ public class ObservationManager {
 
 
 	@Deprecated
-	public static boolean observable(Observation observation) throws TCCException, EmptyCoordinatesException, CoordinateOverrideException{
+	public static boolean observable(ObservationTO observation) throws TCCException, EmptyCoordinatesException, CoordinateOverrideException{
 
 		Angle HANow = observation.getHANow();
 		if(Math.abs(HANow.getDecimalHourValue())>6){ 
@@ -316,7 +316,7 @@ public class ObservationManager {
 		return true;
 	}
 
-	public static boolean observable(Observation observation, String utc) throws TCCException, EmptyCoordinatesException, CoordinateOverrideException{
+	public static boolean observable(ObservationTO observation, String utc) throws TCCException, EmptyCoordinatesException, CoordinateOverrideException{
 		Angle HANow = observation.getHAForUTC(utc);
 		if(Math.abs(HANow.getDecimalHourValue())>6){ 
 			System.err.println("HA >6: "+ HANow.getDecimalHourValue());

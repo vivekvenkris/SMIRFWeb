@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import bean.Angle;
-import bean.Observation;
+import bean.ObservationTO;
 import bean.TBSourceTO;
 import util.PSRCATConstants;
 

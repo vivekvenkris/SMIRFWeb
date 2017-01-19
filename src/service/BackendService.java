@@ -26,7 +26,7 @@ import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
-import bean.Observation;
+import bean.ObservationTO;
 import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.BackendInInvalidStateException;
@@ -60,7 +60,7 @@ public class BackendService implements BackendConstants {
 		this.statusService = statusService;
 	}
 
-	private void setUpBackendForObservation(Observation observation) throws BackendException{
+	private void setUpBackendForObservation(ObservationTO observation) throws BackendException{
 		
 		String template = "";
 		template+=pfbParams;
@@ -148,7 +148,7 @@ public class BackendService implements BackendConstants {
 
 	}
 
-	public void startBackend(Observation observation) throws BackendException{
+	public void startBackend(ObservationTO observation) throws BackendException{
 		if(this.statusService) throw new BackendException(invalidInstance);
 		if(!isON()) throw new BackendException("Backend failed: Cause: Backend not ON "); 
 

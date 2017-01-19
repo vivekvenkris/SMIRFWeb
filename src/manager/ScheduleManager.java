@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 
 import bean.Angle;
 import bean.Coords;
-import bean.Observation;
+import bean.ObservationTO;
 import bean.PhaseCalibratorTO;
 import bean.Pointing;
 import bean.PointingTO;
@@ -50,7 +50,7 @@ import util.SMIRFConstants;
 import util.Utilities;
 
 public class ScheduleManager implements SMIRFConstants {
-	static Observation currentObservation = null;
+	static ObservationTO currentObservation = null;
 	static String schedulerMessages = "";
 	private boolean finishCall = false;
 	private boolean terminateCall = false;
@@ -59,7 +59,7 @@ public class ScheduleManager implements SMIRFConstants {
 	public boolean Calibrate(Integer calibratorID, Integer tobs, String observer) throws TCCException, BackendException, InterruptedException, IOException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
 
 		PhaseCalibratorTO calibratorTO = new PhaseCalibratorTO(DBService.getCalibratorByID(calibratorID));
-		Observation observation = new Observation();
+		ObservationTO observation = new ObservationTO();
 		observation.setName(calibratorTO.getSourceName());
 		PointingTO pointingTO = new PointingTO(calibratorTO);
 
@@ -107,7 +107,7 @@ public class ScheduleManager implements SMIRFConstants {
 
 			@Override
 			public Boolean call() throws Exception {
-				Observation observation = new Observation();
+				ObservationTO observation = new ObservationTO();
 				observation.setName(selectedPointing.getPointingName());
 				if(selectedPointing.getType().equals(SMIRFConstants.phaseCalibratorSymbol)) {
 					observation.setBackendType(BackendConstants.corrBackend);
@@ -187,7 +187,7 @@ public class ScheduleManager implements SMIRFConstants {
 						System.err.println("Observing: " + pointing.getPointingName());
 
 
-						Observation observation = new Observation();
+						ObservationTO observation = new ObservationTO();
 						observation.setName(pointing.getPointingName());
 						if(coords.getPointingTO().getType().equals("P")) {
 							observation.setBackendType(BackendConstants.corrBackend);
@@ -260,7 +260,7 @@ public class ScheduleManager implements SMIRFConstants {
 	}
 
 	
-	public boolean sendUniqStitchesForObservation(Observation observation) throws EmptyCoordinatesException, CoordinateOverrideException, UnknownHostException, IOException{
+	public boolean sendUniqStitchesForObservation(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException, UnknownHostException, IOException{
 		SMIRF_GetUniqStitches getUniqStitches = new SMIRF_GetUniqStitches();
 		List<Point> points = getUniqStitches.generateUniqStitches(observation);
 		Set<Entry<String, Integer>> nepenthesServerEntrySet = BackendConstants.bfNodeNepenthesServers.entrySet();
@@ -453,11 +453,11 @@ public class ScheduleManager implements SMIRFConstants {
 
 
 
-	public static Observation getCurrentObservation() {
+	public static ObservationTO getCurrentObservation() {
 		return currentObservation;
 	}
 
-	public static void setCurrentObservation(Observation currentObservation) {
+	public static void setCurrentObservation(ObservationTO currentObservation) {
 		ScheduleManager.currentObservation = currentObservation;
 	}
 

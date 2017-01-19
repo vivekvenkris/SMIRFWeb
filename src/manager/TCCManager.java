@@ -5,7 +5,7 @@ import java.util.Collections;
 
 import org.javatuples.Pair;
 
-import bean.Observation;
+import bean.ObservationTO;
 import bean.TCCStatus;
 import exceptions.TCCException;
 import service.TCCStatusService;

@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 
 import bean.Angle;
 import bean.CoordinateTO;
-import bean.Observation;
+import bean.ObservationTO;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
@@ -33,7 +33,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 	}
 	
-	public List<Point> generateUniqStitches(Observation observation) throws EmptyCoordinatesException, CoordinateOverrideException{
+	public List<Point> generateUniqStitches(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException{
 		return generateUniqStitches(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), observation.getCoords().getPointingTO().getAngleDEC(), SMIRFConstants.thresholdPercent, Math.round(observation.getTobs()/Constants.tsamp));
 	}
 

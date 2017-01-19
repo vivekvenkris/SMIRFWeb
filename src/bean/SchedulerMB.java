@@ -265,7 +265,7 @@ public class SchedulerMB implements Serializable {
 	
 	
 	public void test(){
-		Observation observation = new Observation(new Coords(new PointingTO(DBService.getPointingByUniqueName("SMIRF_1906-0119"))),900);
+		ObservationTO observation = new ObservationTO(new Coords(new PointingTO(DBService.getPointingByUniqueName("SMIRF_1906-0119"))),900);
 		ObservationManager manager = new ObservationManager();
 		List<TBSourceTO> tbs = new ArrayList<>();
 		tbs.add(new TBSourceTO("J1859+00"));
@@ -290,7 +290,7 @@ public class SchedulerMB implements Serializable {
 		try {
 			for(PhaseCalibratorTO p: phaseCalibrators){
 				PointingTO pointingTO =  new PointingTO( p);
-				Observation observation = new Observation( new Coords( pointingTO ), SMIRFConstants.phaseCalibrationTobs);
+				ObservationTO observation = new ObservationTO( new Coords( pointingTO ), SMIRFConstants.phaseCalibrationTobs);
 				if(ObservationManager.observable(observation,utc)) shortlisted.add(p);
 			}
 		}
@@ -308,7 +308,7 @@ public class SchedulerMB implements Serializable {
 		Double minRadEquatorialDistance = null;
 		try {
 			for(FluxCalibratorTO p: FluxCalibrators){
-				Observation observation = new Observation( new Coords( new PointingTO(p)), SMIRFConstants.fluxCalibrationTobs);
+				ObservationTO observation = new ObservationTO( new Coords( new PointingTO(p)), SMIRFConstants.fluxCalibrationTobs);
 				if(ObservationManager.observable(observation,utc)) {
 					double radEquatorialDistance = Utilities.distance(firstPointing.getAngleRA(), firstPointing.getAngleDEC(), p.getAngleRA(), p.getAngleDEC());
 					if(minRadEquatorialDistance == null || minRadEquatorialDistance > radEquatorialDistance) {

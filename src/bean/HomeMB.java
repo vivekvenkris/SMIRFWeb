@@ -18,7 +18,7 @@ import service.TCCStatusService;
 @ApplicationScoped
 public class HomeMB {
 
-	private Observation observation;
+	private ObservationTO observation;
 	private String backendStatus;
 	private String TCCStatus;
 	private String SMIRFStatus;
@@ -31,10 +31,10 @@ public class HomeMB {
 	public HomeMB() {
 		backendStatus = TCCStatus = SMIRFStatus = null;
 	}
-	public Observation getObservation() {
+	public ObservationTO getObservation() {
 		return observation;
 	}
-	public void setObservation(Observation observation) {
+	public void setObservation(ObservationTO observation) {
 		this.observation = observation;
 	}
 	public String getBackendStatus() {

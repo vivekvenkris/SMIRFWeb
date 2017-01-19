@@ -13,7 +13,7 @@ import util.BackendConstants;
 import util.Constants;
 import util.SMIRFConstants;
 
-public class Observation {
+public class ObservationTO {
 	String name;
 	Angle angleRA;
 	Angle angleDEC;
@@ -28,7 +28,7 @@ public class Observation {
 	Angle fanbeamSpacing;
 	Coords coords;
 	
-	public Observation() {
+	public ObservationTO() {
 		nfb = 352;
 		fanbeamSpacing = new Angle("0.01139601", Angle.DEG);
 		tiedBeamSources = new ArrayList<TBSourceTO>();
@@ -37,7 +37,7 @@ public class Observation {
 		
 	}
 	
-	public Observation(Coords coords, Integer tobs){
+	public ObservationTO(Coords coords, Integer tobs){
 		this();
 		this.coords = coords;
 		this.tobs = tobs;
