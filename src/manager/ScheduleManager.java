@@ -1,10 +1,14 @@
 package manager;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -14,12 +18,12 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.apache.jasper.tagplugins.jstl.core.Catch;
 
 import bean.Angle;
 import bean.Coords;
@@ -36,8 +40,12 @@ import exceptions.TCCException;
 import service.CalibrationService;
 import service.DBService;
 import service.EphemService;
+import standalones.Point;
 import standalones.SMIRFGalacticPlaneTiler;
+import standalones.SMIRF_GetUniqStitches;
+import standalones.Traversal;
 import util.BackendConstants;
+import util.Constants;
 import util.SMIRFConstants;
 import util.Utilities;
 
@@ -77,9 +85,7 @@ public class ScheduleManager implements SMIRFConstants {
 
 	}
 
-	public boolean CalibrateAndUpdateDelays(Observation observation) throws IOException, InterruptedException{
-		return simulate ?  true: new CalibrationService().Calibrate( observation.getUtc(), observation.getCoords().getPointingTO().getPointingName());
-	}
+
 
 	public void observeTestPSR(){
 
@@ -92,10 +98,11 @@ public class ScheduleManager implements SMIRFConstants {
 		 */
 
 	}
-	
-	public void startObserving(PointingTO selectedPointing, int tobs,String observer, Boolean tccEnabled, Boolean backendEnabled) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException, IOException{
+
+	public void startObserving(PointingTO selectedPointing, int tobs,String observer, Boolean tccEnabled, Boolean backendEnabled, Boolean  doPostObservationStuff) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException, IOException{
 		ObservationManager manager = new ObservationManager();
-		
+		ExecutorService executorService = Executors.newFixedThreadPool(4);
+
 		Callable<Boolean> observe = new Callable<Boolean>() {
 
 			@Override
@@ -115,9 +122,26 @@ public class ScheduleManager implements SMIRFConstants {
 				observation.setObserver(observer);
 				observation.setTobs(tobs);
 				currentObservation = observation;
-				
+
 				manager.startObserving(observation, tccEnabled, backendEnabled);
 				
+				if(observation.isSurveyPointing() && doPostObservationStuff){
+					Callable<Boolean> getStictchesReady = new Callable<Boolean>() {
+
+						@Override
+						public Boolean call() throws Exception {
+							try{
+							System.err.println("Sending stitches for observation" + observation.getUtc());
+							return sendUniqStitchesForObservation(observation);
+							} catch (Exception e) {
+								e.printStackTrace();
+								throw e;
+							}
+						}
+					};
+					executorService.submit(getStictchesReady);
+				}
+
 				long obsTime = observation.getTobs()*1000;
 				long startTime = backendEnabled ?  observation.getUtcDate().getTime() : new Date().getTime();
 				while(!((new Date().getTime() - startTime) > obsTime)) {
@@ -132,30 +156,25 @@ public class ScheduleManager implements SMIRFConstants {
 				System.err.println("observation over.");
 				manager.stopObserving();
 
-				
-				if(observation.isSurveyPointing()){
-				DBService.incrementPointingObservations(selectedPointing.getPointingID());
-				// call peasoup controller.
-				}
-				if(observation.isPhaseCalPointing()){
-					CalibrateAndUpdateDelays(observation);
-				}
+
+				if(doPostObservationStuff ) PostObservationManager.doPostObservationStuff(observation);
+
 				System.err.println("stopped.");	
 				currentObservation = null;
 				finishCall = terminateCall = false;
 				return true;
-				}
+			}
 		};
-		ExecutorService executorService = Executors.newFixedThreadPool(4);
 
 		scheduler = executorService.submit(observe);
-		
-		
+
+
 
 	}
 
-	public void startSMIRFScheduler(List<Coords> coordsList, int obsDuration, int tobs, String observer) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException, BackendException, InterruptedException{
+	public void startSMIRFScheduler(List<Coords> coordsList, int obsDuration, int tobs, String observer, Boolean tccEnabled, Boolean backendEnabled, Boolean  doPostObservationStuff) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException, BackendException, InterruptedException{
 		ObservationManager manager = new ObservationManager();		
+		ExecutorService executorService = Executors.newFixedThreadPool(4);
 
 
 		Callable<Boolean> schedulerCore = new Callable<Boolean>() {
@@ -184,11 +203,23 @@ public class ScheduleManager implements SMIRFConstants {
 						observation.setTobs(tobs);
 						currentObservation = observation;
 						try{
-							manager.startObserving(observation);
+							manager.startObserving(observation, tccEnabled, backendEnabled);
 						}catch (ObservationException e) {
 							// add log that the pointing was not observable.
 							e.printStackTrace();
 							continue;
+						}
+
+						if(observation.isSurveyPointing() && doPostObservationStuff){
+							Callable<Boolean> getStictchesReady = new Callable<Boolean>() {
+
+								@Override
+								public Boolean call() throws Exception {
+									System.err.println("Sending stitches for observation" + observation.getUtc());
+									return sendUniqStitchesForObservation(observation);
+								}
+							};
+							executorService.submit(getStictchesReady);
 						}
 
 						long obsTime = observation.getTobs()*1000;
@@ -200,16 +231,11 @@ public class ScheduleManager implements SMIRFConstants {
 						if(terminateCall) break;
 
 						System.err.println("observation over.");
-						
-						if(observation.isSurveyPointing()){
-						DBService.incrementPointingObservations(coords.getPointingTO().getPointingID());
-						// call peasoup controller.
-						}
+
 						manager.stopObserving();
 
-						if(observation.isPhaseCalPointing()){
-							CalibrateAndUpdateDelays(observation);
-						}
+						if(doPostObservationStuff ) PostObservationManager.doPostObservationStuff(observation);
+
 						System.err.println("stopped.");
 
 						if(finishCall || terminateCall) {
@@ -225,15 +251,51 @@ public class ScheduleManager implements SMIRFConstants {
 			}
 		};
 
-		ExecutorService executorService = Executors.newFixedThreadPool(4);
 
 		scheduler = executorService.submit(schedulerCore);
-		
+
 
 
 
 	}
 
+	
+	public boolean sendUniqStitchesForObservation(Observation observation) throws EmptyCoordinatesException, CoordinateOverrideException, UnknownHostException, IOException{
+		SMIRF_GetUniqStitches getUniqStitches = new SMIRF_GetUniqStitches();
+		List<Point> points = getUniqStitches.generateUniqStitches(observation);
+		Set<Entry<String, Integer>> nepenthesServerEntrySet = BackendConstants.bfNodeNepenthesServers.entrySet();
+		for(Entry<String,Integer> nepenthesServer: nepenthesServerEntrySet){
+			System.err.println("Attempting to connect to " + nepenthesServer.getValue());
+			Socket socket = new Socket( simulate? "localhost" :nepenthesServer.getKey(), nepenthesServer.getValue());
+			System.err.println("Connected to " + nepenthesServer.getValue());
+			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+
+			out.println("utc: " + observation.getUtc());
+			out.println("0");
+
+			for(Point p: points){
+				List<Traversal> traversals = p.getTraversalMap().get(nepenthesServer.getValue() - 38030);
+				if(traversals!=null) {
+					out.print(p.getRa() + " " + p.getDec() + " " + p.getStartFanBeam() + " "+ p.getEndFanBeam() + " "+ 
+									String.format("%7.5f", p.getStartNS()*Constants.rad2Deg) + " "+ String.format("%7.5f", p.getEndNS()*Constants.rad2Deg) + " ");
+					for(Traversal t: traversals){
+						out.print(t.getFanbeam()+ " " + String.format("%7.5f", t.getNs()) + " "+ t.getStartSample() + " "+ t.getNumSamples() + " "+ t.getPercent() + " ");
+					}
+					out.println();
+					out.flush();
+
+				}
+			}
+			out.println("#end");
+			out.flush();
+			out.close();
+			in.close();
+			socket.close();
+			
+		}
+		return true;
+	}
 
 
 	public List<Coords> getPointingsForSession(String utc, int totalSeconds, int tobsSeconds, Comparator<Coords> comparator) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException{
@@ -395,9 +457,9 @@ public class ScheduleManager implements SMIRFConstants {
 		return currentObservation;
 	}
 
-		public static void setCurrentObservation(Observation currentObservation) {
-			ScheduleManager.currentObservation = currentObservation;
-		}
+	public static void setCurrentObservation(Observation currentObservation) {
+		ScheduleManager.currentObservation = currentObservation;
+	}
 
 	public boolean isFinishCall() {
 		return finishCall;
@@ -414,16 +476,16 @@ public class ScheduleManager implements SMIRFConstants {
 	public void setTerminateCall(boolean terminateCall) {
 		this.terminateCall = terminateCall;
 	}
-	
+
 	public void terminate(){
 		terminateCall = true;
 	}
-	
+
 	public void finish(){
 		finishCall = true;
 	}
 
-	
+
 	public Future<Boolean> getScheduler() {
 		return scheduler;
 	}

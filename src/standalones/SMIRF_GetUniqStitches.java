@@ -33,11 +33,11 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 	}
 	
-	public List<Point> generatePoints(Observation observation) throws EmptyCoordinatesException, CoordinateOverrideException{
-		return generatePoints(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), observation.getCoords().getPointingTO().getAngleDEC(), SMIRFConstants.thresholdPercent, Math.round(observation.getTobs()/Constants.tsamp));
+	public List<Point> generateUniqStitches(Observation observation) throws EmptyCoordinatesException, CoordinateOverrideException{
+		return generateUniqStitches(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), observation.getCoords().getPointingTO().getAngleDEC(), SMIRFConstants.thresholdPercent, Math.round(observation.getTobs()/Constants.tsamp));
 	}
 
-	public List<Point> generatePoints(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples) throws EmptyCoordinatesException, CoordinateOverrideException {
+	public List<Point> generateUniqStitches(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples) throws EmptyCoordinatesException, CoordinateOverrideException {
 
 		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utcStr),Angle.HHMMSS);
 		Angle ha = EphemService.getHA(lst, ra);
@@ -48,7 +48,6 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 		List<Point> points = new LinkedList<Point>();
 		int sampleSteps = 20480;
-		int maxFBTraversal = 10;
 		Integer maxTraversals = 0;
 
 		double beamWidthNS = 2.0 * Constants.toRadians;
@@ -63,7 +62,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 		for(double nfb = 1; nfb <= numFB; nfb = nfb + 1){
 
 			double nfbNow = nfb;
-			double mdDistance = Utilities.getMDDistance(nfb, numFB, boresight.getRadMD());
+			double mdDistance = Utilities.getMDDistance(nfbNow, numFB, boresight.getRadMD());
 			double mdNow = boresight.getRadMD() + mdDistance;
 			double nsDistance = -beamWidthNS/2.0;
 			Map<Integer, Long> lastPointMap = null;
@@ -75,7 +74,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				MolongloCoordinateTransforms.telToSky(now);
 
 				boolean unwantedPoint = false;
-				Map<Integer, Long> samplesInFB = new LinkedHashMap<Integer, Long>(maxFBTraversal);
+				Map<Integer, Long> samplesInFB = new LinkedHashMap<Integer, Long>();
 
 				for(int n=0;n<totalSamples; n+=sampleSteps){
 
@@ -101,7 +100,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				}
 
 				Point p = new Point();
-				p.startFanBeam = p.endFanBeam = nfb;
+				p.startFanBeam = p.endFanBeam = nfbNow;
 				p.startNS = p.endNS = nsNow;
 				p.uniq = false;
 				p.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
@@ -132,7 +131,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 							if(Math.abs(percent - percentNow) > thresholdPercent){
 								Point lastPoint = points.get(points.size()-1);
-								lastPoint.endFanBeam = nfb;
+								lastPoint.endFanBeam = nfbNow;
 								lastPoint.endNS = nsNow;
 								Long startSample = 0L;
 								Integer server = getServer(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
@@ -167,12 +166,12 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 		Angle ra = new Angle("22:41:00", Angle.HHMMSS);
 		Angle dec = new Angle("-52:36:00",Angle.DDMMSS);
 
-		List<Point> points = gus.generatePoints(utcStr,ra,dec ,10,Math.round(900/Constants.tsamp)); 
+		List<Point> points = gus.generateUniqStitches(utcStr,ra,dec ,10,Math.round(900/Constants.tsamp)); 
 		for(Point p: points){
 			//List<Traversal> traversals = p.traversalMap.get(Integer.parseInt(args[3]));
 			for(Entry<Integer, List<Traversal>> entry :p.traversalMap.entrySet()){
 				List<Traversal> traversals = entry.getValue();
-
+				if(!entry.getKey().equals(1)) continue;
 				if(traversals!=null) {
 					System.err.print(p.ra + " " + p.dec + " " + p.startFanBeam + " "+ p.endFanBeam + " "+ String.format("%7.5f", p.startNS*Constants.rad2Deg) + " "+ String.format("%7.5f", p.endNS*Constants.rad2Deg) + " ");
 					for(Traversal t: traversals){

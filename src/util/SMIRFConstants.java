@@ -21,23 +21,23 @@ public interface SMIRFConstants {
 	
 	double tilingDiameter = 2.0 * Constants.deg2Rad;
 	
-	Integer numBeamsPerServer = 44;
 	
+	/* unique stitching constants */
+	
+	Integer numBeamsPerServer = 44;
 	Integer BF08 = 8;
 	Integer thresholdPercent=10;
+	
+	
+	
+	
 	
 	String PID = "P999";
 	Integer tobs = simulate? 30: 900;
 	Integer phaseCalibrationTobs = simulate? 30 : 20* 60;
 	Integer fluxCalibrationTobs = simulate? 30 : 900;
 	
-	String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	String DB_URL = "jdbc:mysql://localhost/mpsr_ksp_survey";
 	
-	String USER = simulate? "root":"vivek";
-	String PASS = simulate? "tcsmysqlpwd": "4&.S1kz5";
-//	String USER = "vivek";
-//	String PASS = "4&.S1kz5";
 	
 	Integer highestPriority=1;
 	
@@ -52,6 +52,16 @@ public interface SMIRFConstants {
 	String SMIRFPointingPrefix = "SMIRF_";
 	String fluxCalPointingPrefix = "J";
 	String phaseCalPointingPrefix = "CJ";
+	
+	
+	/* JDBC & JPA constants */
+	
+	String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
+	String DB_URL = "jdbc:mysql://localhost/mpsr_ksp_survey";
+	
+	String USER = "vivek";
+	String PASS = "4&.S1kz5";
+
 	
 	
 

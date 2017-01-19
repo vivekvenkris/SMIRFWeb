@@ -25,6 +25,7 @@ public class SingleMB {
 	
 	Boolean tccEnabled = true;
 	Boolean backendEnabled = true;
+	Boolean doPostObservationStuff = true;
 	
 	String observer = "VVK";
 
@@ -41,7 +42,7 @@ public class SingleMB {
 	public SingleMB(){
 		utc = "now";
 		utcRendered = false;
-		tobs = 300;
+		tobs = 30;
 		tobsUnits = 1;
 
 		pointingTypes = DBManager.getAllPointingTypes();
@@ -113,7 +114,7 @@ public class SingleMB {
 			System.err.println(observer);
 			System.err.println(tccEnabled);
 			System.err.println(backendEnabled);
-			manager.startObserving(selectedPointing,tobs*tobsUnits,observer,tccEnabled,backendEnabled);
+			manager.startObserving(selectedPointing,tobs*tobsUnits,observer,tccEnabled,backendEnabled,doPostObservationStuff);
 		}
 		catch (Exception e) {
 			e.printStackTrace();

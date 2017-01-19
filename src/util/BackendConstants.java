@@ -44,6 +44,13 @@ public interface BackendConstants {
 	String backendUTCFormatOfPattern="yyyy-MM-dd-kk:mm:ss.SSS";
 	
 	
+	
+	
+	
+	Map<String, Integer> bfNodeNepenthesServers = Utilities.populateNepenthesServers();
+	
+	
+	
 	/* xml message constants*/
 	
 	String invalidInstance = "Invalid instance. This instance can only check the status."

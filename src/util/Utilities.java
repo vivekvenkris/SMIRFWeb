@@ -14,6 +14,9 @@ import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -224,5 +227,20 @@ public class Utilities {
 			return false;
 		}
 		
+	}
+	
+	public static Map<String,Integer> populateNepenthesServers(){
+		
+		Map<String, Integer> nepenthesServers = new HashMap<>();
+		nepenthesServers.put("mpsr-bf00.obs.molonglo.local", 38030);
+		nepenthesServers.put("mpsr-bf01.obs.molonglo.local", 38031);
+		nepenthesServers.put("mpsr-bf02.obs.molonglo.local", 38032);
+		nepenthesServers.put("mpsr-bf03.obs.molonglo.local", 38033);
+		nepenthesServers.put("mpsr-bf04.obs.molonglo.local", 38034);
+		nepenthesServers.put("mpsr-bf05.obs.molonglo.local", 38035);
+		nepenthesServers.put("mpsr-bf06.obs.molonglo.local", 38036);
+		nepenthesServers.put("mpsr-bf07.obs.molonglo.local", 38037);
+		nepenthesServers.put("mpsr-bf08.obs.molonglo.local", 38038);
+		return Collections.unmodifiableMap(nepenthesServers);
 	}
 }
