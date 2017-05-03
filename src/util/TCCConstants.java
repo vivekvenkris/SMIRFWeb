@@ -4,11 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public interface TCCConstants {
-	String tccControllerIP = "127.0.0.1";
-	Integer   tccControllerPort = 38012;
+	String  tccControllerIP = ConfigManager.getSmirfMap().get("TCC_CONTROL_IP");
+	Integer tccControllerPort = Integer.parseInt(ConfigManager.getSmirfMap().get("TCC_CONTROL_PORT"));
 	
-	String tccStatusIP = "127.0.0.1";
-	Integer   tccStatusPort = 38013;
+	String  tccStatusIP = ConfigManager.getSmirfMap().get("TCC_STATUS_IP");
+	Integer tccStatusPort = Integer.parseInt(ConfigManager.getSmirfMap().get("TCC_STATUS_PORT"));;
 	
 	String EAST = "east";
 	String WEST = "west";
@@ -18,14 +18,14 @@ public interface TCCConstants {
 	String track = "point";
 	String stop = "stop";
 	
-	Double slewRateMD = 2.5/60;
-	Double slewRateNSFast = 4.8/60;
-	Double slewRateNSSlow = 1.0/60.0;
-	Double rampTime = 5.0;
+	Double slewRateMD = Double.parseDouble(ConfigManager.getSmirfMap().get("SLEW_RATE_MD")); 
+	Double slewRateNSFast = Double.parseDouble(ConfigManager.getSmirfMap().get("SLEW_RATE_NS_FAST")); 
+	Double slewRateNSSlow = Double.parseDouble(ConfigManager.getSmirfMap().get("SLEW_RATE_NS_SLOW")); 
+	Double rampTime = Double.parseDouble(ConfigManager.getSmirfMap().get("RAMP_TIME"));
 
 	
-	Double OnSourceThresholdRadNS = 0.005;
-	Double OnSourceThresholdRadMD = 0.005;
+	Double OnSourceThresholdRadNS = Double.parseDouble(ConfigManager.getSmirfMap().get("ON_SOURCE_THRESHOLD_NS")) * Constants.deg2Rad;
+	Double OnSourceThresholdRadMD = Double.parseDouble(ConfigManager.getSmirfMap().get("ON_SOURCE_THRESHOLD_MD")) * Constants.deg2Rad;
 	
 	String messageWrapper = "<?xml version='1.0' encoding='ISO-8859-1'?>"
 							+ "<tcc_request>"
