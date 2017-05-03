@@ -12,6 +12,10 @@ import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
 import bean.FluxCalibrator;
+import bean.Observation;
+import bean.ObservationSessionTO;
+import bean.ObservationTO;
+import bean.ObservingSession;
 import bean.PhaseCalibrator;
 import bean.Pointing;
 import util.SMIRFConstants;
@@ -193,6 +197,47 @@ public class DBService implements SMIRFConstants {
 	}
 	
 	
+	
+	public static void addObservationToDB(ObservationTO observationTO){
+		Observation observation = new Observation(observationTO);
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		entityManager.persist(observation);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		observationTO.setObservationID(observation.getObservationID());
+	}
+	
+	public static void addSessionToDB(ObservationSessionTO observationSessionTO){
+		ObservingSession observationSession = new ObservingSession(observationSessionTO);
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		entityManager.persist(observationSession);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		observationSessionTO.setSessionID(observationSession.getSessionID()); 
+	}
+
+	public static void makeObservationComplete(ObservationTO observationTO){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		Observation observation = entityManager.find(Observation.class, observationTO.getObservationID());
+		observation.setComplete(true);
+		entityManager.persist(observation);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+	}
+	
+	public static void incrementCompletedObservation(ObservationSessionTO observationSessionTO){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		ObservingSession observingSession = entityManager.find(ObservingSession.class, observationSessionTO.getSessionID());
+		observingSession.setNumPointingsDone(observingSession.getNumPointingsDone() + 1);
+		entityManager.persist(observingSession);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+	}
+
 	
 	
 

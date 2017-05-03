@@ -14,6 +14,7 @@ import util.Constants;
 import util.SMIRFConstants;
 
 public class ObservationTO {
+	Integer observationID;
 	String name;
 	Angle angleRA;
 	Angle angleDEC;
@@ -27,6 +28,7 @@ public class ObservationTO {
 	Integer nfb;
 	Angle fanbeamSpacing;
 	Coords coords;
+	ObservationSessionTO observingSession;
 	
 	public ObservationTO() {
 		nfb = 352;
@@ -42,7 +44,6 @@ public class ObservationTO {
 		this.coords = coords;
 		this.tobs = tobs;
 	}
-	
 	
 	
 	private double computeHAForMJD(double mjd){ 
@@ -91,6 +92,8 @@ public class ObservationTO {
 		utcDate = sdf.parse(utc+".000");
 	}
 	
+	
+	
 	public String getUtc() {
 		return utc;
 	}
@@ -136,6 +139,15 @@ public class ObservationTO {
 	}
 
 	
+
+	
+	public ObservationSessionTO getObservingSession() {
+		return observingSession;
+	}
+
+	public void setObservingSession(ObservationSessionTO observingSession) {
+		this.observingSession = observingSession;
+	}
 
 	public List<TBSourceTO> getTiedBeamSources() {
 		return tiedBeamSources;
@@ -193,6 +205,22 @@ public class ObservationTO {
 
 	public void setUtcDate(Date utcDate) {
 		this.utcDate = utcDate;
+	}
+	
+
+	
+
+
+	public void setUtc(String utc) {
+		this.utc = utc;
+	}
+
+	public Integer getObservationID() {
+		return observationID;
+	}
+
+	public void setObservationID(Integer observationID) {
+		this.observationID = observationID;
 	}
 
 	public boolean isGalacticPointing() throws ObservationException{
