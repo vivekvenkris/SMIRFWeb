@@ -2,6 +2,9 @@ package util;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -229,18 +232,4 @@ public class Utilities {
 		
 	}
 	
-	public static Map<String,Integer> populateNepenthesServers(){
-		
-		Map<String, Integer> nepenthesServers = new HashMap<>();
-		nepenthesServers.put("mpsr-bf00.obs.molonglo.local", 38030);
-		nepenthesServers.put("mpsr-bf01.obs.molonglo.local", 38031);
-		nepenthesServers.put("mpsr-bf02.obs.molonglo.local", 38032);
-		nepenthesServers.put("mpsr-bf03.obs.molonglo.local", 38033);
-		nepenthesServers.put("mpsr-bf04.obs.molonglo.local", 38034);
-		nepenthesServers.put("mpsr-bf05.obs.molonglo.local", 38035);
-		nepenthesServers.put("mpsr-bf06.obs.molonglo.local", 38036);
-		nepenthesServers.put("mpsr-bf07.obs.molonglo.local", 38037);
-		nepenthesServers.put("mpsr-bf08.obs.molonglo.local", 38038);
-		return Collections.unmodifiableMap(nepenthesServers);
-	}
 }
