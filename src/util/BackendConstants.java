@@ -6,8 +6,9 @@ import java.util.Map;
 
 public interface BackendConstants {
 
-	String backendIP = (SMIRFConstants.simulate)? "127.0.0.1":"172.17.228.204";
-	int   backendPort = 38010;
+	String backendIP = ConfigManager.getSmirfMap().get("BACKEND_IP");
+	int   backendPort = Integer.parseInt(ConfigManager.getSmirfMap().get("BACKEND_PORT"));
+	
 	String query = "query";
 	String prepare = "prepare";
 	String start = "start";
@@ -23,9 +24,11 @@ public interface BackendConstants {
 	String backendPrepared = "parsed correctly";
 	
 	String loadBackendScript="/home/dada/scripts/load_config.csh";
-	String psrBackend= "live_320chan_8ant_44pfb_352_beams";//"live_bfp_40chan_16ant_22pfb_352_beams";
-	String corrBackend= "live_320chan_8ant_44pfb_352_beams";//"live_corr_40chan_16ant_22pfb"; 
+	
+	String globalBackend = "live_320chan_16ant_22pfb_352_beams_smirf";
+	String smirfBackend = "live_320chan_16ant_22pfb_352_beams_smirf";
 	String otherBackends = "other";
+	
 	String dadaAtLocalhost = "dada@localhost";
 	
 	String tiedArrayFanBeam = "TIED_ARRAY_FAN_BEAM";
@@ -47,7 +50,7 @@ public interface BackendConstants {
 	
 	
 	
-	Map<String, Integer> bfNodeNepenthesServers = Utilities.populateNepenthesServers();
+	Map<String, Integer> bfNodeNepenthesServers = ConfigManager.getNepenthesServers();
 	
 	
 	

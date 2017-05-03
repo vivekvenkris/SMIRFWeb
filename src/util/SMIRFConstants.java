@@ -1,68 +1,71 @@
 package util;
 
 public interface SMIRFConstants {
+
+	//Utilities.simulate();
 	
-	boolean simulate =  Utilities.simulate();
-	
-	double minRadMD = (simulate? -100.0: -100) * Constants.deg2Rad;
-	double maxRadMD = (simulate? +100.0: 100) * Constants.deg2Rad;
-	
-	double minRadHA = (simulate? -10.0: -10 ) * Constants.hrs2Rad;
-	double maxRadHA = (simulate? +10.0: +10 ) * Constants.hrs2Rad;
-	
-	double minRadNS = -54.0 * Constants.deg2Rad;
-	double maxRadNS = +54.0 * Constants.deg2Rad;
-	
-	double minGalacticLongitude = -115 * Constants.deg2Rad;
-	double maxGalacticLongitude = +35 * Constants.deg2Rad;
-	
-	double minGalacticLatitude = -4 * Constants.deg2Rad;
-	double maxGalacticLatitude = +4 * Constants.deg2Rad;
-	
-	double tilingDiameter = 2.0 * Constants.deg2Rad;
-	
-	
+	String smirfConfigRoot = "/Users/vkrishnan/Desktop/dustbin/smirf/";
+	String smirfConfig = smirfConfigRoot + "smirf.cfg";
+	String smirfConventionsConfig = smirfConfigRoot+ "smirf_conventions.cfg";
+
+	double minRadMD = Double.parseDouble(ConfigManager.getSmirfMap().get("MIN_MD")) * Constants.deg2Rad;
+	double maxRadMD = Double.parseDouble(ConfigManager.getSmirfMap().get("MAX_MD")) * Constants.deg2Rad;
+
+	double minRadHA = Double.parseDouble(ConfigManager.getSmirfMap().get("MIN_HA")) * Constants.hrs2Rad;
+	double maxRadHA = Double.parseDouble(ConfigManager.getSmirfMap().get("MAX_HA")) * Constants.hrs2Rad;
+
+	double minRadNS = Double.parseDouble(ConfigManager.getSmirfMap().get("MIN_NS")) * Constants.deg2Rad;
+	double maxRadNS = Double.parseDouble(ConfigManager.getSmirfMap().get("MAX_NS")) * Constants.deg2Rad;
+
+	double minGalacticLongitude = Double.parseDouble(ConfigManager.getSmirfMap().get("MIN_GL")) * Constants.deg2Rad;
+	double maxGalacticLongitude = Double.parseDouble(ConfigManager.getSmirfMap().get("MAX_GL")) * Constants.deg2Rad;
+
+	double minGalacticLatitude = Double.parseDouble(ConfigManager.getSmirfMap().get("MIN_GB")) * Constants.deg2Rad;
+	double maxGalacticLatitude = Double.parseDouble(ConfigManager.getSmirfMap().get("MAX_GB")) * Constants.deg2Rad;
+
+	double tilingDiameter = Double.parseDouble(ConfigManager.getSmirfMap().get("TILING_DIAMETER")) * Constants.deg2Rad;
+
+
 	/* unique stitching constants */
+
+	int BF08 = ConfigManager.getServerNumberForServerName( ConfigManager.getEdgeNode() );
+	double thresholdPercent = Double.parseDouble(ConfigManager.getSmirfMap().get("STITCH_SPILLOVER_THRESHOLD"));
+
+	String PID = ConfigManager.getSmirfMap().get("PID");
+
+
+	int tobs = Integer.parseInt(ConfigManager.getSmirfMap().get("SURVEY_TOBS"));
+	int phaseCalibrationTobs = Integer.parseInt(ConfigManager.getSmirfMap().get("PHASE_CAL_TOBS"));
+	int fluxCalibrationTobs = Integer.parseInt(ConfigManager.getSmirfMap().get("FLUX_CAL_TOBS"));
 	
-	Integer numBeamsPerServer = 44;
-	Integer BF08 = 8;
-	Integer thresholdPercent=10;
-	
-	
-	
-	
-	
-	String PID = "P999";
-	Integer tobs = simulate? 30: 900;
-	Integer phaseCalibrationTobs = simulate? 30 : 20* 60;
-	Integer fluxCalibrationTobs = simulate? 30 : 900;
-	
-	
-	
+	Long fft_size = Long.parseLong(ConfigManager.getSmirfMap().get("FFT_SIZE"));
+
+
+
 	Integer highestPriority=1;
-	
-	String phaseCalibratorSymbol = "P";
-	String fluxCalibratorSymbol = "F";
-	String smcPointingSymbol = "S";
-	String lmcPointingSymbol = "L";
-	String galacticPointingSymbol = "G";
-	String candidatePointingSymbol="C";
-	String randomPointingSymbol = "R";
-	
-	String SMIRFPointingPrefix = "SMIRF_";
-	String fluxCalPointingPrefix = "J";
-	String phaseCalPointingPrefix = "CJ";
-	
-	
+
+	String phaseCalibratorSymbol   = ConfigManager.getSmirfConventionsMap().get("PHASE_CAL_SYMBOL");
+	String fluxCalibratorSymbol    = ConfigManager.getSmirfConventionsMap().get("FLUX_CAL_SYMBOL");
+	String smcPointingSymbol       = ConfigManager.getSmirfConventionsMap().get("SMC_POINTING_SYMBOL");
+	String lmcPointingSymbol       = ConfigManager.getSmirfConventionsMap().get("LMC_POINTING_SYMBOL");
+	String galacticPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("GALACTIC_POINTING_SYMBOL");
+	String candidatePointingSymbol = ConfigManager.getSmirfConventionsMap().get("CANDIDATE_POINTING_SYMBOL");
+	String randomPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("USER_POINTING_SYMBOL");
+
+	String SMIRFPointingPrefix = ConfigManager.getSmirfConventionsMap().get("SMIRF_POINTING_PREEFIX");
+	String fluxCalPointingPrefix = ConfigManager.getSmirfConventionsMap().get("FLUX_CAL_POINTING_PREFIX");
+	String phaseCalPointingPrefix = ConfigManager.getSmirfConventionsMap().get("PHASE_CAL_POINTING_PREFIX");
+
+
 	/* JDBC & JPA constants */
-	
+
 	String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
 	String DB_URL = "jdbc:mysql://localhost/mpsr_ksp_survey";
-	
+
 	String USER = "vivek";
 	String PASS = "4&.S1kz5";
 
-	
-	
+
+
 
 }

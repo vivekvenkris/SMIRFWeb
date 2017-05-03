@@ -13,7 +13,7 @@ public interface Constants {
 	
 	Double rad2Hrs = rad2Deg/hrs2Deg;
 	
-	Double tsamp = 655.36E-6;
+	Double tsamp = Double.parseDouble(ConfigManager.getSmirfMap().get("FIL_TSAMP"));
 	Double samples2secs  = tsamp;
 	
 	/* Andrew's numbers*/
@@ -35,11 +35,11 @@ public interface Constants {
 	Double cosLat = Math.cos(MolongloLatitude);
 	Double sinLat = Math.sin(MolongloLatitude);
 	
-	Double MolongloLongitude = SMIRFConstants.simulate? 40 : 149.424658;
+	Double MolongloLongitude =  149.424658;
 	Double MolongloLongitudeRAD = MolongloLongitude*deg2Rad;
 	
-	Double RadMolongloNSBeamWidth = 4.64 * deg2Rad;
-	Double RadMolongloMDBeamWidth = 2.14 * deg2Rad;
+	Double RadMolongloNSBeamWidth = Double.parseDouble(ConfigManager.getSmirfMap().get("NS_BEAM")) * deg2Rad;
+	Double RadMolongloMDBeamWidth = Double.parseDouble(ConfigManager.getSmirfMap().get("MD_BEAM")) * deg2Rad;
 	
 	
 	
