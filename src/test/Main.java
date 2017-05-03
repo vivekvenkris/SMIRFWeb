@@ -22,7 +22,7 @@ public class Main {
 //		scheduleManager.startSMIRFScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
 		System.err.println(InetAddress.getLocalHost().getHostName());
 		
-
+		System.err.println("Test");
 
 	}
 }
