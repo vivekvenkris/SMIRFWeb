@@ -494,9 +494,4 @@ public class SchedulerMB implements Serializable {
 	}
 
 
-public static void main(String[] args) throws BackendException {
-
-
-}
-
 }
