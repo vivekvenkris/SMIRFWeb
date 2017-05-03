@@ -43,6 +43,12 @@ public class Traversal{
 	public void setPercent(Integer percent) {
 		this.percent = percent;
 	}
-	
+	@Override
+	public String toString() {
+		String s = 	fanbeam+ " " + String.format("%7.5f", ns) + " "+ 
+					startSample + " "+ numSamples + " "+ percent + " ";
+
+		return s;
+	}
 	
 }

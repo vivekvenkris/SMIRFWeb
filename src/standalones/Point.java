@@ -1,8 +1,11 @@
 package standalones;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import util.Constants;
 
 public class Point{
 	String ra;
@@ -11,8 +14,10 @@ public class Point{
 	Double startNS;
 	Double endFanBeam;
 	Double endNS;
-	Map<Integer, List<Traversal>> traversalMap = new HashMap<Integer, List<Traversal>>();
+	//Map<Integer, List<Traversal>> traversalMap = new HashMap<Integer, List<Traversal>>();
+	List<Traversal> traversalList = new ArrayList<>();
 	boolean uniq;
+	Integer server;
 	public String getRa() {
 		return ra;
 	}
@@ -49,17 +54,36 @@ public class Point{
 	public void setEndNS(Double endNS) {
 		this.endNS = endNS;
 	}
-	public Map<Integer, List<Traversal>> getTraversalMap() {
-		return traversalMap;
-	}
-	public void setTraversalMap(Map<Integer, List<Traversal>> traversalMap) {
-		this.traversalMap = traversalMap;
-	}
+	
 	public boolean isUniq() {
 		return uniq;
 	}
 	public void setUniq(boolean uniq) {
 		this.uniq = uniq;
+	}
+	public List<Traversal> getTraversalList() {
+		return traversalList;
+	}
+	public void setTraversalList(List<Traversal> traversalList) {
+		this.traversalList = traversalList;
+	}
+	public Integer getServer() {
+		return server;
+	}
+	public void setServer(Integer server) {
+		this.server = server;
+	}
+	
+	@Override
+	public String toString() {
+		Point pt = this;
+		String s = 	pt.ra + " " + pt.dec + " " + pt.startFanBeam + " "+
+		pt.endFanBeam + " "+ String.format("%7.5f", pt.startNS*Constants.rad2Deg) + " "+ 
+				String.format("%7.5f", pt.endNS*Constants.rad2Deg) + " " ;
+		
+		for(Traversal t: pt.traversalList)  s += t;
+
+		return s;
 	}
 	
 	
