@@ -7,17 +7,13 @@ import exceptions.ObservationException;
 import service.CalibrationService;
 import service.DBService;
 import util.SMIRFConstants;
+import util.Switches;
 
 public class PostObservationManager {
 
 	
 	public static boolean CalibrateAndUpdateDelays(ObservationTO observation) throws IOException, InterruptedException{
-		return SMIRFConstants.simulate ?  true: new CalibrationService().Calibrate( observation.getUtc(), observation.getCoords().getPointingTO().getPointingName());
-	}
-	
-	public static boolean startPeasoup(ObservationTO observation){
-		
-		return true;
+		return Switches.simulate ?  true: new CalibrationService().Calibrate( observation.getUtc(), observation.getCoords().getPointingTO().getPointingName());
 	}
 	
 	public static void doPostObservationStuff(ObservationTO observation) throws ObservationException, IOException, InterruptedException{
