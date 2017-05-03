@@ -34,6 +34,15 @@ public class ConfigManager {
 	private static Integer numFanBeams;
 	private static String  edgeNode;
 	private static List<String> active_nodes = new ArrayList<>();
+	
+	static{
+		try {
+			loadConfigs();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	static void loadConfigs() throws IOException{
 		
