@@ -25,8 +25,8 @@ public interface BackendConstants {
 	
 	String loadBackendScript="/home/dada/scripts/load_config.csh";
 	
-	String globalBackend = "live_320chan_16ant_22pfb_352_beams_smirf";
-	String smirfBackend = "live_320chan_16ant_22pfb_352_beams_smirf";
+	String globalBackend = ConfigManager.getSmirfMap().get("GLOBAL_BACKEND");
+	String smirfBackend = ConfigManager.getSmirfMap().get("SMIRF_BACKEND");
 	String otherBackends = "other";
 	
 	String dadaAtLocalhost = "dada@localhost";
@@ -36,8 +36,8 @@ public interface BackendConstants {
 	String correlation = "CORRELATION";
 	
 	String resultsDir = "/data/mopsr/results/";
-	String calibrateScript = "python /home/observer/bin/calib_wrk_superbays.py -b 1280 -n 352 -c cc.sum -antf obs.antenna -plot no -tsamp 0.032 -nchan 40";
-	String updateDelays = "/home/dada/linux_64/share/update_delays_snr.csh calib.delays";
+	String calibrateScript = ConfigManager.getSmirfMap().get("CALIBRATE_SCRIPT");
+	String updateDelays = ConfigManager.getSmirfMap().get("UPDATE_DELAYS_SCRIPT");
 	
 	
 	
