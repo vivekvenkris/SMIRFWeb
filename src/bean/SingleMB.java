@@ -22,23 +22,23 @@ public class SingleMB {
 	Boolean utcRendered = false;
 	Integer tobs;
 	Integer tobsUnits;
-	
+
 	Boolean tccEnabled = true;
 	Boolean backendEnabled = true;
 	Boolean doPostObservationStuff = true;
-	
+
 	String observer = "VVK";
 
-	
+
 	List<String> pointingTypes;
 	String selectedPointingType;
-	
+
 	List<PointingTO> pointings;
 	PointingTO selectedPointing;
 	String selectedPointingName;
 	ScheduleManager manager = new ScheduleManager();
 
-	
+
 	public SingleMB(){
 		utc = "now";
 		utcRendered = false;
@@ -51,9 +51,9 @@ public class SingleMB {
 		pointings = DBManager.getAllPointings();
 		pointings.addAll(PointingTO.getFluxCalPointingList(DBManager.getAllFluxCalibrators()));
 		pointings.addAll(PointingTO.getPhaseCalPointingList(DBManager.getAllPhaseCalibrators()));
-		
+
 	}
-	
+
 	public void toggleUTCInput(){
 		if(utc.equals("now")){
 			utcRendered = false;
@@ -65,47 +65,52 @@ public class SingleMB {
 		}
 	}
 	public void pointingTypeSelected(){
-		System.err.println("called...");
+
 		pointings.clear();
-		switch (selectedPointingType) {
-		case "All":
+
+		if(selectedPointingType.equals("All")){
+
 			pointings = DBManager.getAllPointings();
 			pointings.addAll(PointingTO.getFluxCalPointingList(DBManager.getAllFluxCalibrators()));
 			pointings.addAll(PointingTO.getPhaseCalPointingList(DBManager.getAllPhaseCalibrators()));
-			break;
-		case SMIRFConstants.phaseCalibratorSymbol:
-			pointings.addAll(PointingTO.getPhaseCalPointingList(DBManager.getAllPhaseCalibrators()));
-			break;
-		case SMIRFConstants.fluxCalibratorSymbol:
-			pointings.addAll(PointingTO.getFluxCalPointingList(DBManager.getAllFluxCalibrators()));
-			break;
 
-		default:
+		}
+		else if(selectedPointingType.equals(SMIRFConstants.phaseCalibratorSymbol)){
+			
+			pointings.addAll(PointingTO.getPhaseCalPointingList(DBManager.getAllPhaseCalibrators()));
+			
+		}
+		else if(selectedPointingType.equals(SMIRFConstants.fluxCalibratorSymbol)) {
+			
+			pointings.addAll(PointingTO.getFluxCalPointingList(DBManager.getAllFluxCalibrators()));
+			
+		}
+		else{
+			
 			pointings = DBManager.getAllPointingsForPointingType(selectedPointingType);
-			break;
 			
 		}
 	}
-	
+
 	public void pointingSelected(){
-		
+
 		if(selectedPointingName.startsWith(SMIRFConstants.SMIRFPointingPrefix)){
-			
+
 			selectedPointing = DBManager.getPointingByUniqueName(selectedPointingName);
-			
+
 		}
 		else if(selectedPointingName.startsWith(SMIRFConstants.fluxCalPointingPrefix)) {
-			
+
 			selectedPointing = DBManager.getFluxCalByUniqueName(selectedPointingName);
-			
+
 		}
 		else if(selectedPointingName.startsWith(SMIRFConstants.phaseCalPointingPrefix)) {
-			
+
 			selectedPointing = DBManager.getPhaseCalByUniqueName(selectedPointingName);
-			
+
 		}
 	}
-	
+
 	public void startObservation(ActionEvent event){
 		try{
 			System.err.println(selectedPointing);
@@ -120,15 +125,15 @@ public class SingleMB {
 			e.printStackTrace();
 		}
 	}
-	
-	
+
+
 	public void terminateObservation(ActionEvent event){
 		manager.terminate();
 		while(manager.getScheduler()!= null && manager.getScheduler().isDone());
 		addMessage("Terminated.");
 	}
 
-	
+
 	public void addMessage(String summary) {
 		FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary,  null);
 		FacesContext.getCurrentInstance().addMessage(null, message);
@@ -234,6 +239,6 @@ public class SingleMB {
 	public void setBackendEnabled(Boolean backendEnabled) {
 		this.backendEnabled = backendEnabled;
 	}
-	
-	
+
+
 }
