@@ -1,12 +1,7 @@
 package manager;
 
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -26,11 +21,13 @@ import exceptions.EmptyCoordinatesException;
 import exceptions.ObservationException;
 import exceptions.TCCException;
 import service.BackendService;
+import service.EphemService;
 import service.TCCService;
 import service.TCCStatusService;
 import util.BackendConstants;
 import util.Constants;
 import util.SMIRFConstants;
+import util.Switches;
 import util.Utilities;
 
 public class ObservationManager {
@@ -48,10 +45,10 @@ public class ObservationManager {
 
 
 		if(tccEnabled) {
-			if( !observable(observation)) {
+			if( !observable(observation,EphemService.getUtcStringNow())) {
 				System.err.println("not observable.");
-				throw new ObservationException("cant observe this source. Source not visible." + observation.getCoords().getAngleHA() + " " 
-						+ observation.getCoords().getAngleNS() + " "+ observation.getCoords().getAngleMD());
+				throw new ObservationException("cant observe this source. Source not visible. Reqd Coords= HA:" + observation.getCoords().getAngleHA() + " NS:" 
+						+ observation.getCoords().getAngleNS() + " MD:"+ observation.getCoords().getAngleMD());
 			}
 
 			TCCService       tccService =     TCCService.createTccInstance();
@@ -102,7 +99,7 @@ public class ObservationManager {
 				@Override
 				public Boolean call() throws BackendException {
 
-					if(SMIRFConstants.simulate) return true;
+					if(Switches.simulate) return true;
 
 					boolean isON = backendStatus.isON();
 					if(isON){
@@ -110,20 +107,20 @@ public class ObservationManager {
 						boolean isidle = backendStatus.isIdle();
 						if(!isidle) backendService.stopBackend();
 					}
-					//				String currentBackend;
-					//				currentBackend = backendService.getCurrentBackend();
-					//				System.err.println("Current Backend:" + currentBackend);
-					//				System.err.println("Required backend:" + observation.getBackendType());
-					//				if(!currentBackend.equals(observation.getBackendType())){
-					//					System.err.println("backend change needed..");
-					//					if(isON) {
-					//						backendService.shutDownBackend();
-					//					}
-					//					backendService.changeBackendConfig(observation.getBackendType());
-					//				}
-					//				System.err.println("Booting backend..");
-					//				backendService.bootUpBackend();
-					//				System.err.println("backend booted..");
+					String currentBackend;
+					currentBackend = backendService.getCurrentBackend();
+					System.err.println("Current Backend:" + currentBackend);
+					System.err.println("Required backend:" + observation.getBackendType());
+					if(!currentBackend.equals(observation.getBackendType())){
+						System.err.println("backend change needed..");
+						if(isON) {
+							backendService.shutDownBackend();
+						}
+						backendService.changeBackendConfig(observation.getBackendType());
+					}
+					System.err.println("Booting backend..");
+					backendService.bootUpBackend();
+					System.err.println("backend booted..");
 					return true;
 				}
 			};
@@ -170,6 +167,7 @@ public class ObservationManager {
 
 	public boolean stopObserving() throws TCCException, BackendException, InterruptedException{
 		return stopObserving(true, true);
+		
 	}
 
 	public boolean stopObserving(boolean tccEnabled, boolean backendEnabled) throws TCCException, BackendException, InterruptedException{
