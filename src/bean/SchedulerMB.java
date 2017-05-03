@@ -240,7 +240,9 @@ public class SchedulerMB implements Serializable {
 		List<Coords> finalCoordsList = coordsList;
 
 		try {
-			manager.startSMIRFScheduler(finalCoordsList, this.duration*this.durationUnits, this.tobs*this.tobsUnits, "VVK",true,true,true);
+			ObservationSessionTO sessionTO = new ObservationSessionTO(Utilities.getUTCString(EphemService.getUTCTimestamp()), "VVK", tobs, duration, orderMDNS, phaseCal, fluxCalStart, fluxCalWhenever, finalCoordsList.size());
+			DBManager.addSessionToDB(sessionTO);
+			manager.startSMIRFScheduler(finalCoordsList, this.duration*this.durationUnits, this.tobs*this.tobsUnits, "VVK",true,true,true,sessionTO);
 			addMessage("started...");
 		} catch (EmptyCoordinatesException | CoordinateOverrideException | PointingException | TCCException
 				| BackendException | InterruptedException e) {
