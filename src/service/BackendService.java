@@ -45,7 +45,7 @@ class Lights{
 }
 
 public class BackendService implements BackendConstants {
-	static BackendService backendService = null;
+	private static BackendService backendService = null;
 	Boolean statusService = true;
 	public static BackendService createBackendInstance(){
 		if(backendService == null) backendService = new BackendService(false);
@@ -282,48 +282,56 @@ public class BackendService implements BackendConstants {
 		l.grey = grey;
 		return l;
 	}
-
+	
 	private void talkToBackendServer(String command) throws BackendException{
-		try {
-			long javascriptRuntime = 60000;
-			WebClient webClient = new WebClient(BrowserVersion.FIREFOX_45);
-			webClient.getCookieManager().setCookiesEnabled(false);
-			webClient.waitForBackgroundJavaScript(60000);
-			webClient.getCache().clear();
-			HtmlPage page = webClient.getPage("http://localhost:80/mopsr/control.lib.php?single=true");
-			ScriptResult result = page.executeJavaScript(command);
-
-			Page newPage = result.getNewPage();
-			webClient.waitForBackgroundJavaScript(javascriptRuntime);
-			if(newPage.isHtmlPage()){
-				HtmlPage newHtmlPage = (HtmlPage) newPage;
-				int iter=0;
-				boolean isDone = false;
-				while(!isDone){
-
-					if(iter++ > maxIter){
-						throw new BackendException("maximum iteration to backend controls page reached", ExceptionUtils.getStackTrace(new Exception()));
-					}
-					Lights l = getLights(newHtmlPage);
-					if(command.equals(bootUp) && l.red ==0 && l.yellow == 0) isDone = true;
-					else if(command.equals(shutDown) && l.green ==0 && l.yellow ==0) isDone = true;
-					else {
-						//newHtmlPage = (HtmlPage) newHtmlPage.refresh();
-						webClient.waitForBackgroundJavaScript(javascriptRuntime);
-					}
-				}
-
-			}
-			webClient.close();
-
-
-		} catch (FailingHttpStatusCodeException | IOException e) {
-			e.printStackTrace();
-		} catch (BackendException e) {
-			throw new BackendException("maximum iteration to backend controls page reached", ExceptionUtils.getStackTrace(e));
+		try{
+			// run backend order here.
+		}catch (Exception e) {
+			// TODO: handle exception
 		}
 	}
 
+//	private void talkToBackendServer(String command) throws BackendException{
+//		try {
+//			long javascriptRuntime = 60000;
+//			WebClient webClient = new WebClient(BrowserVersion.FIREFOX_45);
+//			webClient.getCookieManager().setCookiesEnabled(false);
+//			webClient.waitForBackgroundJavaScript(60000);
+//			webClient.getCache().clear();
+//			HtmlPage page = webClient.getPage("http://localhost:80/mopsr/control.lib.php?single=true");
+//			ScriptResult result = page.executeJavaScript(command);
+//
+//			Page newPage = result.getNewPage();
+//			webClient.waitForBackgroundJavaScript(javascriptRuntime);
+//			if(newPage.isHtmlPage()){
+//				HtmlPage newHtmlPage = (HtmlPage) newPage;
+//				int iter=0;
+//				boolean isDone = false;
+//				while(!isDone){
+//
+//					if(iter++ > maxIter){
+//						throw new BackendException("maximum iteration to backend controls page reached", ExceptionUtils.getStackTrace(new Exception()));
+//					}
+//					Lights l = getLights(newHtmlPage);
+//					if(command.equals(bootUp) && l.red ==0 && l.yellow == 0) isDone = true;
+//					else if(command.equals(shutDown) && l.green ==0 && l.yellow ==0) isDone = true;
+//					else {
+//						//newHtmlPage = (HtmlPage) newHtmlPage.refresh();
+//						webClient.waitForBackgroundJavaScript(javascriptRuntime);
+//					}
+//				}
+//
+//			}
+//			webClient.close();
+//
+//
+//		} catch (FailingHttpStatusCodeException | IOException e) {
+//			e.printStackTrace();
+//		} catch (BackendException e) {
+//			throw new BackendException("maximum iteration to backend controls page reached", ExceptionUtils.getStackTrace(e));
+//		}
+//	}
+//
 
 
 	public void bootUpBackend() throws BackendException{
@@ -375,8 +383,8 @@ public class BackendService implements BackendConstants {
 			while ((line = in.readLine()) != null) {
 				str+=line;
 			}
-			if(str.contains(psrBackend)) return psrBackend;
-			if(str.contains(corrBackend)) return corrBackend;
+			if(str.contains(smirfBackend)) return smirfBackend;
+			if(str.contains(globalBackend)) return globalBackend;
 			return otherBackends;
 		} catch (IOException e) {
 			throw new BackendException(e.getMessage(), ExceptionUtils.getStackTrace(e));
