@@ -42,7 +42,7 @@ public class SingleMB {
 	public SingleMB(){
 		utc = "now";
 		utcRendered = false;
-		tobs = 30;
+		tobs = 720;
 		tobsUnits = 1;
 
 		pointingTypes = DBManager.getAllPointingTypes();
