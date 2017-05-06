@@ -6,6 +6,8 @@
 		<class>converters.Angle2HHMMSS</class>
 		<class>bean.PhaseCalibrator</class>
 		<class>bean.FluxCalibrator</class>
+		<class>bean.Observation</class>
+		<class>bean.ObservingSession</class>
 		 <properties>
          <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/mpsr_ksp_survey"/>
          <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>

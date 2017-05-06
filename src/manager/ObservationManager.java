@@ -61,24 +61,35 @@ public class ObservationManager {
 
 				@Override
 				public Boolean call() throws TCCException, InterruptedException{
-					System.err.println("starting TCC..");
+					
+					System.err.println("Starting TCC.");
 					tccService.pointAndTrackSource(observation.getCoords().getPointingTO().getAngleRA().toHHMMSS(), observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
-					System.err.println("started TCC..");
-					long maxSlewTime = TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000; // to milliseconds
-					System.err.println(" max slew time.." + maxSlewTime);
+					
 					long startTime = System.currentTimeMillis();
+					
+					System.err.println("Computing slew time.");
+					long maxSlewTime = TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000; // to milliseconds
+					System.err.println(" max slew time = " + maxSlewTime/1000.0 + "seconds = " + maxSlewTime/60000.0 + "minutes");
+					
+					
 					long elapsedTime = 0L;
 					Thread.sleep(5000);
+					
+					
 					while(true){
+						
 						if(!tccStatusService.getTelescopeStatus().isTelescopeDriving()) break;
+						
 						elapsedTime = (new Date()).getTime() - startTime;
-						System.err.print("\rslewing for the past "+ elapsedTime/1000.0 + " seconds");
+						
+						System.err.println("slewing for the past "+ elapsedTime/1000.0 + " seconds");
+						
 						if(elapsedTime > maxSlewTime) {
 							throw new DriveBrokenException("Drive taking longer than expected to go to source.");
 						}
 						Thread.sleep(2000);
 					}
-					System.err.println("TCC reached..");
+					System.err.println("TCC reached.");
 					return true;
 				}
 
@@ -324,18 +335,27 @@ public class ObservationManager {
 		CoordinateTO coordsNow  = new CoordinateTO(HANow.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsNow);
 		//System.err.println( "*************" +observation.getCoords().getPointingTO().getPointingName() +" " +coordsNow.getRadMD()*Constants.rad2Deg  + " " +coordsNow.getRadNS()*Constants.rad2Deg );
-		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD || coordsNow.getRadMD() > SMIRFConstants.maxRadMD) return false;
+		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD || coordsNow.getRadMD() > SMIRFConstants.maxRadMD) {
+			System.err.println("coords begin > limit");
+			return false;
+		}
 
 		int slewTime = TCCManager.computeSlewTime(coordsNow.getRadNS(), coordsNow.getRadMD());
 		int obsTime = observation.getTobs();
 
 		int totalSecs = obsTime + slewTime + 60;
 		Angle HAend = observation.getHAForUTCPlusOffset(utc,totalSecs);
-		if(Math.abs(HAend.getDecimalHourValue())>6) return false;
+		if(Math.abs(HAend.getDecimalHourValue())>6) {
+			System.err.println("HA end  > 6");
+			return false;
+		}
 
 		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsEnd);
-		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD || coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) return false;
+		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD || coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) {
+			System.err.println("coords end > limit");
+			return false;
+		}
 
 		return true;
 	}

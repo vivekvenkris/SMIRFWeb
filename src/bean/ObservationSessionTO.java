@@ -32,6 +32,7 @@ public class ObservationSessionTO {
 		this.phaseCalibrateAtStart = phaseCalibrateAtStart;
 		this.fluxCalibrateAtStart = fluxCalibrateAtStart;
 		this.fluxCalibrateWhenever = fluxCalibrateWhenever;
+		this.numPlannedPointings = numPlannedPointings;
 	}
 
 	public Integer getSessionID() {

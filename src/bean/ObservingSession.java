@@ -18,7 +18,7 @@ public class ObservingSession {
 	@Column(name = "start_utc")
 	private String startUTC;
 	
-	@Column(name = "tobs_per_pointing")
+	@Column(name = "tobs_per_pointing_seconds")
 	private Integer pointingTobs;
 	
 	@Column(name = "session_duration_seconds")
@@ -39,7 +39,7 @@ public class ObservingSession {
 	@Column(name = "npointings_planned")
 	private Integer numPlannedPointings;
 	
-	@Column(name = "npointings_planned")
+	@Column(name = "npointings_done")
 	private Integer numPointingsDone;
 	
 	private String observer;
@@ -54,6 +54,8 @@ public class ObservingSession {
 		this.fluxCalibrateAtStart = observationSessionTO.getFluxCalibrateAtStart();
 		this.fluxCalibrateWhenever = observationSessionTO.getFluxCalibrateWhenever();
 		this.observer = observationSessionTO.getObserver();
+		this.numPlannedPointings = observationSessionTO.getNumPlannedPointings();
+		this.numPointingsDone = 0;
 	}
 	public Integer getSessionID() {
 		return sessionID;

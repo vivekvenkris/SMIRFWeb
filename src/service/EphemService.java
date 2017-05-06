@@ -90,6 +90,7 @@ public class EphemService {
 	}
 	
 	public static double getRadLMSTforMolonglo(String utcStr){
+		if(!utcStr.contains(".")) utcStr += ".000";
 		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
 		double last = EphemService.getRadLMSTForMolonglo(mjd);
