@@ -4,7 +4,7 @@ public interface SMIRFConstants {
 
 	//Utilities.simulate();
 	
-	String smirfConfigRoot = "/Users/vkrishnan/Desktop/dustbin/smirf/";
+	String smirfConfigRoot = "/home/vivek/SMIRF/config/";
 	String smirfConfig = smirfConfigRoot + "smirf.cfg";
 	String smirfConventionsConfig = smirfConfigRoot+ "smirf_conventions.cfg";
 
