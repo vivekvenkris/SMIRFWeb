@@ -17,7 +17,7 @@ public class Point{
 	//Map<Integer, List<Traversal>> traversalMap = new HashMap<Integer, List<Traversal>>();
 	List<Traversal> traversalList = new ArrayList<>();
 	boolean uniq;
-	Integer server;
+	Integer beamSearcher;
 	public String getRa() {
 		return ra;
 	}
@@ -29,6 +29,12 @@ public class Point{
 	}
 	public void setDec(String dec) {
 		this.dec = dec;
+	}
+	public Integer getBeamSearcher() {
+		return beamSearcher;
+	}
+	public void setBeamSearcher(Integer beamSearcher) {
+		this.beamSearcher = beamSearcher;
 	}
 	public Double getStartFanBeam() {
 		return startFanBeam;
@@ -67,12 +73,7 @@ public class Point{
 	public void setTraversalList(List<Traversal> traversalList) {
 		this.traversalList = traversalList;
 	}
-	public Integer getServer() {
-		return server;
-	}
-	public void setServer(Integer server) {
-		this.server = server;
-	}
+	
 	
 	@Override
 	public String toString() {

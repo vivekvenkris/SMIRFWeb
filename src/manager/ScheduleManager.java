@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -189,9 +190,7 @@ public class ScheduleManager implements SMIRFConstants {
 						
 						try{
 							
-							DBManager.addObservationToDB(observation);
 							manager.startObserving(observation, tccEnabled, backendEnabled);
-							DBManager.makeObservationComplete(observation);
 							
 						}catch (ObservationException e) {
 							// add log that the pointing was not observable.
@@ -226,6 +225,8 @@ public class ScheduleManager implements SMIRFConstants {
 						System.err.println("observation over.");
 
 						manager.stopObserving();
+						DBManager.makeObservationComplete(observation);
+
 						
 						if(sendStitches !=null) sendStitches.get();
 						
@@ -263,42 +264,51 @@ public class ScheduleManager implements SMIRFConstants {
 		SMIRF_GetUniqStitches getUniqStitches = new SMIRF_GetUniqStitches();
 		List<Point> points = getUniqStitches.generateUniqStitches(observation);
 		
-		Set<Entry<String, Integer>> nepenthesServerEntrySet = BackendConstants.bfNodeNepenthesServers.entrySet();
-		
-		for(Entry<String,Integer> nepenthesServer: nepenthesServerEntrySet){
-			
-			String hostname = Inet4Address.getLocalHost().getHostName();
-			Integer server = Integer.parseInt(hostname.replaceAll("\\D+", ""));
-			
-			System.err.println("Attempting to connect to " + nepenthesServer.getValue());
-			Socket socket = new Socket();
-			socket.connect(new InetSocketAddress(nepenthesServer.getKey(), nepenthesServer.getValue()),10000);
-			System.err.println("Connected to " + nepenthesServer.getValue());
-			
-			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
-
-			/***
-			 * Format is the following:
-			 * utc: <UTC_START>
-			 * values
-			 */
-			out.println(ConfigManager.getSmirfMap().get("NEPENTHES_UTC_PREFIX") + observation.getUtc());
-						
-			for(Point p: points) {
+		System.err.println("Unique points for observation: " + points.size());
 				
-				if(! p.getServer().equals(server)) continue;
-		
-				out.println(p);
+		for(Entry<String,Map<Integer,Integer> > nepenthesServer: BackendConstants.bfNodeNepenthesServers.entrySet()){
+			
+			String hostname = nepenthesServer.getKey();
+			for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
+				System.err.println("Attempting to connect to " + nepenthesServer.getValue());
+				Socket socket = new Socket();
+				socket.connect(new InetSocketAddress(nepenthesServer.getKey(), bsEntry.getValue()),10000);
+				System.err.println("Connected to " + nepenthesServer.getValue());
+				
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+
+				/***
+				 * Format is the following:
+				 * utc: <UTC_START>
+				 * values
+				 */
+				String utcStr = ( observation.getUtc().contains(".") ) ? observation.getUtc().split("\\.")[0] : observation.getUtc();
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_UTC_PREFIX") + utcStr);
+				
+				int numPoints = 0;
+				for(Point p: points) {
+					
+					if(! p.getBeamSearcher().equals(bsEntry.getKey())) continue;
+			
+					out.println(p);
+					out.flush();
+					
+					numPoints++;
+					
+				}
+				
+				System.err.println(numPoints + " points for " + hostname + ":" + nepenthesServer.getValue());
+
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
 				out.flush();
-				
+				out.close();
+				in.close();
+				socket.close();
 			}
-
-			out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
-			out.flush();
-			out.close();
-			in.close();
-			socket.close();
+			
+			
+			
 			
 		}
 		return true;
