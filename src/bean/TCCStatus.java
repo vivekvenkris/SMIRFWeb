@@ -60,7 +60,9 @@ public class TCCStatus {
 			if(!this.md.getWest().getDisabled() && !isWestMDTracking())
 				throw new DriveBrokenException("West arm MD was not driving, disabled or on target", ExceptionUtils.getStackTrace(new Exception()),this);
 		}
-				return isEastMDDriving || isWestMDDriving || isEastMDDriving || isWestMDDriving;
+		
+		
+				return isEastMDDriving || isWestMDDriving || isEastNSDriving || isWestNSDriving;
 	}
 	
 	public boolean isEastNSTracking(){
