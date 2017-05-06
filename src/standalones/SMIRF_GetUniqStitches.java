@@ -1,6 +1,12 @@
 package standalones;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,6 +14,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -25,35 +33,38 @@ import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import manager.MolongloCoordinateTransforms;
 import service.EphemService;
+import util.BackendConstants;
 import util.ConfigManager;
 import util.Constants;
 import util.SMIRFConstants;
 import util.Utilities;
 
 public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
-	
-	public Integer getServer(double startFB, double endFB){
+
+	public Integer getBeamSearcher(double startFB, double endFB){
+		
 		Integer startServer = ConfigManager.getServerNumberForFB((int) startFB);
 		Integer endServer =  ConfigManager.getServerNumberForFB((int) endFB);
+		if(startServer == null || endServer == null ) return null;
 		if(startServer != endServer ) return ConfigManager.getServerNumberForServerName(ConfigManager.getEdgeNode());
 
 		return startServer;
 
 	}
 
-//	public Integer getServer(double startFB, double endFB){
-//		Integer startServer = (int)Math.floor((startFB-1)/numBeamsPerServer);
-//		Integer endServer = (int)Math.floor((endFB-1)/numBeamsPerServer);
-//		if(startServer != endServer ) return BF08;
-//
-//		return startServer;
-//
-//	}
+	//	public Integer getServer(double startFB, double endFB){
+	//		Integer startServer = (int)Math.floor((startFB-1)/numBeamsPerServer);
+	//		Integer endServer = (int)Math.floor((endFB-1)/numBeamsPerServer);
+	//		if(startServer != endServer ) return BF08;
+	//
+	//		return startServer;
+	//
+	//	}
 
 	public List<Point> generateUniqStitches(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException{
 		List<Point> points =  generateUniqStitches(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), observation.getCoords().getPointingTO().getAngleDEC(), 
 				SMIRFConstants.thresholdPercent, fft_size, Constants.tsamp);
-		
+
 		for(TBSourceTO to : observation.getTiedBeamSources()) {
 			Point point = getPointForSkyPosition(observation.getUtc(), observation.getAngleRA(), observation.getAngleDEC(), to.getAngleRA(), to.getAngleDEC(), fft_size, Constants.tsamp);
 			points.add(point);
@@ -130,7 +141,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 
 	public List<Point> generateUniqStitches(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples, double tsamp) throws EmptyCoordinatesException, CoordinateOverrideException {
-		
+
 		double samples2secs = tsamp;
 		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utcStr),Angle.HHMMSS);
 		Angle ha = EphemService.getHA(lst, ra);
@@ -202,8 +213,8 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				p.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
 				p.ra = EphemService.getRA(lst, new Angle(now.getRadHA(),Angle.HHMMSS)).toString();
 
-				p.server = getServer(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
-
+				Integer beamSearcher = getBeamSearcher(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
+				p.beamSearcher = ( beamSearcher == null )? -1 : beamSearcher;
 				if(!unwantedPoint){
 					if(lastPointMap ==null){
 						Long startSample = 0L;
@@ -260,8 +271,8 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, IOException{
-		
-		//args = new String("-u 2017-03-17-00:00:21 -r 17:45:00 -d -30:00:00 -n 13732910 -t 327.68e-6 -o stderr ").split(" ");
+
+		args = new String("-u 2017-03-11-00:21:21 -r 17:45:00 -d -30:00:00 -n 1373291 -t 327.68e-6 -o nepenthes ").split(" ");
 
 		CommandLine line;
 		CommandLineParser parser = new DefaultParser();
@@ -272,7 +283,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 		Option decBoresightOption = new Option("d", "dec", true, " boresight DEC in dd:mm:ss [required]");
 		Option nsampOption = new Option("n", "nsamp", true, " nsamples [required]");
 		Option tsampOption = new Option("t", "tsamp", true, " tsamp in seconds [required]");
-		Option outPrefixOption = new Option("o", "out_prefix", true, " if out suffix is stderr, out on sys.err else, out file = <out_prefix>.<node>");
+		Option outPrefixOption = new Option("o", "out_prefix", true, " if stderr = standard error, nepenthes = send to nepenthes, anything else = file prefix");
 		Option pointRA =  new Option("R", "pt_ra", true, " UTC start of observation");
 		Option pointDEC =  new Option("D", "pt_dec", true, " UTC start of observation");
 
@@ -284,6 +295,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 		options.addOption(outPrefixOption);
 		options.addOption(pointRA);
 		options.addOption(pointDEC);
+
 
 
 		try {
@@ -308,49 +320,112 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 			boolean point = hasOption(line, pointRA) && hasOption(line, pointDEC);
 
 			String outPrefix = getValue(line, outPrefixOption);
-			String utcStr  =  ( getValue(line, utcOption).split(".").length > 1) ? getValue(line, utcOption)  : getValue(line, utcOption) + ".000";
+			String utcStr  =  ( getValue(line, utcOption).split("\\.").length > 1) ? getValue(line, utcOption)  : getValue(line, utcOption) + ".000";
 			String raStr   =  getValue(line,raBoresightOption);
 			String decStr  =  getValue(line,decBoresightOption);
 			long nsamp     =  Long.parseLong(getValue(line,nsampOption));
 			double tsamp   =  Double.parseDouble(getValue(line, tsampOption));
-			
+
 			Angle raBoresight = new Angle(raStr, Angle.HHMMSS);
 			Angle decBoresight = new Angle(decStr,Angle.DDMMSS);
-			
+
 			if(point){
 				Point pt = new SMIRF_GetUniqStitches().getPointForSkyPosition(utcStr,raBoresight, decBoresight, 
 						new Angle( getValue(line, pointRA),Angle.HHMMSS), new Angle(getValue(line, pointDEC), Angle.DDMMSS), nsamp, tsamp);
-				
+
 				PrintStream ps = (outPrefix.equalsIgnoreCase("stderr")) ? System.err : new PrintStream(outPrefix+ ".point");
-				
+
 				ps.println(pt);
 				ps.flush();
 				ps.close();
 				return;
 			}
-			
-			List<PrintStream> printStreams = new ArrayList<>();
-			List<Integer> servers = Arrays.asList(new Integer[]{0,1,2,3,4,5,6,7,8});
 
-			for(Integer server: servers) {
-				
+			List<PrintStream> printStreams = new ArrayList<>();
+			List<Integer> beamSearchers = Arrays.asList(new Integer[]{0,1,2,3,4,5,6,7,8});
+
+			for(Integer beamSearcher: beamSearchers) {
+
 				if(outPrefix.equalsIgnoreCase("stderr")) printStreams.add(System.err);
-				
-				else printStreams.add(new PrintStream(outPrefix+ ".mpsr-bf0" +server));
-				
+
+				else printStreams.add(new PrintStream(outPrefix+ ".mpsr-bf0" +beamSearcher));
+
 			}
+
+			System.err.println("Getting points list for args:  "+utcStr + " " + raBoresight+ " " + decBoresight+ " " + thresholdPercent+ " " + nsamp+ " " +tsamp);
+
 
 			List<Point> pointsList = new SMIRF_GetUniqStitches().generateUniqStitches( utcStr, raBoresight, decBoresight, thresholdPercent, nsamp,tsamp);
+
+			System.err.println("Got points list");
+
+			if(outPrefix.equals("nepenthes")) {
+				if(utcStr.contains(".")) utcStr = utcStr.split("\\.")[0];
+
+				System.err.println("Sending to Nepenthes servers");
+
+				Set<Entry<String, Map<Integer, Integer>>> nepenthesServerEntrySet = BackendConstants.bfNodeNepenthesServers.entrySet();
+
+				System.err.println(BackendConstants.bfNodeNepenthesServers);
+
+				for(Entry<String,Map<Integer, Integer>> nepenthesServer: nepenthesServerEntrySet){
+
+					String hostname = nepenthesServer.getKey();
+					//Integer server = Integer.parseInt(hostname.replaceAll("\\D+", ""));
+
+					for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
+
+						System.err.println("Attempting to connect to " + nepenthesServer.getValue());
+						Socket socket = new Socket();
+						socket.connect(new InetSocketAddress(hostname, bsEntry.getValue()),10000);
+						System.err.println("Connected to " + nepenthesServer.getValue());
+
+						PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+						BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+
+
+						/***
+						 * Format is the following:
+						 * utc: <UTC_START>
+						 * values
+						 */
+						out.println(ConfigManager.getSmirfMap().get("NEPENTHES_UTC_PREFIX") + utcStr);
+
+
+						for(Point p: pointsList) {
+
+							if(! p.getBeamSearcher().equals(bsEntry.getKey())) continue;
+
+							out.println(p);
+							out.flush();
+
+						}
+
+						out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
+						out.flush();
+						out.close();
+						in.close();
+						socket.close();
+
+					}
+
+				}
+
+
+
+			}
+
+
 			for(Point pt: pointsList) {
-				
-				if(!servers.contains(pt.server)) continue;
-				
-				PrintStream ps = printStreams.get(servers.indexOf(pt.server));
+
+				if(!beamSearchers.contains(pt.beamSearcher)) continue;
+
+				PrintStream ps = printStreams.get(beamSearchers.indexOf(pt.beamSearcher));
 				ps.println(pt);
 				ps.flush();
-				
+
 			}
-			
+
 
 		} catch (ParseException e) {
 			e.printStackTrace();
