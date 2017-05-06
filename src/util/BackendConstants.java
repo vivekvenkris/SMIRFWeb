@@ -50,7 +50,7 @@ public interface BackendConstants {
 	
 	
 	
-	Map<String, Integer> bfNodeNepenthesServers = ConfigManager.getNepenthesServers();
+	Map<String, Map<Integer,Integer>> bfNodeNepenthesServers = ConfigManager.getNepenthesServers();
 	
 	
 	

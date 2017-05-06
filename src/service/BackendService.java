@@ -31,6 +31,7 @@ import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.BackendInInvalidStateException;
 import exceptions.UnexpectedBackendReplyException;
+import manager.DBManager;
 import util.BackendConstants;
 import util.SMIRFConstants;
 import util.Utilities;
@@ -158,6 +159,7 @@ public class BackendService implements BackendConstants {
 			response = this.sendCommand(BackendService.start,"");
 			if(response.equals("fail")) throw new UnexpectedBackendReplyException(start, response);
 			observation.setUTCDateAndString(response);
+			//DBManager.addObservationToDB(observation);
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
 		}catch (ParseException e) {
