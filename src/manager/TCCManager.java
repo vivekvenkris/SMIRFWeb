@@ -21,6 +21,7 @@ public class TCCManager {
 		Pair<Double,Double> tiltNSNow = tccStatus.getTiltNS();
 		
 		int rampTime = 10;
+		
 		System.err.println("source:"+srcRadNS*Constants.rad2Deg + " "+srcRadMD*Constants.rad2Deg);
 		System.err.println("status:" + " " + tiltNSNow.getValue0()*Constants.rad2Deg + " " + tiltNSNow.getValue1()*Constants.rad2Deg + " "
 		+ tiltMDNow.getValue0()*Constants.rad2Deg + " "+tiltMDNow.getValue1()*Constants.rad2Deg );
@@ -33,7 +34,7 @@ public class TCCManager {
 		System.err.println("slew time:" + slewTimeNS.getValue0() + " "+slewTimeNS.getValue1()+ " "+slewTimeMD.getValue0()+ " "+slewTimeMD.getValue1());
 		
 		Double maxSlewTime = Collections.max(Arrays.asList(slewTimeNS.getValue0(),slewTimeNS.getValue1(),slewTimeMD.getValue0(),slewTimeMD.getValue1()));
-		return (int)(maxSlewTime + 2*rampTime);
+		return (int)(1.2*(maxSlewTime + 2*rampTime));
 				
 	}
 	
