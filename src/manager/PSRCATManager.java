@@ -1,6 +1,7 @@
 package manager;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -10,6 +11,7 @@ import java.util.List;
 import bean.Angle;
 import bean.ObservationTO;
 import bean.TBSourceTO;
+import util.ConfigManager;
 import util.PSRCATConstants;
 
 public class PSRCATManager implements PSRCATConstants{
@@ -28,7 +30,7 @@ public class PSRCATManager implements PSRCATConstants{
 			BufferedReader br = null;
 			int count = 0;
 			try {
-				br = new BufferedReader(new FileReader(psrcatDB));
+				br = new BufferedReader(new FileReader(psrcatDB)); 
 				String line = "";
 				TBSourceTO tbSourceTO = null;
 				count++;
@@ -66,6 +68,41 @@ public class PSRCATManager implements PSRCATConstants{
 				}
 			}
 		}
+		
+		String file = null;
+		if(( file = ConfigManager.getSmirfMap().get("HIGH_PRIORITY_PULSAR_LIST")) !=null){
+			
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader( new FileReader(new File(file)));
+				String line = "";
+				
+				while( ( line = br.readLine())  !=null) {
+					
+					if(PSRCATManager.getTbSources().contains(new TBSourceTO(line))){
+						//System.err.println("increasing priority of TB source: " + line);
+						PSRCATManager.getTbSources().get(PSRCATManager.getTbSources().indexOf(new TBSourceTO(line))).setPriority(2);
+					}
+					
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			finally {
+				try {
+					if(br!=null)
+					br.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			
+			
+		}
+		
+		
 		return tbSources;
 	}
 	
@@ -83,6 +120,7 @@ public class PSRCATManager implements PSRCATConstants{
 	}
 	
 	public static void main(String[] args) {
+		loadDB();
 		System.err.println(tbSources.size());
 		
 	}
