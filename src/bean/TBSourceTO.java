@@ -62,10 +62,13 @@ public class TBSourceTO {
 	
 	public TBSourceTO() {
 		projectID = SMIRFConstants.PID;
+		priority = 1;
+
 	}
 	public TBSourceTO(String jname){
 		this();
 		psrName = jname;
+		priority = 1;
 	}
 	
 	public void addToEphemerides( String str){
