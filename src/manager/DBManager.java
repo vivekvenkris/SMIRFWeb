@@ -57,7 +57,8 @@ public class DBManager {
 	}
 
 	public static PointingTO getFluxCalByUniqueName(String name){
-		return new PointingTO(new FluxCalibratorTO(DBService.getFluxCalByUniqueName(name)));
+		FluxCalibrator calibrator = DBService.getFluxCalByUniqueName(name);
+		return calibrator == null? null : new PointingTO(new FluxCalibratorTO(calibrator));
 	}
 	public static PointingTO getPhaseCalByUniqueName(String name){
 		return new PointingTO(new PhaseCalibratorTO(DBService.getPhaseCalByUniqueName(name)));
