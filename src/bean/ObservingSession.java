@@ -56,6 +56,8 @@ public class ObservingSession {
 		this.observer = observationSessionTO.getObserver();
 		this.numPlannedPointings = observationSessionTO.getNumPlannedPointings();
 		this.numPointingsDone = 0;
+		if(observationSessionTO.getSessionID() !=null)
+			this.sessionID = observationSessionTO.getSessionID();
 	}
 	public Integer getSessionID() {
 		return sessionID;
