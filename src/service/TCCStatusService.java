@@ -48,7 +48,7 @@ public class TCCStatusService implements TCCConstants {
 		try {
 		TCCStatus status = new TCCStatus();
 		status.setOverview(Utilities.getTextFromXpath(xmlMessage, "//overview/error_string"));
-		
+		status.setXml(xmlMessage);
 		TCCStatus.SourceCoordinates coords = status.getCoordinates();
 		coords.setRa(new Angle(Utilities.getTextFromXpath(xmlMessage, "//coordinates/RA"),Angle.HHMMSS));
 		coords.setDec(new Angle(Utilities.getTextFromXpath(xmlMessage, "//coordinates/Dec"),Angle.DDMMSS));
@@ -115,6 +115,7 @@ public class TCCStatusService implements TCCConstants {
 	public static void main(String[] args) throws TCCException {
 		TCCStatusService service = new TCCStatusService();
 		TCCStatus status = service.getTelescopeStatus();
+		Utilities.prettyPrintXML(status.getXml());
 		System.exit(0);
 		 final String s = "<?xml version='1.0' encoding='ISO-8859-1'?>"
 	        		+" <tcc_status> "
