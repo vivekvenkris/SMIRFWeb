@@ -17,7 +17,7 @@ public class CalibrationService {
 			
 			String response =Utilities.runSSHProcess(BackendConstants.dadaAtLocalhost, process, null, true);
 			
-			//System.err.println(response);
+			System.err.println(response);
 			process = "cd "+BackendConstants.resultsDir+"/"+utc+"/"+calibratorName+ "; "+BackendConstants.updateDelays;
 			System.err.println("running: "+ process);
 			response = Utilities.runSSHProcess(BackendConstants.dadaAtLocalhost, process, null, true);
@@ -27,6 +27,10 @@ public class CalibrationService {
 			return true;
 			
 
+	}
+	
+	public static void main(String[] args) throws IOException, InterruptedException {
+		new CalibrationService().Calibrate("2017-05-08-11:58:34", "CJ1229+0203");
 	}
 
 }
