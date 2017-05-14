@@ -76,6 +76,11 @@ public class EphemService {
 		return getRadLMSTForMolonglo (getMJDNow());
 	}
 
+	
+	public static Angle getAngleLMSTForMolongloNow(){
+		return new Angle(getRadLMSTForMolongloNow(),Angle.HHMMSS);
+	}
+	
 	public static double getRadLMSTForMolonglo (double mjd)
 	{
 		double gast, last;
