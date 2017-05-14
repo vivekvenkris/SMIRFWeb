@@ -1,5 +1,6 @@
 package standalones;
 import java.io.BufferedReader;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -10,11 +11,15 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.Map.Entry;
 
 import org.apache.commons.cli.CommandLine;
@@ -31,7 +36,8 @@ import bean.ObservationTO;
 import bean.TBSourceTO;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
-import manager.MolongloCoordinateTransforms;
+import exceptions.InvalidFanBeamNumberException;
+import manager.MolongloCoordinateTransforms; 
 import service.EphemService;
 import util.BackendConstants;
 import util.ConfigManager;
@@ -41,10 +47,10 @@ import util.Utilities;
 
 public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
-	public Integer getBeamSearcher(double startFB, double endFB){
-		
-		Integer startServer = ConfigManager.getServerNumberForFB((int) startFB);
-		Integer endServer =  ConfigManager.getServerNumberForFB((int) endFB);
+	public Integer getBeamSearcher(double startFB, double endFB) throws InvalidFanBeamNumberException{
+
+		Integer startServer = ConfigManager.getBeamSearcherForFB(((int) startFB));
+		Integer endServer =  ConfigManager.getBeamSearcherForFB((int) endFB);
 		if(startServer == null || endServer == null ) return null;
 		if(startServer != endServer ) return ConfigManager.getServerNumberForServerName(ConfigManager.getEdgeNode());
 
@@ -52,27 +58,30 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 	}
 
-	//	public Integer getServer(double startFB, double endFB){
-	//		Integer startServer = (int)Math.floor((startFB-1)/numBeamsPerServer);
-	//		Integer endServer = (int)Math.floor((endFB-1)/numBeamsPerServer);
-	//		if(startServer != endServer ) return BF08;
-	//
-	//		return startServer;
-	//
-	//	}
 
-	public List<Point> generateUniqStitches(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException{
-		List<Point> points =  generateUniqStitches(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), observation.getCoords().getPointingTO().getAngleDEC(), 
-				SMIRFConstants.thresholdPercent, fft_size, Constants.tsamp);
 
-		for(TBSourceTO to : observation.getTiedBeamSources()) {
-			Point point = getPointForSkyPosition(observation.getUtc(), observation.getAngleRA(), observation.getAngleDEC(), to.getAngleRA(), to.getAngleDEC(), fft_size, Constants.tsamp);
-			points.add(point);
+	public List<Point> generateUniqStitches(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException {
+		try {
+			List<Point> points =  generateUniqStitches(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), 
+					observation.getCoords().getPointingTO().getAngleDEC(), 
+					SMIRFConstants.thresholdPercent, fft_size, Constants.tsamp);
+
+			for(TBSourceTO to : observation.getTiedBeamSources()) {
+				Point point = getPointForSkyPosition(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), 
+						observation.getCoords().getPointingTO().getAngleDEC(), to.getAngleRA(), to.getAngleDEC(), fft_size, Constants.tsamp);
+				
+				if(point!=null) points.add(point);
+			}
+			return points;
+
+		}catch (EmptyCoordinatesException | CoordinateOverrideException | InvalidFanBeamNumberException e) {
+
+			e.printStackTrace();
+			throw e;
 		}
-		return points;
 	}
 
-	public Point getPointForSkyPosition(String utcStr, Angle boresightRA, Angle boresightDeclination, Angle pointRA, Angle pointDEC, Long totalSamples, double tsamp)throws EmptyCoordinatesException, CoordinateOverrideException{
+	public Point getPointForSkyPosition(String utcStr, Angle boresightRA, Angle boresightDeclination, Angle pointRA, Angle pointDEC, Long totalSamples, double tsamp)throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException{
 
 		double samples2secs = tsamp;
 		Point p = new Point();
@@ -96,7 +105,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 		Map<Integer, Long> samplesInFB = new LinkedHashMap<Integer, Long>();
 
-		int sampleSteps = 1024;
+		int sampleSteps = 2048;
 
 		for(int n=0;n<totalSamples; n+=sampleSteps){
 
@@ -120,12 +129,20 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 			samplesInFB.put(nfbLater, numSamples);
 
 		}
+		
+		if(Collections.min(samplesInFB.keySet()) < 1 ) return null;
+		if(Collections.max(samplesInFB.keySet()) > numFB ) return null;
 
 		p.startFanBeam = p.endFanBeam = nfbNow;
 		p.startNS = p.endNS = nsNow;
 		p.uniq = false;
 		p.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
 		p.ra = EphemService.getRA(lst, new Angle(now.getRadHA(),Angle.HHMMSS)).toString();
+		
+		Integer beamSearcher = getBeamSearcher(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
+		p.beamSearcher = ( beamSearcher == null )? -1 : beamSearcher;
+		
+		
 		Long startSample = 0L;
 		List<Traversal> traversals = p.traversalList;
 		for(Map.Entry<Integer, Long> entry: samplesInFB.entrySet()){
@@ -140,7 +157,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 	}
 
 
-	public List<Point> generateUniqStitches(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples, double tsamp) throws EmptyCoordinatesException, CoordinateOverrideException {
+	public List<Point> generateUniqStitches(String utcStr, Angle ra, Angle dec, double thresholdPercent, Long totalSamples, double tsamp) throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException {
 
 		double samples2secs = tsamp;
 		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utcStr),Angle.HHMMSS);
@@ -213,48 +230,77 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				p.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
 				p.ra = EphemService.getRA(lst, new Angle(now.getRadHA(),Angle.HHMMSS)).toString();
 
-				Integer beamSearcher = getBeamSearcher(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
-				p.beamSearcher = ( beamSearcher == null )? -1 : beamSearcher;
+
+
 				if(!unwantedPoint){
+
+					Integer beamSearcher = getBeamSearcher(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
+					p.beamSearcher = ( beamSearcher == null )? -1 : beamSearcher;
+
 					if(lastPointMap ==null){
+
 						Long startSample = 0L;
 						List<Traversal> traversals =  p.traversalList;
+
 						for(Map.Entry<Integer, Long> entry: samplesInFB.entrySet()){
+
 							Long numSamples = entry.getValue();
 							Long numSamps = (startSample + numSamples) > totalSamples ? (totalSamples-startSample): numSamples;
+
 							Double percent =  100*(numSamples+0.0)/totalSamples;
+
 							traversals.add(new Traversal(entry.getKey()+0.0,nsDistance,startSample,numSamps,percent.intValue()));
+
 							startSample += numSamples;
+
 						}
-						//p.traversalMap.put(server, traversals);
+
 						if(maxTraversals < samplesInFB.size()) maxTraversals = samplesInFB.size();
 						p.uniq = true;
+
 					}
 					else{
+
 						for(Map.Entry<Integer, Long> previous : lastPointMap.entrySet()){
+
 							Integer fb = previous.getKey();
 							Long numSamplesPrevious = previous.getValue();
+
 							Double  percent =  100*(numSamplesPrevious+0.0)/totalSamples;
+
 							Long numSamplesNow = samplesInFB.getOrDefault(fb, 0L);
+
 							Double percentNow = 100*(numSamplesNow + 0.0)/totalSamples;
 
 							if(Math.abs(percent - percentNow) > thresholdPercent){
+
 								Point lastPoint = points.get(points.size()-1);
 								lastPoint.endFanBeam = nfbNow;
 								lastPoint.endNS = nsNow;
+
 								Long startSample = 0L;
+
 								List<Traversal> traversals = p.traversalList;
+
 								for(Map.Entry<Integer, Long> entry: samplesInFB.entrySet()){
+
 									Long numSamples = entry.getValue();
 									Long numSamps = (startSample + numSamples) > totalSamples ? (totalSamples-startSample): numSamples;
+
 									Double pc =  100*(numSamples+0.0)/totalSamples;
+
 									traversals.add(new Traversal(entry.getKey()+0.0,nsDistance,startSample,numSamps,pc.intValue()));
+
 									startSample += numSamples;
+
 								}
-								//p.traversalMap.put(server, traversals);
+
+
 								if(maxTraversals < samplesInFB.size()) maxTraversals = samplesInFB.size();
-								p.uniq = true;
+								p.uniq = true; 
+
 								break;
+
 							}
 						}
 					}
@@ -270,9 +316,9 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 	}
 
 
-	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, IOException{
+	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, IOException, InvalidFanBeamNumberException{
 
-		args = new String("-u 2017-03-11-00:21:21 -r 17:45:00 -d -30:00:00 -n 1373291 -t 327.68e-6 -o nepenthes ").split(" ");
+		args = new String("-u 2017-05-09-14:15:42 -r 16:31:3.30 -d -51:36:17.70 -n 2097152 -t 327.68e-6 -o test ").split(" ");
 
 		CommandLine line;
 		CommandLineParser parser = new DefaultParser();
@@ -330,6 +376,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 			Angle decBoresight = new Angle(decStr,Angle.DDMMSS);
 
 			if(point){
+
 				Point pt = new SMIRF_GetUniqStitches().getPointForSkyPosition(utcStr,raBoresight, decBoresight, 
 						new Angle( getValue(line, pointRA),Angle.HHMMSS), new Angle(getValue(line, pointDEC), Angle.DDMMSS), nsamp, tsamp);
 
@@ -339,6 +386,8 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				ps.flush();
 				ps.close();
 				return;
+
+
 			}
 
 			List<PrintStream> printStreams = new ArrayList<>();
@@ -348,7 +397,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 				if(outPrefix.equalsIgnoreCase("stderr")) printStreams.add(System.err);
 
-				else printStreams.add(new PrintStream(outPrefix+ ".mpsr-bf0" +beamSearcher));
+				else printStreams.add(new PrintStream(outPrefix+ ".BS" +beamSearcher));
 
 			}
 
@@ -357,7 +406,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 			List<Point> pointsList = new SMIRF_GetUniqStitches().generateUniqStitches( utcStr, raBoresight, decBoresight, thresholdPercent, nsamp,tsamp);
 
-			System.err.println("Got points list");
+			System.err.println("Got points list. size=" + pointsList.size());
 
 			if(outPrefix.equals("nepenthes")) {
 				if(utcStr.contains(".")) utcStr = utcStr.split("\\.")[0];
@@ -415,22 +464,80 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 			}
 
+			Map<Integer, Set<Integer>> fanbeamsToTransfer = new HashMap<>();
+			Set<Integer> edgeBeams = new HashSet<>();
 
-			for(Point pt: pointsList) {
+			for(Point p: pointsList){
 
-				if(!beamSearchers.contains(pt.beamSearcher)) continue;
+				if(p.getBeamSearcher().equals(ConfigManager.getEdgeBS())) {
 
-				PrintStream ps = printStreams.get(beamSearchers.indexOf(pt.beamSearcher));
-				ps.println(pt);
-				ps.flush();
+					Integer fanbeam = p.getStartFanBeam().intValue();
+
+					Integer bs =  ConfigManager.getBeamSearcherForFB(fanbeam);
+
+					Set<Integer> fanbeams = fanbeamsToTransfer.getOrDefault(bs, new LinkedHashSet<>());
+					fanbeams.add(fanbeam);
+
+					fanbeamsToTransfer.put(bs, fanbeams);
+
+					Set<Integer> traversedFBs = p.getTraversalList().stream().map(t -> t.getFanbeam().intValue()).collect(Collectors.toSet());
+
+					for(Integer fb: traversedFBs){
+
+						fanbeams  = fanbeamsToTransfer.getOrDefault(ConfigManager.getBeamSearcherForFB(fb), new LinkedHashSet<>());
+						fanbeams.add(fb);
+						fanbeamsToTransfer.put(ConfigManager.getBeamSearcherForFB(fb), fanbeams);
+						edgeBeams.addAll(fanbeams);
+
+					}
+					
+					edgeBeams.addAll(fanbeams);
+					
+				}
+			}
+
+			for(Point p: pointsList){
+				
+				Set<Integer> traversedFBs = p.getTraversalList().stream().map(t -> t.getFanbeam().intValue()).collect(Collectors.toSet());
+				if(edgeBeams.containsAll(traversedFBs)) p.setBeamSearcher(ConfigManager.getEdgeBS());
+				
+			}
+
+
+
+			for(Integer bs: beamSearchers){
+
+				PrintStream ps = printStreams.get(beamSearchers.indexOf(bs));
+				
+				int i=0;
+				for(Point pt: pointsList) {
+
+					if(pt.beamSearcher.equals(bs)){
+						i++;
+						ps.println(pt);
+						ps.flush();
+					}
+				}
+
+				ps.println();
+				System.err.println(bs + " has " + i + " points");
+				ps.println();
 
 			}
+
+			for(Entry<Integer,Set<Integer>> e : fanbeamsToTransfer.entrySet()) {
+				System.err.println(e.getKey() + " sends " + e.getValue().size() + " fanbeams.");
+				for(Integer fanbeam: e.getValue()) System.err.println( e.getKey() + " " + fanbeam + " " + ConfigManager.getBeamSubDir(utcStr.split("\\.")[0], fanbeam));
+				System.err.println();
+			}
+
+
+			System.err.println("Total points:" + pointsList.size());
 
 
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-
 
 	}
 
