@@ -83,6 +83,11 @@ public class CoordinateTO {
 		this.radMD = radMD;
 	}
 	
+	@Override
+	public String toString() {
+		
+		return "HA:" + radHA + " DEC: " + radDec + " NS: " + radNS + " MD: " + radMD;
+	}
 	
 	
 	
