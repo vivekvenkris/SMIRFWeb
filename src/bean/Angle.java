@@ -162,6 +162,12 @@ public class Angle{
 		return null;
 				
 	}
+	public Double getRadValue() {
+		return radValue;
+	}
+	public void setRadValue(Double radValue) {
+		this.radValue = radValue;
+	}
 	
 	
 
