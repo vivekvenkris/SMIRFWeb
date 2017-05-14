@@ -2,13 +2,22 @@ package bean;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
+import exceptions.TCCException;
 import manager.MolongloCoordinateTransforms;
 import service.EphemService;
+import service.TCCStatusService;
 import util.BackendConstants;
+import util.Utilities;
 
 public class Coords {
  PointingTO pointingTO;
@@ -36,6 +45,26 @@ public Coords(PointingTO pointingTO){
 public Coords(PointingTO pointingTO, LocalDateTime utcTime) throws EmptyCoordinatesException, CoordinateOverrideException{
 	this(pointingTO, new Angle(EphemService.getRadLMSTforMolonglo(utcTime), Angle.HHMMSS));
 	utc = utcTime.format(DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
+}
+
+public Coords(TCCStatus status) throws CoordinateOverrideException, EmptyCoordinatesException{
+	
+	angleNS = new Angle((status.getTiltNS().getValue0() + status.getTiltNS().getValue1())/2.0, Angle.DEG) ;
+	angleMD = new Angle((status.getTiltMD().getValue0() + status.getTiltMD().getValue1())/2.0, Angle.DEG) ;
+	CoordinateTO cto = new CoordinateTO(null, null, angleNS, angleMD);
+	MolongloCoordinateTransforms.telToSky(cto);
+	
+	this.angleHA  = cto.getAngleHA();
+	this.angleLST = EphemService.getAngleLMSTForMolongloNow();
+	
+	
+	pointingTO = new PointingTO(EphemService.getRA(angleLST, angleHA), cto.getAngleDEC());
+	
+	
+}
+
+public static void main(String[] args) throws TCCException, CoordinateOverrideException, EmptyCoordinatesException {
+	new Coords(new TCCStatusService().getTelescopeStatus());
 }
  
  public void recompute(Angle lst) throws EmptyCoordinatesException, CoordinateOverrideException{
@@ -108,7 +137,27 @@ public static Comparator<Coords> compareMDNS = new Comparator<Coords>() {
 };
 
 
- 
+public static List<Coords> sortCoordsByNearestDistanceTo(List<Coords> inputList, Coords nearTo){
+	
+	List<Double> distanceList = apply(inputList, a -> Utilities.distance(a.getAngleNS(), a.getAngleMD(), nearTo.getAngleNS(), nearTo.getAngleMD()));
+	List<Double> unsortedList = new ArrayList<>(distanceList);
+	
+	Collections.sort(distanceList);
+	List<Double> sortedList = distanceList;
+	
+	List<Coords> outputList = new ArrayList<>();
+	
+	for( int i=0; i < inputList.size(); i++ ){
+		int index = unsortedList.indexOf(sortedList.get(i));
+		outputList.add(inputList.get(index));
+	}
+	return outputList;
+	
+}
+
+public static <T, R> List<R> apply(Collection<T> coll, Function<? super T, ? extends R> mapper) {
+    return coll.stream().map(mapper).collect(Collectors.toList());
+}
 
 
 public String getUtc() {
