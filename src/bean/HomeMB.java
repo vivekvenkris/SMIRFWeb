@@ -1,6 +1,7 @@
 package bean;
 
 import java.text.ParseException;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -65,7 +66,7 @@ public class HomeMB {
 	public void updateObs(){
 		this.observation = ScheduleManager.getCurrentObservation();
 		try {
-			this.backendStatus = backendStatusService.getBackendStatus();
+			this.backendStatus = backendStatusService.getBackendStatusForHomePage();
 			TCCStatus tccStatus = tccService.getTelescopeStatus();
 			if(tccStatus.isTelescopeIdle()) this.TCCStatus = "Idle";
 			else if(tccStatus.isTelescopeDriving())this.TCCStatus =  "driving";
@@ -78,11 +79,17 @@ public class HomeMB {
 			this.backendStatus="problem";
 			e.printStackTrace();
 			
+		} catch (InterruptedException e) {
+			this.backendStatus="problem";
+			e.printStackTrace();
 		}
 	}
 	
 	public void updateTimeElapsed(){
-			if(this.observation == null || this.observation.getUtc() == null || observation.getUtcDate() == null) return;
+			if(this.observation == null || this.observation.getUtc() == null || observation.getUtcDate() == null) {
+				this.timeElapsedPercent = 0;
+				return;
+			}
 			this.timeElapsedPercent = (int) ((new Date().getTime() - observation.getUtcDate().getTime())*100/(observation.getTobs()*1000));
 	}
 
