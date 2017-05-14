@@ -28,6 +28,42 @@ public class PointingTO {
 		 return "("+this.type+") "+this.pointingName;
 	}
 	
+	public PointingTO(Integer pointingID, String PointingName, String raStr, String decStr){
+		this.pointingID = pointingID;
+		this.pointingName = PointingName;
+		this.angleRA = new Angle(raStr,Angle.HHMMSS);
+		this.angleDEC = new Angle(decStr, Angle.DDMMSS);
+		
+		this.priority =10;
+		this.type = SMIRFConstants.randomPointingSymbol;
+		this.numObs = 0;
+		
+		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
+		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
+		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
+		
+		
+	}
+	
+	public PointingTO(Angle RA, Angle DEC){
+		
+		this.pointingID = null;
+		this.pointingName = null;
+		this.angleRA = RA;
+		this.angleDEC = DEC;
+		
+		this.type = SMIRFConstants.randomPointingSymbol;
+		this.priority =null;
+		this.numObs = null;
+
+		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
+		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
+		if(this.angleLON.getRadianValue() > Math.PI ) this.angleLON.setRadValue(this.angleLON.getRadianValue() - 2*Math.PI);
+		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
+		
+	}
+	
+	
 	public PointingTO(Pointing pointing) {
 		this.pointingID = pointing.getPointingID();
 		this.pointingName = pointing.getPointingName();
@@ -49,11 +85,13 @@ public class PointingTO {
 		this.type = SMIRFConstants.phaseCalibratorSymbol;
 		this.priority = SMIRFConstants.highestPriority;
 		/**
-		 * Check this coordinate conversion. - 1950 and J2000 shit.
+		 * Check this coordinate conversion. - 1950 and J2000 .
 		 */
 		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
-		this.angleLAT = new Angle(sc.alpha, Angle.DDMMSS);
-		this.angleLON = new Angle(sc.delta, Angle.DDMMSS);
+		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
+		if(this.angleLON.getRadianValue() > Math.PI ) this.angleLON.setRadValue(this.angleLON.getRadianValue() - 2*Math.PI);
+		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
+		
 		
 	}
 	
@@ -68,8 +106,10 @@ public class PointingTO {
 		 * Check this coordinate conversion. - 1950 and J2000 shit.
 		 */
 		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
-		this.angleLAT = new Angle(sc.alpha, Angle.DDMMSS);
-		this.angleLON = new Angle(sc.delta, Angle.DDMMSS);
+		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
+		if(this.angleLON.getRadianValue() > Math.PI ) this.angleLON.setRadValue(this.angleLON.getRadianValue() - 2*Math.PI);
+		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
+		
 		
 	}
 	
