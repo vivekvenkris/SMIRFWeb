@@ -32,6 +32,8 @@ import manager.ScheduleManager;
 import service.BackendService;
 import service.DBService;
 import service.EphemService;
+import service.TCCService;
+import service.TCCStatusService;
 import util.BackendConstants;
 import util.ChartHelper;
 import util.SMIRFConstants;
@@ -105,6 +107,7 @@ public class SchedulerMB implements Serializable {
 		glanceEq.setZoom(true);
 		glanceGal.setZoom(true);
 		glanceTel.setZoom(true);
+		
 
 		glanceEq.setLegendPlacement(LegendPlacement.OUTSIDEGRID);
 		glanceGal.setLegendPlacement(LegendPlacement.OUTSIDEGRID);
@@ -120,18 +123,26 @@ public class SchedulerMB implements Serializable {
 		
 		LineChartSeries allPointingsEq = new LineChartSeries();
 		LineChartSeries allPointingsGal = new LineChartSeries();
+		
 		for(PointingTO pointingTO: DBManager.getAllPointings()){
+			
 			allPointingsEq.set(pointingTO.getAngleRA().getDecimalHourValue(), pointingTO.getAngleDEC().getDegreeValue());
 			//ChartHelper.addToSeries(allPointingsGal,pointingTO.getAngleLON().getDegreeValue(),pointingTO.getAngleLAT().getDegreeValue());
 			allPointingsGal.set(pointingTO.getAngleLON().getDegreeValue(),pointingTO.getAngleLAT().getDegreeValue());
+			
 		}
+		
 		allPointingsEq.setLabel("all pointings");
 		allPointingsGal.setLabel("all pointings");
+		
 		allPointingsEq.setShowLine(false);
 		allPointingsGal.setShowLine(false);
+		
 		glanceEq.addSeries(allPointingsEq);
 		glanceGal.addSeries(allPointingsGal);
+		
 		//ChartHelper.addSeriesToChart(glanceGal, allPointingsGal);
+		
 		System.err.println(DBManager.getAllPointings().size() + " " +allPointingsGal.getData().size() + " " + glanceGal.getSeries().get(0).getData().size() + " " + glanceEq.getSeries().get(0).getData().size() );
 		
 		
@@ -161,27 +172,43 @@ public class SchedulerMB implements Serializable {
 			else utc = enteredUTC + ".000";
 
 			LocalDateTime utcTime =  Utilities.getUTCLocalDateTime(utc);
-			utcTime = utcTime.plusSeconds(SMIRFConstants.fluxCalibrationTobs + SMIRFConstants.phaseCalibrationTobs);
-
-			List<Coords> surveyCoordsList = manager.getPointingsForSession(Utilities.getUTCString(utcTime), duration* durationUnits ,tobs * tobsUnits, orderMDNS? Coords.compareMDNS: Coords.compareNSMD);
-			if(surveyCoordsList.isEmpty()) throw new NoSourceVisibleException("No pointing is visible to observe at UTC = " + utc);
 			
 			Coords phaseCalCoords = null;
 			Coords fluxCalCoords = null;
-			utcTime =  Utilities.getUTCLocalDateTime(utc);
+			
+			Coords lastCoords = new Coords( new TCCStatusService().getTelescopeStatus());
+			
 			if(this.phaseCal) {
+				
 				if(this.phaseCalibrator==null) phaseCalibrator = getNearestAndBrightestPhaseCalibrator(utc);		
 				phaseCalCoords = new Coords(new PointingTO(phaseCalibrator),utcTime);
+				
+				lastCoords = phaseCalCoords;
+				
+				utcTime = utcTime.plusSeconds(SMIRFConstants.phaseCalibrationTobs);
+				
+				coordsList.add(phaseCalCoords);
+				
 			}
 			
-			utcTime = utcTime.plusSeconds(SMIRFConstants.phaseCalibrationTobs);
+			
 			if(fluxCalStart){
-				if(this.fluxCalibrator == null)  fluxCalibrator = getNearestAndHighDMFluxCalibrator(surveyCoordsList.get(0).getPointingTO(),utc);
+				
+				if(this.fluxCalibrator == null)  fluxCalibrator = getNearestAndHighDMFluxCalibrator(lastCoords.getPointingTO(),utc);
 				fluxCalCoords =  new Coords(new PointingTO(fluxCalibrator),utcTime);
-			}
+				
+				lastCoords = fluxCalCoords;
+				
+				utcTime = utcTime.plusSeconds(SMIRFConstants.fluxCalibrationTobs);
+				coordsList.add(fluxCalCoords);
 
-			if(phaseCalCoords!=null) coordsList.add(phaseCalCoords);
-			if(fluxCalCoords!=null) coordsList.add(fluxCalCoords);
+			}
+		
+			System.err.println("Telescope is at " + lastCoords.getAngleNS() + " " + lastCoords.getAngleMD());
+			List<Coords> surveyCoordsList = manager.getPointingsForSession(Utilities.getUTCString(utcTime), duration* durationUnits ,tobs * tobsUnits, 
+					orderMDNS? Coords.compareMDNS: Coords.compareNSMD, lastCoords, fluxCalWhenever);
+			if(surveyCoordsList.isEmpty()) throw new NoSourceVisibleException("No pointing is visible to observe at UTC = " + utc);
+			
 			coordsList.addAll(surveyCoordsList);
 			System.err.println(coordsList.size());
 			drawGlancePlot();
@@ -215,7 +242,7 @@ public class SchedulerMB implements Serializable {
 		glanceEq.addSeries(scheduleEq);
 		glanceGal.addSeries(scheduleGal);
 		//ChartHelper.addSeriesToChart(glanceGal, scheduleGal);
-
+		scheduleTel.setShowLine(false);
 		glanceTel.addSeries(scheduleTel);
 
 	}
@@ -254,8 +281,29 @@ public class SchedulerMB implements Serializable {
 	}
 
 	public void terminateSchedule(ActionEvent event){
+		
 		manager.terminate();
+		
 		while(manager.getScheduler()!= null && manager.getScheduler().isDone());
+		
+		try {
+			
+			BackendService.createBackendInstance().stopBackend();
+			TCCService.createTccInstance().stopTelescope();
+
+		} catch (BackendException e) {
+			
+			e.printStackTrace();
+			addMessage(e.getMessage());
+
+			
+		} catch (TCCException e) {
+			
+			e.printStackTrace();
+			addMessage(e.getMessage());
+
+		}
+		
 		addMessage("Terminated.");
 	}
 
@@ -266,28 +314,9 @@ public class SchedulerMB implements Serializable {
 	}
 	
 	
-	public void test(){
-		ObservationTO observation = new ObservationTO(new Coords(new PointingTO(DBService.getPointingByUniqueName("SMIRF_1906-0119"))),900);
-		ObservationManager manager = new ObservationManager();
-		List<TBSourceTO> tbs = new ArrayList<>();
-		tbs.add(new TBSourceTO("J1859+00"));
-		tbs.add(new TBSourceTO("J1900-0051"));
-		tbs.add(new TBSourceTO("J1901+00"));
-		observation.setTiedBeamSources(tbs);
-		observation.setObsType(BackendConstants.tiedArrayFanBeam);
-		BackendService service = BackendService.createBackendInstance();
-		try {
-			service.startBackend(observation);
-		} catch (BackendException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 	
-
-
 	private PhaseCalibratorTO getNearestAndBrightestPhaseCalibrator(String utc) throws NoSourceVisibleException{
-		List<PhaseCalibratorTO> phaseCalibrators = DBManager.getAllPhaseCalibratorsOrderByFluxDesc();
+		List<PhaseCalibratorTO> phaseCalibrators = DBManager.getAllPhaseCalibrators();
 		List<PhaseCalibratorTO> shortlisted = new ArrayList<>();
 		try {
 			for(PhaseCalibratorTO p: phaseCalibrators){
