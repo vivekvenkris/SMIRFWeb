@@ -159,8 +159,19 @@
 										<p:selectBooleanButton offLabel="No" onLabel="Yes" value="#{singleMB.tccEnabled}"></p:selectBooleanButton>
 										</p:column>
 									</p:row>
-								
-								</p:panelGrid>		
+	
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Do Post Observation Stuff ?"></p:outputLabel>
+										</p:column>
+										<p:column>
+											<p:selectBooleanButton offLabel="No" onLabel="Yes"
+												value="#{singleMB.doPostObservationStuff}"></p:selectBooleanButton>
+										</p:column>
+									</p:row>
+	
+	
+							</p:panelGrid>		
 								<p:separator/>
 								<h:panelGroup id="pointingInfo">		 
 									<p:panelGrid   styleClass="panelgrid"  rendered="#{ singleMB.selectedPointing!=null }"  columns="2" style="align: center;">
