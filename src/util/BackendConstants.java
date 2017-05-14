@@ -199,6 +199,7 @@ public interface BackendConstants {
 				"<type>${corr_type}</type>" +
 				"<processing_file>${corr_proc_file}</processing_file>" +
 				"<dump_time units='${corr_dump_time_units}'>${corr_dump_time}</dump_time>" +
+				"<mode>CORR</mode> " + 
 			"</correlation_parameters>";
 
 	String fabBeamParams = "<fan_beams_parameters>" +
