@@ -30,6 +30,11 @@ public class ObservationTO {
 	Coords coords;
 	ObservationSessionTO observingSession;
 	
+	@Override
+	public String toString() {
+		return "name: " + name + " RA:" + angleRA + " DEC:" + angleDEC + " tobs:" + tobs + " utc: " + utc;
+	}
+	
 	public ObservationTO() {
 		nfb = 352;
 		fanbeamSpacing = new Angle("0.01139601", Angle.DEG);
