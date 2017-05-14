@@ -8,10 +8,14 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.context.FacesContext;
 import javax.faces.event.ActionEvent;
 
+import exceptions.BackendException;
+import exceptions.TCCException;
 import manager.DBManager;
 import manager.ObservationManager;
 import manager.ScheduleManager;
+import service.BackendService;
 import service.EphemService;
+import service.TCCService;
 import util.BackendConstants;
 import util.SMIRFConstants;
 @ManagedBean
@@ -119,6 +123,7 @@ public class SingleMB {
 			System.err.println(observer);
 			System.err.println(tccEnabled);
 			System.err.println(backendEnabled);
+			
 			manager.startObserving(selectedPointing,tobs*tobsUnits,observer,tccEnabled,backendEnabled,doPostObservationStuff);
 		}
 		catch (Exception e) {
@@ -130,6 +135,24 @@ public class SingleMB {
 	public void terminateObservation(ActionEvent event){
 		manager.terminate();
 		while(manager.getScheduler()!= null && manager.getScheduler().isDone());
+		try {
+			
+			BackendService.createBackendInstance().stopBackend();
+			TCCService.createTccInstance().stopTelescope();
+
+		} catch (BackendException e) {
+			
+			e.printStackTrace();
+			addMessage(e.getMessage());
+
+			
+		} catch (TCCException e) {
+			
+			e.printStackTrace();
+			addMessage(e.getMessage());
+
+		}
+		
 		addMessage("Terminated.");
 	}
 
@@ -238,6 +261,14 @@ public class SingleMB {
 
 	public void setBackendEnabled(Boolean backendEnabled) {
 		this.backendEnabled = backendEnabled;
+	}
+
+	public Boolean getDoPostObservationStuff() {
+		return doPostObservationStuff;
+	}
+
+	public void setDoPostObservationStuff(Boolean doPostObservationStuff) {
+		this.doPostObservationStuff = doPostObservationStuff;
 	}
 
 
