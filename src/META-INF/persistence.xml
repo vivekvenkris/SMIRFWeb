@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <persistence version="2.1" xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd">
 	<persistence-unit name="SMIRFWeb" transaction-type="RESOURCE_LOCAL">
+	<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
 		<class>bean.Pointing</class>
 		<class>converters.Angle2DDMMSS</class>
 		<class>converters.Angle2HHMMSS</class>
@@ -9,6 +10,7 @@
 		<class>bean.Observation</class>
 		<class>bean.ObservingSession</class>
 		 <properties>
+		 
          <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/mpsr_ksp_survey"/>
          <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
          
