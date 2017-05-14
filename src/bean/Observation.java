@@ -47,11 +47,12 @@ public class Observation {
 	public Observation() {	}
 	public Observation(ObservationTO observationTO) {
 		this.sourceName = observationTO.getName();
-		this.utc = sdf.format(observationTO.getUtcDate());
+		this.utc = observationTO.getUtc();
 		this.tobs = observationTO.getTobs();
 		this.tiedBeamSources = observationTO.getTiedBeamSources().toString();
 		this.observationType = observationTO.getObsType();
-		this.observingSession = new ObservingSession(observationTO.getObservingSession());
+		if(observationTO.getObservingSession()!=null)
+			this.observingSession = new ObservingSession(observationTO.getObservingSession());
 		
 	}
 
