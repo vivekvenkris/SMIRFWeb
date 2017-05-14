@@ -87,7 +87,7 @@ public class BackendService implements BackendConstants {
 		case correlation:
 			defaultParams.put("corr_project_id",SMIRFConstants.PID);
 			defaultParams.put("corr_type", "FX");
-			
+			defaultParams.put("antenna_weights", "false");
 			defaultParams.put("corr_proc_file","mopsr.calib.hires.pref16.gpu");
 			template +=corrParams;
 			break;
@@ -98,6 +98,7 @@ public class BackendService implements BackendConstants {
 				String tbStr = "tb"+index;
 				defaultParams.put(tbStr+"_project_id", tbs.getProjectID());
 				defaultParams.put(tbStr+"_mode", "PSR");
+				defaultParams.put("antenna_weights", "true");
 				defaultParams.put(tbStr+"_proc_file","mopsr.dspsr.cpu");
 				defaultParams.put(tbStr+"_source_name", tbs.getPsrName());
 				defaultParams.put(tbStr+"_ra", tbs.getAngleRA().toHHMMSS());
@@ -122,8 +123,8 @@ public class BackendService implements BackendConstants {
 				tbParamStr = dspsrSubstitutor.replace(tbParamStr);
 
 				template+=tbParamStr;
-				index ++;
 				if(index >= BackendConstants.maximumNumberOfTB -1 ) break;
+				index ++;
 			}
 		case fanBeam:
 			defaultParams.put("fb_project_id", SMIRFConstants.PID);
@@ -159,7 +160,6 @@ public class BackendService implements BackendConstants {
 			response = this.sendCommand(BackendService.start,"");
 			if(response.equals("fail")) throw new UnexpectedBackendReplyException(start, response);
 			observation.setUTCDateAndString(response);
-			//DBManager.addObservationToDB(observation);
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
 		}catch (ParseException e) {
@@ -190,6 +190,18 @@ public class BackendService implements BackendConstants {
 		}
 
 	}
+	
+	public String getBackendStatusForHomePage() throws BackendException {
+		try{
+			String response = this.sendCommand(BackendService.query,"");
+			return response;
+		}catch (ConnectException e) {
+			return "cannot connect";
+		}
+
+	}
+	
+	
 
 	public Boolean isIdle() throws BackendException {
 		try{
@@ -236,11 +248,13 @@ public class BackendService implements BackendConstants {
 		messageMap.put("parameters", params);
 		
 		String message = messageSubstitutor.replace(messageWrapper);
-		String xmlResponseStr = talkToBackend(message);
-		String response = "";
+		
 
 		try  
 		{  
+			String xmlResponseStr = talkToBackend(message);
+			String response = "";
+			
 			switch (command) {
 
 			case query:
@@ -251,7 +265,7 @@ public class BackendService implements BackendConstants {
 				break;
 			case prepare:
 			case start:
-				System.err.println(message);
+				Utilities.prettyPrintXML(message);
 				response  = Utilities.getTextFromXpath(xmlResponseStr, "//response");
 				break;
 			}
@@ -259,7 +273,7 @@ public class BackendService implements BackendConstants {
 		} catch (ConnectException e) {  
 			throw e;
 		} catch (XPathExpressionException | ParserConfigurationException | SAXException | IOException e) {
-			e.printStackTrace();
+			if(! command.equals(query)) e.printStackTrace();
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
 
 		} 
@@ -451,7 +465,7 @@ public class BackendService implements BackendConstants {
 		defaultParams.put("east_tracking", "true");    
 		
 		defaultParams.put("corr_dump_time_units", "seconds");
-		defaultParams.put("corr_dump_time", "20");
+		defaultParams.put("corr_dump_time", "60");
 		
 		defaultParams.put("fb_spacing_units", "degrees");
 		
