@@ -17,7 +17,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +30,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import bean.Angle;
 import bean.Coords;
@@ -38,6 +45,7 @@ import bean.PointingTO;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
+import exceptions.InvalidFanBeamNumberException;
 import exceptions.ObservationException;
 import exceptions.PointingException;
 import exceptions.TCCException;
@@ -56,15 +64,12 @@ import util.Switches;
 import util.Utilities;
 
 public class ScheduleManager implements SMIRFConstants {
+
 	static ObservationTO currentObservation = null;
 	static String schedulerMessages = "";
 	private boolean finishCall = false;
 	private boolean terminateCall = false;
 	Future<Boolean> scheduler = null;
-	
-	
-
-
 
 	public void observeTestPSR(){
 
@@ -100,18 +105,22 @@ public class ScheduleManager implements SMIRFConstants {
 				observation.setCoords(new Coords(selectedPointing));
 				observation.setObserver(observer);
 				observation.setTobs(tobs);
+				if(observation.getObsType().equals(SMIRFConstants.phaseCalibratorSymbol)) observation.setTobs(SMIRFConstants.phaseCalibrationTobs);
+				if(observation.getObsType().equals(SMIRFConstants.fluxCalibratorSymbol)) observation.setTobs(SMIRFConstants.fluxCalibrationTobs);
 				currentObservation = observation;
-
-				manager.startObserving(observation, tccEnabled, backendEnabled);
 				
-				if(observation.isSurveyPointing() && doPostObservationStuff){
+				waitForPreviousObservations();
+				manager.startObserving(observation, tccEnabled, backendEnabled);
+				DBManager.addObservationToDB(observation);
+
+				if(!observation.isPhaseCalPointing() && doPostObservationStuff){
 					Callable<Boolean> getStictchesReady = new Callable<Boolean>() {
 
 						@Override
 						public Boolean call() throws Exception {
 							try{
-							System.err.println("Sending stitches for observation" + observation.getUtc());
-							return sendUniqStitchesForObservation(observation);
+								System.err.println("Sending stitches for observation" + observation.getUtc());
+								return sendUniqStitchesForObservation(observation);
 							} catch (Exception e) {
 								e.printStackTrace();
 								throw e;
@@ -138,6 +147,8 @@ public class ScheduleManager implements SMIRFConstants {
 
 				if(doPostObservationStuff ) PostObservationManager.doPostObservationStuff(observation);
 
+				DBManager.makeObservationComplete(observation);
+
 				System.err.println("stopped.");	
 				currentObservation = null;
 				finishCall = terminateCall = false;
@@ -156,14 +167,14 @@ public class ScheduleManager implements SMIRFConstants {
 		ExecutorService executorService = Executors.newFixedThreadPool(8);
 
 
-		
+
 		Callable<Boolean> schedulerCore = new Callable<Boolean>() {
 
 			@Override
 			public Boolean call() throws Exception {
 				try{
 					for(Coords coords: coordsList){
-						
+
 						PointingTO pointing = coords.getPointingTO();
 						System.err.println("Observing: " + pointing.getPointingName());
 
@@ -171,14 +182,14 @@ public class ScheduleManager implements SMIRFConstants {
 						ObservationTO observation = new ObservationTO();
 						observation.setObservingSession(session);
 						observation.setName(pointing.getPointingName());
-						
+
 						if(coords.getPointingTO().getType().equals("P")) {
-							
+
 							observation.setBackendType(BackendConstants.globalBackend);
 							observation.setObsType(BackendConstants.correlation);
 						}
 						else {
-							
+
 							observation.setBackendType(BackendConstants.smirfBackend);
 							observation.setObsType(BackendConstants.tiedArrayFanBeam);
 						}
@@ -186,12 +197,16 @@ public class ScheduleManager implements SMIRFConstants {
 						observation.setCoords(coords);
 						observation.setObserver(observer);
 						observation.setTobs(tobs);
+						if(observation.getObsType().equals(SMIRFConstants.phaseCalibratorSymbol)) observation.setTobs(SMIRFConstants.phaseCalibrationTobs);
+						if(observation.getObsType().equals(SMIRFConstants.fluxCalibratorSymbol)) observation.setTobs(SMIRFConstants.fluxCalibrationTobs);
 						currentObservation = observation;
-						
+
 						try{
-							
+							waitForPreviousObservations();
 							manager.startObserving(observation, tccEnabled, backendEnabled);
-							
+							DBManager.addObservationToDB(observation);
+
+
 						}catch (ObservationException e) {
 							// add log that the pointing was not observable.
 							e.printStackTrace();
@@ -199,19 +214,24 @@ public class ScheduleManager implements SMIRFConstants {
 						}
 
 						Future<Boolean> sendStitches = null;
-						
+
 						if(observation.isSurveyPointing() && doPostObservationStuff){
 							Callable<Boolean> sendStitchesThread = new Callable<Boolean>() {
 
 								@Override
 								public Boolean call() throws Exception {
-									System.err.println("Sending stitches for observation" + observation.getUtc());
-									return sendUniqStitchesForObservation(observation);
+									try { 
+										System.err.println("Sending stitches for observation - " + observation);
+										return sendUniqStitchesForObservation(observation);
+									}catch (Exception e) {
+										e.printStackTrace();
+										throw e;
+									}
 								}
-								
+
 							};
 							sendStitches = executorService.submit(sendStitchesThread);
-							
+
 						}
 
 						long obsTime = observation.getTobs()*1000;
@@ -225,15 +245,16 @@ public class ScheduleManager implements SMIRFConstants {
 						System.err.println("observation over.");
 
 						manager.stopObserving();
-						DBManager.makeObservationComplete(observation);
+						//DBManager.makeObservationComplete(observation);
 
-						
+
 						if(sendStitches !=null) sendStitches.get();
-						
+
+						if(doPostObservationStuff ) PostObservationManager.doPostObservationStuff(observation);
+
 						DBManager.makeObservationComplete(observation);
 						DBManager.incrementCompletedObservation(observation.getObservingSession());
 
-						if(doPostObservationStuff ) PostObservationManager.doPostObservationStuff(observation);
 
 						System.err.println("stopped.");
 
@@ -253,28 +274,104 @@ public class ScheduleManager implements SMIRFConstants {
 
 		scheduler = executorService.submit(schedulerCore);
 
-		
 
 
 	}
 
-	
-	public boolean sendUniqStitchesForObservation(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException, UnknownHostException, IOException{
+	public void waitForPreviousObservations() throws IOException, InterruptedException{
 		
+		 Integer maxUtcOnQueue = Integer.parseInt(ConfigManager.getSmirfMap().get("NEPENTHES_MAX_UTC_QUEUE"));
+
+		for(Entry<String,Map<Integer,Integer> > nepenthesServer: BackendConstants.bfNodeNepenthesServers.entrySet()){
+
+			String hostname = nepenthesServer.getKey();
+			
+			for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
+				
+				int size = 0;
+				do { 
+				System.err.println("Attempting to connect to " + nepenthesServer.getValue());
+				Socket socket = new Socket();
+				
+				socket.connect(new InetSocketAddress(nepenthesServer.getKey(), bsEntry.getValue()),10000);
+				System.err.println("Connected to " + nepenthesServer.getValue());
+				
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+				
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_STATUS_PREFIX"));
+				
+				size = Integer.parseInt(in.readLine());
+				
+				System.err.println(nepenthesServer.getValue() + "has " + size + " UTCs on queue");
+				
+				if(size > maxUtcOnQueue) Thread.sleep(2000);
+				
+				}while( size > maxUtcOnQueue );
+				
+				
+			}
+		}
+	}
+
+
+	public boolean sendUniqStitchesForObservation(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException, UnknownHostException, IOException, InvalidFanBeamNumberException{
+
 		SMIRF_GetUniqStitches getUniqStitches = new SMIRF_GetUniqStitches();
 		List<Point> points = getUniqStitches.generateUniqStitches(observation);
-		
+
 		System.err.println("Unique points for observation: " + points.size());
-				
+
+		Map<Integer, Set<Integer>> fanbeamsToTransfer = new HashMap<>();
+		Set<Integer> edgeBeams = new HashSet<>();
+
+
+		for(Point p: points){
+
+			if(!p.getBeamSearcher().equals(ConfigManager.getEdgeBS())) continue;
+
+			Integer fanbeam = p.getStartFanBeam().intValue();
+
+			Integer bs =  ConfigManager.getBeamSearcherForFB(fanbeam);
+
+			Set<Integer> fanbeams = fanbeamsToTransfer.getOrDefault(bs, new LinkedHashSet<>());
+
+			fanbeams.add(fanbeam);
+
+			fanbeamsToTransfer.put(bs, fanbeams);
+
+			Set<Integer> traversedFBs = p.getTraversalList().stream().map(t -> t.getFanbeam().intValue()).collect(Collectors.toSet());
+
+			for(Integer fb: traversedFBs){
+
+				fanbeams  = fanbeamsToTransfer.getOrDefault(ConfigManager.getBeamSearcherForFB(fb), new LinkedHashSet<>());
+				fanbeams.add(fb);
+				fanbeamsToTransfer.put(ConfigManager.getBeamSearcherForFB(fb), fanbeams);
+				edgeBeams.addAll(fanbeams);
+
+			}
+
+			edgeBeams.addAll(fanbeams);
+
+
+		}
+
+		for(Point p: points){
+
+			Set<Integer> traversedFBs = p.getTraversalList().stream().map(t -> t.getFanbeam().intValue()).collect(Collectors.toSet());
+			if(edgeBeams.containsAll(traversedFBs)) p.setBeamSearcher(ConfigManager.getEdgeBS());
+
+		}
+
 		for(Entry<String,Map<Integer,Integer> > nepenthesServer: BackendConstants.bfNodeNepenthesServers.entrySet()){
-			
+
 			String hostname = nepenthesServer.getKey();
 			for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
 				System.err.println("Attempting to connect to " + nepenthesServer.getValue());
 				Socket socket = new Socket();
 				socket.connect(new InetSocketAddress(nepenthesServer.getKey(), bsEntry.getValue()),10000);
 				System.err.println("Connected to " + nepenthesServer.getValue());
-				
+
 				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 				BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
 
@@ -285,71 +382,100 @@ public class ScheduleManager implements SMIRFConstants {
 				 */
 				String utcStr = ( observation.getUtc().contains(".") ) ? observation.getUtc().split("\\.")[0] : observation.getUtc();
 				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_UTC_PREFIX") + utcStr);
-				
+
 				int numPoints = 0;
 				for(Point p: points) {
-					
+
 					if(! p.getBeamSearcher().equals(bsEntry.getKey())) continue;
-			
+
 					out.println(p);
 					out.flush();
-					
+
 					numPoints++;
-					
+
 				}
-				
+
 				System.err.println(numPoints + " points for " + hostname + ":" + nepenthesServer.getValue());
 
+				//out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_RSYNC_PREFIX"));
+
+				Set<Integer> fanbeams = fanbeamsToTransfer.get(bsEntry.getKey());
+				if(fanbeams != null && !fanbeams.isEmpty()) { 
+					for(Integer fanbeam: fanbeams){
+
+						out.println(ConfigManager.getBeamSubDir(utcStr,fanbeam));
+
+						System.err.println(ConfigManager.getBeamSubDir(utcStr,fanbeam) );
+					}
+				}
+
 				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
+
 				out.flush();
 				out.close();
+
 				in.close();
 				socket.close();
 			}
-			
-			
-			
-			
+
+
+
+
 		}
 		return true;
 	}
 
 
-	public List<Coords> getPointingsForSession(String utc, int totalSeconds, int tobsSeconds, Comparator<Coords> comparator) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException{
+	public List<Coords> getPointingsForSession(String utc, int totalSeconds, int tobsSeconds, Comparator<Coords> comparator, Coords lastCoords, boolean fluxCalWhenever) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException{
+
 		List<Pointing> pointings = DBService.getAllUnobservedPointingsOrderByPriority();
+
 		List<PointingTO> pointingTOs = new LinkedList<PointingTO>();
+
 		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utc),Angle.HHMMSS);
-		for(Pointing p : pointings) {
-			if(EphemService.getHA(lst, p.getAngleRA()).getRadianValue() > SMIRFConstants.minRadHA 
-					&& EphemService.getHA(lst, p.getAngleRA()).getRadianValue() < SMIRFConstants.maxRadHA){
-				pointingTOs.add(new PointingTO(p));
-			}
-		}
+
+		pointingTOs = pointings.stream().filter(p -> EphemService.getHA(lst, p.getAngleRA()).getRadianValue() > SMIRFConstants.minRadHA 
+				&& EphemService.getHA(lst, p.getAngleRA()).getRadianValue() < SMIRFConstants.maxRadHA).map(p-> new PointingTO(p)).collect(Collectors.toList());
+
+
 		LinkedList<Coords> pointingList = new LinkedList<>();
 		Integer minSlewTime = 0;
 		LocalDateTime utcTime = Utilities.getUTCLocalDateTime(utc);
 
 		for(int s = tobsSeconds; s<=totalSeconds; s+=tobsSeconds) {
+
 			List<Coords> coordsList = new ArrayList<>();
+
 			for(PointingTO pointingTO: pointingTOs) {
+
 				Coords coords = new Coords(pointingTO, lst);
+
 				double radMD = coords.getAngleMD().getRadianValue();
 				double radNS = coords.getAngleNS().getRadianValue();
 				double radHA = coords.getAngleHA().getRadianValue();
+
 				if(radMD > minRadMD && radMD < maxRadMD &&
 						radNS > minRadNS && radNS < maxRadNS && 
 						radHA > minRadHA && radHA < maxRadHA   ){
 					coordsList.add(coords);
 				}
+
 			}
+
 			Collections.sort(coordsList,comparator);
+
 			coordsList.removeAll(pointingList);
+
 			lst.addSolarSeconds(tobsSeconds);
 			utcTime = utcTime.plusSeconds(tobsSeconds);
+
 			/* remove pointings that did not last in the FOV for tobs + tslew*/
 			for(Iterator<Coords> coordsIterator = coordsList.iterator(); coordsIterator.hasNext();){
+
 				Coords coords = coordsIterator.next();
 				coords.recompute(lst);
+
 				double radMD = coords.getAngleMD().getRadianValue();
 				double radNS = coords.getAngleNS().getRadianValue();
 				double radHA = coords.getAngleHA().getRadianValue();
@@ -358,12 +484,16 @@ public class ScheduleManager implements SMIRFConstants {
 						radHA > minRadHA && radHA < maxRadHA  )){
 					coordsIterator.remove();
 				}
+
 			}
 			if(pointingList.isEmpty()) {
-				if(coordsList.isEmpty())  {
-					continue;//throw new PointingException("No pointing visible now. Please try later");
-				}
+
+				/* This means there is no pointing to go to at UTC start */ 
+				if(coordsList.isEmpty())  continue;
+
+				coordsList = Coords.sortCoordsByNearestDistanceTo(coordsList, lastCoords);
 				coordsList.get(0).setUtc(Utilities.getUTCString(utcTime));
+
 				pointingList.add(coordsList.get(0));
 				int slewtime = TCCManager.computeSlewTime(coordsList.get(0).getAngleNS().getRadianValue(), coordsList.get(0).getAngleMD().getRadianValue());
 				s+=slewtime;
@@ -397,9 +527,9 @@ public class ScheduleManager implements SMIRFConstants {
 
 
 	}
-	
 
-	
+
+
 
 
 
@@ -443,9 +573,9 @@ public class ScheduleManager implements SMIRFConstants {
 	public void setScheduler(Future<Boolean> scheduler) {
 		this.scheduler = scheduler;
 	}
-	
-	
-	
+
+
+
 	@Deprecated
 	public boolean Calibrate(Integer calibratorID, Integer tobs, String observer) throws TCCException, BackendException, InterruptedException, IOException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
 
@@ -475,7 +605,7 @@ public class ScheduleManager implements SMIRFConstants {
 
 
 	}
-	
+
 	/*public List<Coords> getPointingsForSession2(String utc, int totalSeconds, int tobsSeconds) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException{
 	List<Pointing> pointings = DBService.getAllUnobservedPointingsOrderByPriority();
 	List<PointingTO> pointingTOs = new LinkedList<PointingTO>();
@@ -546,29 +676,29 @@ public class ScheduleManager implements SMIRFConstants {
 
 }*/
 
-//	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, IOException, TCCException {
-//		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane();
-//		System.err.println("tiled..");
-//		System.exit(0);
-//		System.in.read();
-//		ScheduleManager sm = new ScheduleManager();
-//		DecimalFormat df = new DecimalFormat("00");
-//		BufferedWriter bw = new BufferedWriter(new FileWriter("/Users/vkrishnan/Desktop/dustbin/blah2"));
-//		LocalDateTime utc = LocalDateTime.parse("2016-11-01-13:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"));
-//		for(int i=1;;i++){
-//			System.err.print("day:" +i +" " + utc.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"))+"\t" );
-//			List<Coords> coordsList = sm.getPointingsForSession(utc.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss")), 24*60*60,900, Coords.compareMDNS);
-//			for(Coords c: coordsList)  {
-//				DBService.incrementPointingObservations(c.getPointingTO().getPointingID());
-//				bw.write(i + " " +c.getPointingTO().getAngleRA().getDegreeValue() + " " + c.getPointingTO().getAngleDEC().getDegreeValue() + "\n" );
-//				bw.flush();
-//			}
-//			System.in.read();
-//			utc = utc.plusDays(1);
-//		}
-//
-//	}
-//
+	//	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, IOException, TCCException {
+	//		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane();
+	//		System.err.println("tiled..");
+	//		System.exit(0);
+	//		System.in.read();
+	//		ScheduleManager sm = new ScheduleManager();
+	//		DecimalFormat df = new DecimalFormat("00");
+	//		BufferedWriter bw = new BufferedWriter(new FileWriter("/Users/vkrishnan/Desktop/dustbin/blah2"));
+	//		LocalDateTime utc = LocalDateTime.parse("2016-11-01-13:00:00", DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"));
+	//		for(int i=1;;i++){
+	//			System.err.print("day:" +i +" " + utc.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss"))+"\t" );
+	//			List<Coords> coordsList = sm.getPointingsForSession(utc.format(DateTimeFormatter.ofPattern("yyyy-MM-dd-kk:mm:ss")), 24*60*60,900, Coords.compareMDNS);
+	//			for(Coords c: coordsList)  {
+	//				DBService.incrementPointingObservations(c.getPointingTO().getPointingID());
+	//				bw.write(i + " " +c.getPointingTO().getAngleRA().getDegreeValue() + " " + c.getPointingTO().getAngleDEC().getDegreeValue() + "\n" );
+	//				bw.flush();
+	//			}
+	//			System.in.read();
+	//			utc = utc.plusDays(1);
+	//		}
+	//
+	//	}
+	//
 
 }
 
