@@ -34,6 +34,19 @@ public class ObservationSessionTO {
 		this.fluxCalibrateWhenever = fluxCalibrateWhenever;
 		this.numPlannedPointings = numPlannedPointings;
 	}
+	
+	public ObservationSessionTO(ObservingSession observingSession){
+		this.startUTC =observingSession.getStartUTC();
+		this.observer = observingSession.getObserver();
+		this.pointingTobs = observingSession.getPointingTobs();
+		this.sessionDuration = observingSession.getSessionDuration();
+		this.mdMajor = observingSession.getMdMajor();
+		this.phaseCalibrateAtStart = observingSession.getPhaseCalibrateAtStart();
+		this.fluxCalibrateAtStart = observingSession.getFluxCalibrateAtStart();
+		this.fluxCalibrateWhenever = observingSession.getFluxCalibrateWhenever();
+		this.numPlannedPointings = observingSession.getNumPlannedPointings();
+		this.sessionID = observingSession.getSessionID();
+	}
 
 	public Integer getSessionID() {
 		return sessionID;
