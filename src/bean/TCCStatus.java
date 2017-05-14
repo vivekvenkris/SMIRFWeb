@@ -7,6 +7,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.javatuples.Pair;
 
 import exceptions.DriveBrokenException;
+import exceptions.TCCException;
+import service.TCCStatusService;
 import util.TCCConstants;
 @XmlRootElement(name="tcc_status")
 public class TCCStatus {
@@ -18,6 +20,7 @@ public class TCCStatus {
 	Pair<Double, Double> tiltMD;
 	Pair<Double, Double> tiltNS;
 	Pair<Boolean,Boolean> speedNS;
+	String xml;
 	
 	
 	public TCCStatus() {
@@ -30,40 +33,48 @@ public class TCCStatus {
 		return !(this.ns.getEast().getDriving() || this.ns.getWest().getDriving() || this.md.getEast().getDriving() || this.md.getWest().getDriving());
 	}
 	
-	public Boolean isTelescopeDriving() throws DriveBrokenException{
+	public Boolean isTelescopeDriving() throws TCCException, InterruptedException{
+		
 		boolean isEastNSDriving = this.ns.getEast().getDriving();
 		
-		if(!isEastNSDriving){
-			if(!this.ns.getEast().getDisabled() && !isEastNSTracking())
-				throw new DriveBrokenException("East arm NS was not driving, disabled or on target", ExceptionUtils.getStackTrace(new Exception()),this);
+		if(!isEastNSDriving && isEastNSStillNotDriving()){
+			if(!this.ns.getEast().getDisabled() && !isEastNSTracking()) {
+				
+				throw new DriveBrokenException("East arm NS was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
+			}
 		}
 		
 		boolean isWestNSDriving =  this.ns.getWest().getDriving();
 		
-		if(!isWestNSDriving){
+		if(!isWestNSDriving && isWestNSStillNotDriving()){
 			if(!this.ns.getWest().getDisabled() && !isWestNSTracking())
-				throw new DriveBrokenException("West arm NS was not driving, disabled or on target", ExceptionUtils.getStackTrace(new Exception()),this);
+				throw new DriveBrokenException("West arm NS was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
 		}
 		
 		
 		
 		boolean isEastMDDriving = this.md.getEast().getDriving();
 		
-		if(!isEastMDDriving){
+		if(!isEastMDDriving && isEastMDStillNotDriving()){
 			if(!this.md.getEast().getDisabled() && !isEastMDTracking())
-				throw new DriveBrokenException("East arm MD was not driving, disabled or on target", ExceptionUtils.getStackTrace(new Exception()),this);
+				throw new DriveBrokenException("East arm MD was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
 		}
 		
 		boolean isWestMDDriving =  this.md.getWest().getDriving();
 		
-		if(!isWestMDDriving){
+		if(!isWestMDDriving && isWestMDStillNotDriving()){
 			if(!this.md.getWest().getDisabled() && !isWestMDTracking())
-				throw new DriveBrokenException("West arm MD was not driving, disabled or on target", ExceptionUtils.getStackTrace(new Exception()),this);
+				throw new DriveBrokenException("West arm MD was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
 		}
 		
 		
 				return isEastMDDriving || isWestMDDriving || isEastNSDriving || isWestNSDriving;
 	}
+	
+	public boolean isEastNSStillNotDriving() throws InterruptedException, TCCException{ Thread.sleep(5000); return new TCCStatusService().getTelescopeStatus().ns.getEast().getDriving();}
+	public boolean isWestNSStillNotDriving() throws InterruptedException, TCCException{ Thread.sleep(5000); return new TCCStatusService().getTelescopeStatus().ns.getWest().getDriving();}
+	public boolean isEastMDStillNotDriving() throws InterruptedException, TCCException{ Thread.sleep(5000); return new TCCStatusService().getTelescopeStatus().md.getEast().getDriving();}
+	public boolean isWestMDStillNotDriving() throws InterruptedException, TCCException{ Thread.sleep(5000); return new TCCStatusService().getTelescopeStatus().md.getWest().getDriving();}
 	
 	public boolean isEastNSTracking(){
 		double sourceRadNS = this.coordinates.getNs().getRadianValue();		
@@ -129,6 +140,17 @@ public class TCCStatus {
 	
 	
 	
+	public String getXml() {
+		return xml;
+	}
+
+	public void setXml(String xml) {
+		this.xml = xml;
+	}
+
+
+
+
 	public static class Arm{
 		String name;
 		Angle tilt;
