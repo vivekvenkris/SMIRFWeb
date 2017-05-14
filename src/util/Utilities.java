@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.ConnectException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -24,6 +25,14 @@ import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.TransformerFactoryConfigurationError;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
@@ -187,10 +196,18 @@ public class Utilities {
 		return str;
 	}
 
-	public static boolean isWithinCircle(double x1, double y1, double x2, double y2, double radius){
+	public static double getEuclideanDistance(double x1, double y1, double x2, double y2){
 
 		double xdist = Math.abs(x2 - x1);
 		double ydist = Math.abs(y2 - y1);
+
+		return ( Math.sqrt(xdist*xdist + ydist*ydist));
+	}
+
+	public static boolean isWithinCircle(double x1, double y1, double x2, double y2, double radius){
+		
+		double ydist = Math.abs(y2 - y1);
+		double xdist = Math.abs(x2 - x1)/Math.cos(0.5*(y1+y2));
 
 		return ( (xdist*xdist + ydist*ydist) <= radius*radius);
 
@@ -214,6 +231,7 @@ public class Utilities {
 		return distance(RA1.getRadianValue(), DEC1.getRadianValue(), RA2.getRadianValue(), DEC2.getRadianValue());
 	}
 
+
 	public static String getUTCString(LocalDateTime utcTime){
 		return utcTime.format(DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 	}
@@ -222,16 +240,8 @@ public class Utilities {
 		return LocalDateTime.parse(utc, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 	}
 
-	public static boolean simulate(){
-		try{
-		return StringUtils.containsIgnoreCase(InetAddress.getLocalHost().getHostName(),"VKRISHNAN")? true: false;
-		}catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		
-	}
-	
+
+
 	public static String createDirectoryStructure(String...names){
 		String result = "";
 		for( int i=0; i< names.length; i++){
@@ -240,5 +250,42 @@ public class Utilities {
 		}
 		return result;
 	}
-	
+
+	public static void prettyPrintXML(String xml){
+		Transformer transformer;
+		try {
+			transformer = TransformerFactory.newInstance().newTransformer();
+			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+			//initialize StreamResult with File object to save to file
+			StreamResult result = new StreamResult(new StringWriter());
+			DOMSource source = new DOMSource(Utilities.parseXml(xml));
+			transformer.transform(source, result);
+			String xmlString = result.getWriter().toString();
+			System.err.println(xmlString);
+			
+		} catch (TransformerConfigurationException | TransformerFactoryConfigurationError e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	public static Document parseXml(String in)
+	{
+		try
+		{
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			InputSource is = new InputSource(new StringReader(in));
+			return db.parse(is);
+		} catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+
 }
