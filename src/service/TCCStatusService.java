@@ -10,6 +10,7 @@ import org.javatuples.Pair;
 
 import bean.Angle;
 import bean.TCCStatus;
+import exceptions.DriveBrokenException;
 import exceptions.TCCException;
 import util.TCCConstants;
 import util.Utilities;
@@ -34,6 +35,28 @@ public class TCCStatusService implements TCCConstants {
 			throw new TCCException("TCC status service failed: Cause:"+ e.getMessage(), ExceptionUtils.getStackTrace(e));
 		}
 	}
+	
+	
+	public boolean isTelescopeDriving() throws TCCException, InterruptedException {
+		Exception exception = null;
+		TCCStatus status = null;
+		for(int i=0; i<10; i++ ){
+			status = getTelescopeStatus();
+			try{
+				
+			return status.isTelescopeDriving();
+			
+			}catch (Exception e) {
+				System.err.println("Telescope not driving, disabled or on target.Wee count = " + i);
+				exception = e;
+			}
+			Thread.sleep(2000);
+			
+		}
+		throw new DriveBrokenException("Drive seems to be broken:",ExceptionUtils.getStackTrace(exception), status);
+		
+	}
+	
 	public TCCStatus getTelescopeStatus() throws TCCException{
 		
 		try {
