@@ -132,8 +132,6 @@ public class Utilities {
 		catch(ConnectException  e){
 			throw e;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 			throw e;
 		}
 	}
