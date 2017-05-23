@@ -1,5 +1,6 @@
 package bean;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import exceptions.TCCException;
 import javafx.scene.chart.NumberAxis;
 import manager.DBManager;
 import manager.ObservationManager;
+import manager.PSRCATManager;
 import manager.ScheduleManager;
 import service.BackendService;
 import service.DBService;
@@ -86,6 +88,7 @@ public class SchedulerMB implements Serializable {
 		phaseCalibrators = DBManager.getAllPhaseCalibrators();
 		fluxCalibrators = DBManager.getAllFluxCalibrators();
 		coordsList = new ArrayList<>();
+		
 
 		glanceEq = new LineChartModel();
 		glanceGal = new LineChartModel();
@@ -179,6 +182,8 @@ public class SchedulerMB implements Serializable {
 			Coords lastCoords = new Coords( new TCCStatusService().getTelescopeStatus());
 			
 			if(this.phaseCal) {
+				
+				System.err.println("Phasecal is true");
 				
 				if(this.phaseCalibrator==null) phaseCalibrator = getNearestAndBrightestPhaseCalibrator(utc);		
 				phaseCalCoords = new Coords(new PointingTO(phaseCalibrator),utcTime);
@@ -299,6 +304,14 @@ public class SchedulerMB implements Serializable {
 			
 		} catch (TCCException e) {
 			
+			e.printStackTrace();
+			addMessage(e.getMessage());
+
+		}
+		
+		try {
+			manager.cancelSmirfingObservation(ScheduleManager.getCurrentObservation());
+		} catch (IOException e) {
 			e.printStackTrace();
 			addMessage(e.getMessage());
 
