@@ -3,15 +3,23 @@ package bean;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
+import exceptions.CoordinateOverrideException;
+import exceptions.EmptyCoordinatesException;
 import exceptions.ObservationException;
+import manager.DBManager;
+import manager.PSRCATManager;
 import service.EphemService;
 import util.BackendConstants;
 import util.Constants;
 import util.SMIRFConstants;
+import util.Utilities;
 
 public class ObservationTO {
 	Integer observationID;
@@ -32,7 +40,11 @@ public class ObservationTO {
 	
 	@Override
 	public String toString() {
-		return "name: " + name + " RA:" + angleRA + " DEC:" + angleDEC + " tobs:" + tobs + " utc: " + utc;
+		return "name: " + name + "\n" 
+				+ " RA:" + this.coords.pointingTO.getAngleRA() + "\n"
+				+ " DEC:" +  this.coords.pointingTO.getAngleDEC() + "\n" 
+				+ " UTC: " + utc + "\n" 
+				+ " TBs: " + this.getTiedBeamSources();
 	}
 	
 	public ObservationTO() {
@@ -48,6 +60,49 @@ public class ObservationTO {
 		this();
 		this.coords = coords;
 		this.tobs = tobs;
+	}
+	
+	public ObservationTO(Observation observation) {
+		this.name = observation.getSourceName();
+		try {
+			String utc = observation.getUtc().contains(".") ? observation.getUtc() : observation.getUtc() + ".000";
+			this.utc = new SimpleDateFormat(BackendConstants.backendUTCFormat)
+					.format(new SimpleDateFormat(BackendConstants.backendUTCMySQLFormat)
+							.parse(utc));
+		} catch (ParseException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		this.tobs = observation.getTobs();
+		this.tiedBeamSources = Arrays.asList(observation.getTiedBeamSources().substring(1, observation.getTiedBeamSources().length() - 1).split(", "))
+								.stream().map(t -> PSRCATManager.getTBSouceByName(t)).filter(t -> t!=null).collect(Collectors.toList());
+		this.obsType = observation.getObservationType();
+		
+		if(observation.getObservingSession()!=null){
+			this.observingSession = new ObservationSessionTO(observation.getObservingSession());
+		}
+		
+		if(this.name !=null){
+			this.coords = new Coords(DBManager.getPointingByUniqueName(this.name));
+			
+			if(this.utc != null ){
+				try {
+					
+					this.coords = new Coords( DBManager.getPointingByUniqueName(this.name), Utilities.getUTCLocalDateTime(this.utc));
+					
+				} catch (EmptyCoordinatesException e) {
+					e.printStackTrace();
+					
+				} catch (CoordinateOverrideException e) {
+					e.printStackTrace();
+					
+				}
+
+			}
+		}
+		
+		
+		
 	}
 	
 	
