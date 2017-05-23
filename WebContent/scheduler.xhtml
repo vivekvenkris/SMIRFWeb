@@ -108,7 +108,7 @@
 											<p:inputText value="#{schedulerMB.duration}" style="width: 100%" required="true" requiredMessage=" enter session duration"></p:inputText>
 										</p:column>
 										<p:column>
-											<p:selectOneButton value="#{schedulerMB.durationUnits}"  >
+											<p:selectOneButton value="#{schedulerMB.durationUnits}" rendered="true" requiredMessage="Please select duration units" >
 												<f:selectItem itemLabel="seconds" itemValue="1"></f:selectItem>
 												<f:selectItem itemLabel="minutes" itemValue="60"></f:selectItem>
 												<f:selectItem itemLabel="hours" itemValue="3600"></f:selectItem>
@@ -125,7 +125,7 @@
 											<p:inputText value="#{schedulerMB.tobs}" style="width: 100%"></p:inputText>
 										</p:column>
 										<p:column>
-											<p:selectOneButton value="#{schedulerMB.tobsUnits}" converter="javax.faces.Integer" style="width: 100%">
+											<p:selectOneButton value="#{schedulerMB.tobsUnits}" converter="javax.faces.Integer" style="width: 100%" rendered="true" requiredMessage="Please select tobs units">
 													<f:selectItem itemLabel="seconds" itemValue="1"></f:selectItem>
 													<f:selectItem itemLabel="minutes" itemValue="60"></f:selectItem>
 													<f:selectItem itemLabel="hours" itemValue="3600"></f:selectItem>
