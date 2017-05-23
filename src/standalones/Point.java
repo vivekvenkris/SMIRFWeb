@@ -1,6 +1,7 @@
 package standalones;
 
 import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,32 @@ public class Point{
 	List<Traversal> traversalList = new ArrayList<>();
 	boolean uniq;
 	Integer beamSearcher;
+	
+	public Point(){}
+	public Point(String pointString) {
+		
+		String[] chunks = pointString.split(" ");
+		
+		ra = chunks[0];
+		dec = chunks[1];
+		
+		startFanBeam = Double.parseDouble(chunks[2]);
+		endFanBeam = Double.parseDouble(chunks[3]);
+		
+		startNS = Double.parseDouble(chunks[4]);
+		endNS = Double.parseDouble(chunks[5]);
+		
+		for(int i=6; i< chunks.length; i+=5){
+			
+			Traversal traversal = new Traversal(Double.parseDouble(chunks[i]), Double.parseDouble(chunks[i+1]),
+					Long.parseLong(chunks[i+2]), Long.parseLong(chunks[i+3]), Integer.parseInt(chunks[i+4]));
+			
+			this.traversalList.add(traversal);
+			
+		}
+		
+	}
+	
 	public String getRa() {
 		return ra;
 	}
