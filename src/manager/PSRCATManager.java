@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import bean.Angle;
 import bean.ObservationTO;
@@ -102,6 +103,49 @@ public class PSRCATManager implements PSRCATConstants{
 			
 		}
 		
+		if(( file = ConfigManager.getSmirfMap().get("PULSAR_FLUX_LIST")) !=null){
+			
+			BufferedReader br = null;
+			try {
+				br = new BufferedReader( new FileReader(new File(file)));
+				String line = "";
+				
+				while( ( line = br.readLine())  !=null) {
+					
+					String[] chunks = line.split(" ");
+					
+					if(chunks.length !=2) continue;
+					
+					String psrName = chunks[0].trim();
+					
+					
+					Double flux = Double.parseDouble(chunks[1].trim());
+					
+					if(PSRCATManager.getTbSources().contains(new TBSourceTO(psrName))){
+						if(PSRCATManager.getTbSources().contains(new TBSourceTO(psrName))) {
+							PSRCATManager.getTbSources().get(PSRCATManager.getTbSources().indexOf(new TBSourceTO(psrName))).setFluxAt843MHz(flux);
+						}
+					}
+					
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			finally {
+				try {
+					if(br!=null)
+					br.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			
+			
+		}
+
+		
 		
 		return tbSources;
 	}
@@ -120,8 +164,8 @@ public class PSRCATManager implements PSRCATConstants{
 	}
 	
 	public static void main(String[] args) {
-		loadDB();
-		System.err.println(tbSources.size());
+		
+		tbSources.stream().map(t-> (t.getPsrName() + " " + t.getFluxAt843MHz())).collect(Collectors.toList());
 		
 	}
 	
