@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -58,6 +59,33 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 	}
 
+	public List<Point> getPointForPulsars(ObservationTO observation)throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException{
+		
+		return observation.getTiedBeamSources().stream().map(t -> {
+			try {
+				if(t == null) return null;
+				
+				
+				
+				return getPointForSkyPosition(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), 
+						observation.getCoords().getPointingTO().getAngleDEC(), t.getAngleRA(), t.getAngleDEC(), fft_size, Constants.tsamp);
+				
+			} catch (EmptyCoordinatesException e) {
+				e.printStackTrace();
+				return null;
+
+			} catch (CoordinateOverrideException e) {
+				e.printStackTrace();
+				return null;
+
+			} catch (InvalidFanBeamNumberException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}).filter(t -> t!=null).collect(Collectors.toList());
+		
+	}
+
 
 
 	public List<Point> generateUniqStitches(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException {
@@ -84,7 +112,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 	public Point getPointForSkyPosition(String utcStr, Angle boresightRA, Angle boresightDeclination, Angle pointRA, Angle pointDEC, Long totalSamples, double tsamp)throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException{
 
 		double samples2secs = tsamp;
-		Point p = new Point();
+		Point point = new Point();
 		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utcStr),Angle.HHMMSS);
 		Angle ha = EphemService.getHA(lst,boresightRA);
 
@@ -102,9 +130,10 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 		double nfbNow = (int)Utilities.getFB(numFB, boresight.getRadMD(), now.getRadMD());
 		Double nsNow = now.getRadNS();
+		
 
 		Map<Integer, Long> samplesInFB = new LinkedHashMap<Integer, Long>();
-
+		List<Double> nsForFB = new LinkedList<>();
 		int sampleSteps = 2048;
 
 		for(int n=0;n<totalSamples; n+=sampleSteps){
@@ -124,35 +153,39 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 			Integer nfbLater = (int) Math.round(Utilities.getFB(numFB, boresightLater.getRadMD(), later.getRadMD()));
 			if(nfbLater <= 0 || nfbLater > numFB) return null;
 
-			Long numSamples = samplesInFB.getOrDefault(nfbLater, 0L);
+			Long numSamples = samplesInFB.getOrDefault(nfbLater, 0L); 
 			numSamples += sampleSteps;
 			samplesInFB.put(nfbLater, numSamples);
+			nsForFB.add( boresightLater.getRadNS() - later.getRadNS());  
 
 		}
 		
 		if(Collections.min(samplesInFB.keySet()) < 1 ) return null;
 		if(Collections.max(samplesInFB.keySet()) > numFB ) return null;
 
-		p.startFanBeam = p.endFanBeam = nfbNow;
-		p.startNS = p.endNS = nsNow;
-		p.uniq = false;
-		p.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
-		p.ra = EphemService.getRA(lst, new Angle(now.getRadHA(),Angle.HHMMSS)).toString();
+		point.startFanBeam = point.endFanBeam = nfbNow;
+		point.startNS = point.endNS = nsNow;
+		point.uniq = false;
+		point.dec = new Angle(now.getRadDec(),Angle.DDMMSS).toString();
+		point.ra = EphemService.getRA(lst, new Angle(now.getRadHA(),Angle.HHMMSS)).toString();
 		
 		Integer beamSearcher = getBeamSearcher(Collections.min(samplesInFB.keySet()),Collections.max(samplesInFB.keySet()));
-		p.beamSearcher = ( beamSearcher == null )? -1 : beamSearcher;
+		point.beamSearcher = ( beamSearcher == null )? -1 : beamSearcher;
 		
 		
 		Long startSample = 0L;
-		List<Traversal> traversals = p.traversalList;
+		 int i=0;
 		for(Map.Entry<Integer, Long> entry: samplesInFB.entrySet()){
+			
 			Long numSamples = entry.getValue();
 			Long numSamps = (startSample + numSamples) > totalSamples ? (totalSamples-startSample): numSamples;
 			Double pc =  100*(numSamples+0.0)/totalSamples;
-			traversals.add(new Traversal(entry.getKey()+0.0,0.0,startSample,numSamps,pc.intValue()));
+			
+			point.traversalList.add(new Traversal(entry.getKey()+0.0,nsForFB.get(i++),startSample,numSamps,pc.intValue()));
 			startSample += numSamples;
+			
 		}
-		return p;
+		return point;
 
 	}
 
@@ -240,7 +273,6 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 					if(lastPointMap ==null){
 
 						Long startSample = 0L;
-						List<Traversal> traversals =  p.traversalList;
 
 						for(Map.Entry<Integer, Long> entry: samplesInFB.entrySet()){
 
@@ -249,7 +281,7 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 							Double percent =  100*(numSamples+0.0)/totalSamples;
 
-							traversals.add(new Traversal(entry.getKey()+0.0,nsDistance,startSample,numSamps,percent.intValue()));
+							p.traversalList.add(new Traversal(entry.getKey()+0.0,nsDistance,startSample,numSamps,percent.intValue()));
 
 							startSample += numSamples;
 
