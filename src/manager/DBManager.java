@@ -15,6 +15,7 @@ import bean.PhaseCalibratorTO;
 import bean.Pointing;
 import bean.PointingTO;
 import service.DBService;
+import util.BackendConstants;
 
 public class DBManager {
 	public static List<PhaseCalibratorTO> getAllPhaseCalibrators(){
@@ -46,6 +47,14 @@ public class DBManager {
 		for(Pointing entity: DBService.getAllPointings()) toList.add(new PointingTO(entity));
 		return toList;
 	}
+	
+	
+	public static List<PointingTO> getAllUnobservedPointingsOrderByPriority(){
+		List<PointingTO> toList = new ArrayList<>();		
+		for(Pointing entity: DBService.getAllUnobservedPointingsOrderByPriority()) toList.add(new PointingTO(entity));
+		return toList;
+	} 
+	
 
 	public static List<String> getAllPointingTypes(){
 		return DBService.getAllPointingTypes();
@@ -53,7 +62,11 @@ public class DBManager {
 
 
 	public static PointingTO getPointingByUniqueName(String pointingName){
-		return new PointingTO(DBService.getPointingByUniqueName(pointingName));
+		
+		if(pointingName.startsWith("J")) return new PointingTO(DBManager.getFluxCalibratorByName(pointingName));
+		else if(pointingName.startsWith("CJ")) return DBManager.getPhaseCalByUniqueName(pointingName);
+		else return new PointingTO(DBService.getPointingByUniqueName(pointingName));
+		
 	}
 
 	public static PointingTO getFluxCalByUniqueName(String name){
@@ -97,6 +110,11 @@ public class DBManager {
 		DBService.incrementCompletedObservation(observationSessionTO);
 	}
 	
-	
+	public static ObservationTO getObservationByUTC(String utc){
+		
+		return new ObservationTO(DBService.getObservationByUTC(utc));
+		
+	}
+
 
 }

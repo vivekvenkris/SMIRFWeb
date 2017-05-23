@@ -274,6 +274,15 @@ public class DBService implements SMIRFConstants {
 	}
 
 
+	
+	public static Observation getObservationByUTC(String utc){
+		
+		EntityManager entityManager = emFactory.createEntityManager( );
+		TypedQuery<Observation> query = entityManager.createQuery("select t from Observation t where t.utc =?1",Observation.class);
+		Observation result = query.setParameter(1, utc).getSingleResult();
+		return result;
+		
+	}
 
 
 
