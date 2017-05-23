@@ -1,4 +1,8 @@
 package standalones;
+
+public class SMIRF_tileGalacticPlane2{
+	
+}
 //package util;
 //
 //import java.awt.Color;

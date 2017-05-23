@@ -141,7 +141,7 @@ public class SMIRF_GetUniqStitches2  {
 
 		return points;
 	}
-
+ 
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
 		SMIRF_GetUniqStitches2 gus = new SMIRF_GetUniqStitches2();
 		Double RA = new Angle("19:07:51.0", Angle.HHMMSS).getRadianValue();
