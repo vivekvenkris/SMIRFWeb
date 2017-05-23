@@ -8,6 +8,7 @@ import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import exceptions.PointingException;
 import exceptions.TCCException;
+import util.BackendConstants;
 
 public class Main {
 	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException {
@@ -21,7 +22,7 @@ public class Main {
 //		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", "").charAt(19));
 //		scheduleManager.startSMIRFScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
 		System.err.println(InetAddress.getLocalHost().getHostName());
-		
+		System.err.println(BackendConstants.maximumNumberOfTB);
 		System.err.println("Test");
 
 	}
