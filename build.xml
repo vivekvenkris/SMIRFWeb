@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="SMIRFWeb">
+    <property environment="env"/>
+    <property name="ECLIPSE_HOME" value="../../../software/eclipse_neon/eclipse/"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.8"/>
+    <property name="source" value="1.8"/>
+    <path id="Apache Tomcat v9.0 [Apache Tomcat v9.0].libraryclasspath">
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-i18n-fr.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-coyote.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/catalina.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-jni.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-jdbc.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-websocket.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/websocket-api.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/catalina-ha.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/el-api.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-i18n-ja.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-i18n-es.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/catalina-storeconfig.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-dbcp.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/jasper-el.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-util.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/jsp-api.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/jasper.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/annotations-api.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-util-scan.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/catalina-ant.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/tomcat-api.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/jaspic-api.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/servlet-api.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/catalina-tribes.jar"/>
+        <pathelement location="../../../software/apache-tomcat-9.0.0.M15/lib/ecj-4.6.1.jar"/>
+    </path>
+    <path id="Web App Libraries.libraryclasspath">
+        <pathelement location="WebContent/WEB-INF/lib/all-themes-1.0.10.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/cdi-api-2.0.Beta1.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/commons-cli-1.3.1-javadoc.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/commons-cli-1.3.1.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/commons-codec-1.10.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/commons-exec-1.3.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/commons-lang3-3.4.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/commons-math3-3.5.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/eclipselink.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/gral.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/htmlunit-2.23.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/httpcore.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/javatuples-1.2.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/javax.faces-2.2.0-m06.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/javax.persistence_2.1.0.v201304241213.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/jsch-0.1.53.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/jsofa-20160729.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/jstl-1.2.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/log4j-api-2.7.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/log4j-core-2.7.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/mysql-connector-java-5.1.40-bin.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/primefaces-6.0.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/rdp4j-0.2.2-SNAPSHOT-javadoc.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/rdp4j-0.2.2-SNAPSHOT.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/slf4j-api-1.7.25.jar"/>
+        <pathelement location="WebContent/WEB-INF/lib/xml-apis-1.4.01.jar"/>
+    </path>
+    <path id="jFreeChart.userclasspath">
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/swtgraphics2d.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/servlet.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/orsonpdf-1.6-eval.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/orsoncharts-1.4-eval-nofx.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/junit-4.11.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/jfreesvg-2.0.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/jfreechart-1.0.19-swt.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/jfreechart-1.0.19-experimental.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/jfreechart-1.0.19.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/jcommon-1.0.23.jar"/>
+        <pathelement location="../../../software/jars/jfreechart-1.0.19/lib/hamcrest-core-1.3.jar"/>
+    </path>
+    <path id="EclipseLink 2.5.2.userclasspath">
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/eclipselink.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/jpa/org.eclipse.persistence.jpars_2.5.2.v20140319-9ad6abd.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/jpa/javax.persistence_2.1.0.v201304241213.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/jpa/org.eclipse.persistence.jpa.modelgen_2.5.2.v20140319-9ad6abd.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/moxy/javax.xml.stream_1.0.1.v201004272200.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/moxy/javax.xml.bind_2.2.0.v201105210648.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/moxy/javax.mail_1.4.0.v201005080615.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/moxy/com.sun.tools.xjc_2.2.0.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/moxy/javax.activation_1.1.0.v201108011116.jar"/>
+        <pathelement location="../libraries/EclipseLink 2.5.2/eclipselink/jlib/moxy/com.sun.xml.bind_2.2.0.v201004141950.jar"/>
+    </path>
+    <path id="SMIRFWeb.classpath">
+        <pathelement location="target/classes"/>
+        <path refid="Apache Tomcat v9.0 [Apache Tomcat v9.0].libraryclasspath"/>
+        <path refid="Web App Libraries.libraryclasspath"/>
+        <path refid="jFreeChart.userclasspath"/>
+        <pathelement location="../../../software/jars/mysql-connector-java-5.1.40-bin.jar"/>
+        <path refid="EclipseLink 2.5.2.userclasspath"/>
+        <pathelement location="../../../software/jars/commons-math3-3.5.jar"/>
+        <pathelement location="../../../software/jars/commons-math3-3.5-javadoc.jar"/>
+        <pathelement location="../../../software/jars/commons-lang3-3.4-javadoc.jar"/>
+        <pathelement location="../../../software/jars/commons-lang3-3.4.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="target/classes"/>
+        <copy includeemptydirs="false" todir="target/classes">
+            <fileset dir="src">
+                <include name="**/*.java"/>
+                <include name="META-INF/"/>
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.xtend"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <copy includeemptydirs="false" todir="target/classes">
+            <fileset dir="WebContent/WEB-INF/lib">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.xtend"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="target/classes"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="target/classes" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src"/>
+            <src path="WebContent/WEB-INF/lib"/>
+            <include name="**/*.java"/>
+            <include name="META-INF/"/>
+            <classpath refid="SMIRFWeb.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="CalibrationService">
+        <java classname="service.CalibrationService" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="TCCStatusService">
+        <java classname="service.TCCStatusService" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="Main">
+        <java classname="test.Main" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="ResendStitches">
+        <java classname="standalones.ResendStitches" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="SMIRF_GetUniqStitches">
+        <java classname="standalones.SMIRF_GetUniqStitches" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="PSRCATManager">
+        <java classname="manager.PSRCATManager" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="ScatterAdd">
+        <java classname="test.ScatterAdd" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="SurveyPlanner">
+        <java classname="standalones.SurveyPlanner" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="TBPrioritizer">
+        <java classname="standalones.TBPrioritizer" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="DBService">
+        <java classname="service.DBService" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="ScheduleManager">
+        <java classname="manager.ScheduleManager" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="FastScatterDemo">
+        <java classname="test.FastScatterDemo" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="SMIRF_GetScheduleWithPulsars">
+        <java classname="standalones.SMIRF_GetScheduleWithPulsars" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="Coords">
+        <java classname="bean.Coords" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="ConfigManager">
+        <java classname="util.ConfigManager" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="SFtpMonitorExample">
+        <java classname="standalones.SFtpMonitorExample" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+    <target name="ObservationManager">
+        <java classname="manager.ObservationManager" failonerror="true" fork="yes">
+            <classpath refid="SMIRFWeb.classpath"/>
+        </java>
+    </target>
+</project>
