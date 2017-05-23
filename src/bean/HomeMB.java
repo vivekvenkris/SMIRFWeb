@@ -66,22 +66,35 @@ public class HomeMB {
 	public void updateObs(){
 		this.observation = ScheduleManager.getCurrentObservation();
 		try {
-			this.backendStatus = backendStatusService.getBackendStatusForHomePage();
+			
+			if(backendStatusService.isON()) this.backendStatus = backendStatusService.getBackendStatusForHomePage();
+			else 							this.backendStatus="OFF";
+			
 			TCCStatus tccStatus = tccService.getTelescopeStatus();
-			if(tccStatus.isTelescopeIdle()) this.TCCStatus = "Idle";
-			else if(tccStatus.isTelescopeDriving())this.TCCStatus =  "driving";
-			else if(tccStatus.isTelescopeTracking())this.TCCStatus =  "tracking";
+			
+			if(tccStatus.isTelescopeIdle())          this.TCCStatus = "Idle";
+			
+			else if(tccService.isTelescopeDriving()) this.TCCStatus =  "driving";
+			
+			else if(tccStatus.isTelescopeTracking()) this.TCCStatus =  "tracking";
+			
 			else this.TCCStatus = "Idle";
+			
 		} catch (TCCException e) {
-			this.TCCStatus =  "slacking";
-			e.printStackTrace();
+			
+			this.TCCStatus =  "problem";
+			System.err.println("TCC Exception on home page: " + e.getMessage());
+			
 		}catch(BackendException e){
+			
 			this.backendStatus="problem";
-			e.printStackTrace();
+			System.err.println("Backend Exception on home page: " + e.getMessage());
 			
 		} catch (InterruptedException e) {
+			
 			this.backendStatus="problem";
-			e.printStackTrace();
+			System.err.println("Interrupted Exception on home page: " + e.getMessage());
+			
 		}
 	}
 	
