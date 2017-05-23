@@ -37,6 +37,7 @@ import javax.persistence.Persistence;
 
 import bean.Angle;
 import bean.Coords;
+import bean.FluxCalibratorTO;
 import bean.ObservationSessionTO;
 import bean.ObservationTO;
 import bean.PhaseCalibratorTO;
@@ -61,6 +62,7 @@ import util.ConfigManager;
 import util.Constants;
 import util.SMIRFConstants;
 import util.Switches;
+import util.TableBuilder;
 import util.Utilities;
 
 public class ScheduleManager implements SMIRFConstants {
@@ -182,11 +184,14 @@ public class ScheduleManager implements SMIRFConstants {
 						ObservationTO observation = new ObservationTO();
 						observation.setObservingSession(session);
 						observation.setName(pointing.getPointingName());
+						observation.setTobs(tobs);
+						
 
-						if(coords.getPointingTO().getType().equals("P")) {
+						if(coords.getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol)) {
 
 							observation.setBackendType(BackendConstants.globalBackend);
 							observation.setObsType(BackendConstants.correlation);
+							observation.setTobs(SMIRFConstants.phaseCalibrationTobs);
 						}
 						else {
 
@@ -196,9 +201,8 @@ public class ScheduleManager implements SMIRFConstants {
 
 						observation.setCoords(coords);
 						observation.setObserver(observer);
-						observation.setTobs(tobs);
-						if(observation.getObsType().equals(SMIRFConstants.phaseCalibratorSymbol)) observation.setTobs(SMIRFConstants.phaseCalibrationTobs);
-						if(observation.getObsType().equals(SMIRFConstants.fluxCalibratorSymbol)) observation.setTobs(SMIRFConstants.fluxCalibrationTobs);
+						if(coords.getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol)) observation.setTobs(SMIRFConstants.phaseCalibrationTobs);
+						if(coords.getPointingTO().getType().equals(SMIRFConstants.fluxCalibratorSymbol)) observation.setTobs(SMIRFConstants.fluxCalibrationTobs);
 						currentObservation = observation;
 
 						try{
@@ -215,7 +219,7 @@ public class ScheduleManager implements SMIRFConstants {
 
 						Future<Boolean> sendStitches = null;
 
-						if(observation.isSurveyPointing() && doPostObservationStuff){
+						if( ( !observation.isPhaseCalPointing() ) && doPostObservationStuff){
 							Callable<Boolean> sendStitchesThread = new Callable<Boolean>() {
 
 								@Override
@@ -233,7 +237,7 @@ public class ScheduleManager implements SMIRFConstants {
 							sendStitches = executorService.submit(sendStitchesThread);
 
 						}
-
+						System.err.println("Observation started. Tobs = " + observation.getTobs());
 						long obsTime = observation.getTobs()*1000;
 						long startTime = observation.getUtcDate().getTime();
 						while(true) {
@@ -277,6 +281,40 @@ public class ScheduleManager implements SMIRFConstants {
 
 
 	}
+	
+	
+	public void cancelSmirfingObservation(ObservationTO observation) throws IOException {
+		
+		if(observation == null || observation.getUtc() == null ) return;
+		
+		for(Entry<String,Map<Integer,Integer> > nepenthesServer: BackendConstants.bfNodeNepenthesServers.entrySet()){
+			
+			String hostname = nepenthesServer.getKey();
+			
+			for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
+				
+				System.err.println("Attempting to connect to " + nepenthesServer.getValue());
+				Socket socket = new Socket();
+				
+				socket.connect(new InetSocketAddress(nepenthesServer.getKey(), bsEntry.getValue()),10000);
+				System.err.println("Connected to " + nepenthesServer.getValue());
+				
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+				
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_REMOVE_UTC_PREFIX") + observation.getUtc());
+				
+				System.err.println(in.readLine());
+				
+				out.flush();
+				out.close();
+				in.close();
+				socket.close();
+				
+			}
+		}
+	}
+	
 
 	public void waitForPreviousObservations() throws IOException, InterruptedException{
 		
@@ -305,9 +343,16 @@ public class ScheduleManager implements SMIRFConstants {
 				
 				System.err.println(nepenthesServer.getValue() + "has " + size + " UTCs on queue");
 				
+				out.flush();
+				out.close();
+				in.close();
+				socket.close();
+				
 				if(size > maxUtcOnQueue) Thread.sleep(2000);
 				
 				}while( size > maxUtcOnQueue );
+				
+				
 				
 				
 			}
@@ -409,6 +454,10 @@ public class ScheduleManager implements SMIRFConstants {
 						System.err.println(ConfigManager.getBeamSubDir(utcStr,fanbeam) );
 					}
 				}
+				
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_SRCNAME_PREFIX"));
+				out.println("SOURCE  "+ observation.getCoords().getPointingTO().getPointingName());
+
 
 				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
 
@@ -429,25 +478,32 @@ public class ScheduleManager implements SMIRFConstants {
 
 	public List<Coords> getPointingsForSession(String utc, int totalSeconds, int tobsSeconds, Comparator<Coords> comparator, Coords lastCoords, boolean fluxCalWhenever) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException{
 
-		List<Pointing> pointings = DBService.getAllUnobservedPointingsOrderByPriority();
+		//List<Pointing> pointings = DBService.getAllUnobservedPointingsOrderByPriority();
+		//pointingTOs = pointings.stream().filter(p -> EphemService.getHA(lst, p.getAngleRA()).getRadianValue() > SMIRFConstants.minRadHA 
+//		&& EphemService.getHA(lst, p.getAngleRA()).getRadianValue() < SMIRFConstants.maxRadHA).map(p-> new PointingTO(p)).collect(Collectors.toList());
 
-		List<PointingTO> pointingTOs = new LinkedList<PointingTO>();
-
+		LocalDateTime utcTime = Utilities.getUTCLocalDateTime(utc);
 		Angle lst = new Angle(EphemService.getRadLMSTforMolonglo(utc),Angle.HHMMSS);
 
-		pointingTOs = pointings.stream().filter(p -> EphemService.getHA(lst, p.getAngleRA()).getRadianValue() > SMIRFConstants.minRadHA 
-				&& EphemService.getHA(lst, p.getAngleRA()).getRadianValue() < SMIRFConstants.maxRadHA).map(p-> new PointingTO(p)).collect(Collectors.toList());
 
+		List<PointingTO> fluxCals = DBService.getAllFluxCalibrators().stream().map(f -> new PointingTO(new FluxCalibratorTO(f))).collect(Collectors.toList());
 
+		List<PointingTO> pointingTOs = DBManager.getAllUnobservedPointingsOrderByPriority();
+
+		
 		LinkedList<Coords> pointingList = new LinkedList<>();
-		Integer minSlewTime = 0;
-		LocalDateTime utcTime = Utilities.getUTCLocalDateTime(utc);
+		
+		int obsSinceFluxcal=0;
 
-		for(int s = tobsSeconds; s<=totalSeconds; s+=tobsSeconds) {
+		for(int s = 0; s<=totalSeconds; s+=tobsSeconds) {
+			
+			boolean doFluxCal = (obsSinceFluxcal == 10 ) ? true: false;
+			
+			doFluxCal = doFluxCal && fluxCalWhenever;
 
 			List<Coords> coordsList = new ArrayList<>();
 
-			for(PointingTO pointingTO: pointingTOs) {
+			for(PointingTO pointingTO: doFluxCal ? fluxCals : pointingTOs) {
 
 				Coords coords = new Coords(pointingTO, lst);
 
@@ -501,25 +557,44 @@ public class ScheduleManager implements SMIRFConstants {
 				utcTime = utcTime.plusSeconds(slewtime);
 			}
 			else{
-				Coords previous = pointingList.getLast();
 				Coords closest = null;
+				Coords previous = pointingList.getLast();
+				
+//				Integer minSlewTime = null;
+//				for(Coords now: coordsList){
+//					int slewtime = TCCManager.computeSlewTime(previous.getAngleNS().getRadianValue(), previous.getAngleMD().getRadianValue(), now.getAngleNS().getRadianValue(), now.getAngleMD().getRadianValue());
+//					if(closest==null || slewtime < minSlewTime){
+//						minSlewTime = slewtime;
+//						closest = now;
+//					}
+//				}
+//				if(closest == null){
+//					System.err.println("Nothing to observe at s = " + s/3600.0 + " hours");
+//					continue;
+//				}
+//				if(closest!=null) {
+//					closest.setUtc(Utilities.getUTCString(utcTime));
+//					pointingList.add(closest);
+//				}
+				
+				if(coordsList.isEmpty()) {
+					System.err.println("Nothing to observe at s = " + s/3600.0 + " hours");
+					continue;
+				}
 
-				for(Coords now: coordsList){
-					int slewtime = TCCManager.computeSlewTime(previous.getAngleNS().getRadianValue(), previous.getAngleMD().getRadianValue(), now.getAngleNS().getRadianValue(), now.getAngleMD().getRadianValue());
-					if(closest==null || slewtime < minSlewTime){
-						minSlewTime = slewtime;
-						closest = now;
-					}
-				}
-				if(closest!=null) {
-					closest.setUtc(Utilities.getUTCString(utcTime));
-					pointingList.add(closest);
-				}
-				s+=minSlewTime;
-				lst.addSolarSeconds(minSlewTime);
-				utcTime = utcTime.plusSeconds(minSlewTime);
+				coordsList = Coords.sortCoordsByNearestDistanceTo(coordsList, previous);
+				closest = coordsList.get(0);
+				closest.setUtc(Utilities.getUTCString(utcTime));
+				pointingList.add(closest);
+				int slewtime = TCCManager.computeSlewTime(closest.getAngleNS().getRadianValue(),closest.getAngleMD().getRadianValue(),previous.getAngleNS().getRadianValue(),previous.getAngleMD().getRadianValue());
+				s+=slewtime;
+				lst.addSolarSeconds(slewtime);
+				utcTime = utcTime.plusSeconds(slewtime);
 			}
+			
+			obsSinceFluxcal = doFluxCal ? 0: obsSinceFluxcal+1;
 
+			
 		}
 		//for(Coords c: pointingList) System.err.print(c);
 		System.err.println( pointingList.size()+ " pointings " + pointingList.size()*tobsSeconds/3600.0 + " hours " +pointingList.size()*tobsSeconds/60.0 + " min " + pointingList.size()*tobsSeconds + " seconds");
@@ -527,8 +602,23 @@ public class ScheduleManager implements SMIRFConstants {
 
 
 	}
+	
+	
+	
+	
 
+	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, TCCException {
+		ScheduleManager manager = new ScheduleManager();
+		List<Coords> coords = manager.getPointingsForSession("2017-05-16-08:00:00.000", 10 * 60 * 60 , 720, Coords.compareMDNS, new Coords(new PointingTO( DBService.getPointingByID(1)), 
+				new Angle(EphemService.getRadLMSTforMolonglo("2017-05-16-08:00:00.000"), Angle.HHMMSS)), true);
+		
+		TableBuilder tb = new TableBuilder();
+		for(Coords c: coords) tb.addRow(c.toString());
+		System.err.println(tb.toString());
+		
+		System.err.println( coords.size()+ " pointings " + coords.size()*720/3600.0 + " hours " +coords.size()*720/60.0 + " min " + coords.size()*720 + " seconds");
 
+	}
 
 
 
