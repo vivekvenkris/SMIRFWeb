@@ -37,7 +37,7 @@ public class TCCStatus {
 		
 		boolean isEastNSDriving = this.ns.getEast().getDriving();
 		
-		if(!isEastNSDriving && isEastNSStillNotDriving()){
+		if(!isEastNSDriving){
 			if(!this.ns.getEast().getDisabled() && !isEastNSTracking()) {
 				
 				throw new DriveBrokenException("East arm NS was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
@@ -46,7 +46,7 @@ public class TCCStatus {
 		
 		boolean isWestNSDriving =  this.ns.getWest().getDriving();
 		
-		if(!isWestNSDriving && isWestNSStillNotDriving()){
+		if(!isWestNSDriving){
 			if(!this.ns.getWest().getDisabled() && !isWestNSTracking())
 				throw new DriveBrokenException("West arm NS was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
 		}
@@ -55,14 +55,14 @@ public class TCCStatus {
 		
 		boolean isEastMDDriving = this.md.getEast().getDriving();
 		
-		if(!isEastMDDriving && isEastMDStillNotDriving()){
+		if(!isEastMDDriving){
 			if(!this.md.getEast().getDisabled() && !isEastMDTracking())
 				throw new DriveBrokenException("East arm MD was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
 		}
 		
 		boolean isWestMDDriving =  this.md.getWest().getDriving();
 		
-		if(!isWestMDDriving && isWestMDStillNotDriving()){
+		if(!isWestMDDriving ){
 			if(!this.md.getWest().getDisabled() && !isWestMDTracking())
 				throw new DriveBrokenException("West arm MD was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
 		}
