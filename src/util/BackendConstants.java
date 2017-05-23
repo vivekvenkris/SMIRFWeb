@@ -16,7 +16,7 @@ public interface BackendConstants {
 	String bootUp = "startMopsr();";
 	String shutDown = "stopMopsr();";
 	int maxIter = 5;
-	Integer maximumNumberOfTB = 4;
+	Integer maximumNumberOfTB =  Integer.parseInt(ConfigManager.getSmirfMap().get("MAX_TIED_BEAM_SOURCES"));
 
 	
 	String backendResponseSuccess = "ok";
@@ -43,6 +43,7 @@ public interface BackendConstants {
 	
 	
 	/* for simple date format */
+	String backendUTCMySQLFormat = "yyyy-MM-dd HH:mm:ss.S";
 	String backendUTCFormat = "yyyy-MM-dd-HH:mm:ss.SSS";
 	String backendUTCFormatOfPattern="yyyy-MM-dd-kk:mm:ss.SSS";
 	
