@@ -15,11 +15,6 @@
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/jFreeChart"/>
-	<classpathentry kind="lib" path="/home/vivek/software/jars/mysql-connector-java-5.1.40-bin.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/EclipseLink 2.5.2"/>
-	<classpathentry kind="lib" path="/home/vivek/software/jars/commons-math3-3.5.jar"/>
-	<classpathentry kind="lib" path="/home/vivek/software/jars/commons-math3-3.5-javadoc.jar"/>
-	<classpathentry kind="lib" path="/home/vivek/software/jars/commons-lang3-3.4-javadoc.jar"/>
-	<classpathentry kind="lib" path="/home/vivek/software/jars/commons-lang3-3.4.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
