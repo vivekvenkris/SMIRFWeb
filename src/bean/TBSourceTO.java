@@ -1,6 +1,5 @@
 package bean;
 
-import manager.PSRCATManager;
 import util.SMIRFConstants;
 
 public class TBSourceTO {
@@ -46,6 +45,7 @@ public class TBSourceTO {
 	String projectID;
 	String ephemerides;
 	Integer priority;
+	Double fluxAt843MHz;
 	
 	@Override
 	public boolean equals(Object obj) {
@@ -63,12 +63,15 @@ public class TBSourceTO {
 	public TBSourceTO() {
 		projectID = SMIRFConstants.PID;
 		priority = 1;
+		ephemerides = "";
+
 
 	}
 	public TBSourceTO(String jname){
 		this();
 		psrName = jname;
 		priority = 1;
+		ephemerides = "";
 	}
 	
 	public void addToEphemerides( String str){
@@ -120,6 +123,16 @@ public class TBSourceTO {
 
 	public void setPriority(Integer priority) {
 		this.priority = priority;
+	}
+
+
+	public Double getFluxAt843MHz() {
+		return fluxAt843MHz;
+	}
+
+
+	public void setFluxAt843MHz(Double fluxAt843MHz) {
+		this.fluxAt843MHz = fluxAt843MHz;
 	}
 
 	
