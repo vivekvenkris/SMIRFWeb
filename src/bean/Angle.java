@@ -13,8 +13,7 @@ public class Angle{
 	private static final Double SECONDS_IN_A_SOLAR_DAY = 24*3600 + 0.0;
 	Double radValue; // always in radians
 	String toStringUnits;
-	
-	
+		
 	public Angle(Double radValue, String toStringUnits){
 		this.radValue = radValue;
 		this.toStringUnits = toStringUnits;
@@ -24,7 +23,7 @@ public class Angle{
 	}
 	
 	public void addSolarSeconds(int seconds){
-		this.radValue = (this.getDecimalHourValue() + (seconds * SECONDS_IN_A_SOLAR_DAY / SECONDS_IN_A_SIDEREAL_DAY )/3600.0) * Constants.hrs2Rad;
+		this.radValue = (this.getDecimalHourValue() + (seconds * SECONDS_IN_A_SOLAR_DAY / SECONDS_IN_A_SIDEREAL_DAY )*Constants.sec2Hrs) * Constants.hrs2Rad;
 		
 	}
 	
