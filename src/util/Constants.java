@@ -7,7 +7,10 @@ public interface Constants {
 	Double toRadians = deg2Rad;
 	Double toDegrees = rad2Deg;
 	Double arcSec2Deg = 1/(60.0*60.0);
+	 
 	Double sec2Hrs = 1/(60.0*60.0);
+	Double hrs2Sec = 1/sec2Hrs;
+
 	Double hrs2Deg = 15.0;
 	Double hrs2Rad = hrs2Deg*deg2Rad;
 	
@@ -24,7 +27,7 @@ public interface Constants {
 	/*Pablo's numbers*/
 	Double MolongloSkew     = -2.3755870374367263e-5;
 	Double MolongloSlope    = -3.448285788259685e-3;
-	Double MolongloLatitude = -0.6173567480991081;
+	Double MolongloLatitude =  -0.6173567480991081;
 	
 	Double cosSkew = Math.cos(MolongloSkew);
 	Double sinSkew = Math.sin(MolongloSkew);
@@ -35,12 +38,19 @@ public interface Constants {
 	Double cosLat = Math.cos(MolongloLatitude);
 	Double sinLat = Math.sin(MolongloLatitude);
 	
-	Double MolongloLongitude =  149.424658;
+	Double MolongloLongitude = 149.424658; // 21.4111;
 	Double MolongloLongitudeRAD = MolongloLongitude*deg2Rad;
 	
 	Double RadMolongloNSBeamWidth = Double.parseDouble(ConfigManager.getSmirfMap().get("NS_BEAM")) * deg2Rad;
 	Double RadMolongloMDBeamWidth = Double.parseDouble(ConfigManager.getSmirfMap().get("MD_BEAM")) * deg2Rad;
+	Double RadMolongloMDBeamWidthForFB = Double.parseDouble(ConfigManager.getSmirfMap().get("MD_FOR_FANBEAM")) * deg2Rad;
 	
+	Double radMDEastHPBW = - RadMolongloMDBeamWidth/2.0;
+	Double radMDWestHPBW = + RadMolongloMDBeamWidth/2.0;
+	
+	Double radMDToStartObs = -RadMolongloMDBeamWidth/SMIRFConstants.tilingDiameter / 2.0 ;
+	Double radMDToEndObs   = +RadMolongloMDBeamWidth/SMIRFConstants.tilingDiameter / 2.0 ;
+
 	
 	
 	
