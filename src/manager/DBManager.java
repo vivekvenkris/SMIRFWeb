@@ -107,6 +107,7 @@ public class DBManager {
 	}
 	
 	public static void incrementCompletedObservation(ObservationSessionTO observationSessionTO){
+		if(observationSessionTO == null ) return;
 		DBService.incrementCompletedObservation(observationSessionTO);
 	}
 	
