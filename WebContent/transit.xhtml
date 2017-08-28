@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html [
+    <!ENTITY nbsp "&#160;"> 
+    <!ENTITY copy "&#169;">
+    <!ENTITY box  "&#9644;"> 
+]>
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:ui="http://java.sun.com/jsf/facelets">
+
+<h:head>
+	<title>SMIRFWeb/Scheduler</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="stylesheet" href="assets/css/main.css" />
+	
+	<style>
+		.panelgrid.ui-panelgrid>*>tr, .panelgrid.ui-panelgrid .ui-panelgrid-cell{
+		    border-style: none;
+		    border: none; 
+		}
+		
+	</style>
+	
+</h:head>
+<h:body class="homepage" >
+<div id="page-wrapper">
+
+			<!-- Header -->
+				<div id="header-wrapper">
+					<header id="header" class="container">
+
+						<!-- Logo -->
+							<div id="logo">
+								&nbsp;&nbsp;&nbsp;&nbsp;<h1><a href="index.html">SMIRF</a></h1><br/>
+								<span>The search for one-off and 
+								periodic radio bursts</span>
+							</div>
+
+						<!-- Nav -->
+							<nav id="nav">
+								<ul>
+									<li ><a href="index.xhtml">Home</a></li>
+									<li ><a href="scheduler.xhtml">Scheduler</a></li>
+									<li class="current"><a href="transit.xhtml">Transit Scheduler</a></li>
+									<li><a href="single.xhtml">Single</a></li>
+									
+									<li><a href="logs.html">Logs</a></li>
+									<li><a href="right-sidebar.html">Right Sidebar</a></li>
+									<li><a href="no-sidebar.html">No Sidebar</a></li>
+								</ul>
+      								<form id="clock" name="clock" style="font-size: larger;">
+									<ul style=" text-align: justify;">
+										<li>MOLONGLO</li> <li id="date"></li>
+										<li>UTC</li>   <li id="utc"></li>
+										<li>LMST</li>  <li id="lst"></li>
+									</ul>
+								</form>
+							</nav>
+							
+
+					</header>
+				</div>
+			<!-- Banner -->
+				<div id="banner-wrapper">
+					<div id="banner" class="box container">
+						<div class="row" >
+								<h:form id="schedule">
+									<p:outputLabel value="Transit Scheduler"></p:outputLabel>
+									<p:panelGrid  styleClass="panelgrid" >
+									<p:row>
+										<p:column>
+											<p:outputLabel value="UTC" ></p:outputLabel>
+										</p:column>
+									<p:column>
+										<p:selectOneButton id="utcChoice" value="#{transitMB.utc}"  required="true" requiredMessage="Select Now/UTC">
+											<f:ajax listener="#{transitMB.toggleUTCInput}" event="change" render="@form" />
+											<f:selectItem itemLabel="now" itemValue="now" />
+											<f:selectItem itemLabel="enter utc" itemValue="utc" />
+										</p:selectOneButton>
+									</p:column>
+									<p:column id= "utcInput" >
+										<p:inputMask mask="9999-99-99-99:99:99"  value="#{transitMB.enteredUTC}"  rendered="#{transitMB.utcRendered}" slotChar="*" style="width:100%;" required="true" requiredMessage="type in UTC"></p:inputMask>
+									</p:column>
+									
+								</p:row>
+									<p:row>
+										<p:column>
+											<p:outputLabel value="session duration"></p:outputLabel>
+										</p:column>
+										<p:column>
+											<p:inputText value="#{transitMB.duration}" style="width: 100%" required="true" requiredMessage=" enter session duration"></p:inputText>
+										</p:column>
+										<p:column>
+											<p:selectOneButton value="#{transitMB.durationUnits}" rendered="true" requiredMessage="Please select duration units" >
+												<f:selectItem itemLabel="seconds" itemValue="1"></f:selectItem>
+												<f:selectItem itemLabel="minutes" itemValue="60"></f:selectItem>
+												<f:selectItem itemLabel="hours" itemValue="3600"></f:selectItem>
+											</p:selectOneButton>
+										</p:column>
+										
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="tobs per pointing"></p:outputLabel>
+										</p:column>
+										<p:column>
+											<p:inputText value="#{transitMB.tobs}" style="width: 100%"></p:inputText>
+										</p:column>
+										<p:column>
+											<p:selectOneButton value="#{transitMB.tobsUnits}" converter="javax.faces.Integer" style="width: 100%" rendered="true" requiredMessage="Please select tobs units">
+													<f:selectItem itemLabel="seconds" itemValue="1"></f:selectItem>
+													<f:selectItem itemLabel="minutes" itemValue="60"></f:selectItem>
+													<f:selectItem itemLabel="hours" itemValue="3600"></f:selectItem>
+											</p:selectOneButton>
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Observer"></p:outputLabel>
+										</p:column>
+										<p:column>
+											<p:inputText value="#{transitMB.observer}" style="width: 100%"></p:inputText>
+										</p:column>
+										
+									</p:row>
+									
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="phase calibrate at start?"></p:outputLabel>
+										</p:column>
+										
+										<p:column>
+											<p:selectBooleanButton value="#{transitMB.phaseCal}"  onLabel="Yes" offLabel="No" />
+											
+										</p:column>
+										
+										<p:column>
+											<p:selectOneMenu value="#{transitMB.phaseCalibrator}" style="width: 100%;">
+												<f:selectItem itemLabel="choose automatically" itemValue="auto"></f:selectItem>
+												<f:selectItems value="#{transitMB.phaseCalibrators}"></f:selectItems>
+												<f:converter converterId="converters.PhaseCalibratorConverter"/>
+											</p:selectOneMenu>
+										</p:column>
+									</p:row>
+								
+									<p:row>
+										<p:column>
+											<p:outputLabel value="do pulsar search?"></p:outputLabel>
+										</p:column>
+										
+										<p:column>
+											<p:selectBooleanButton value="#{transitMB.doPulsarSearch}"  onLabel="Yes" offLabel="No" />
+											
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="enable TCC?"></p:outputLabel>
+										</p:column>
+										
+										<p:column>
+											<p:selectBooleanButton value="#{transitMB.enableTCC}"  onLabel="Yes" offLabel="No" />
+											
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="enable backend?"></p:outputLabel>
+										</p:column>
+										
+										<p:column>
+											<p:selectBooleanButton value="#{transitMB.enableBackend}"  onLabel="Yes" offLabel="No" />
+											
+										</p:column>
+									</p:row>
+	
+									<p:row>
+										<p:column>
+											<p:outputLabel value="do timing?"></p:outputLabel>
+										</p:column>
+										
+										<p:column>
+											<p:selectBooleanButton value="#{transitMB.doTiming}"  onLabel="Yes" offLabel="No" />
+											
+										</p:column>
+										
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="NS mode"></p:outputLabel>
+										</p:column>
+										
+										<p:column>
+											<p:selectOneButton value="#{transitMB.nsSpeed}" style="width: 100%" rendered="true" requiredMessage="Please select tobs units">
+													<f:selectItems value="#{transitMB.nsSpeeds}"></f:selectItems>
+											</p:selectOneButton>											
+										</p:column>
+									</p:row>
+									
+								</p:panelGrid>		
+								
+								<p:panelGrid id="buttonPanel" styleClass="panelgrid"  style="float: right;">
+								<p:row>
+								<p:column colspan="2">
+								<p:commandButton styleClass="button  icon fa-play-circle"  style="background: #99CC99; color: white;" value="start"  update="growl" actionListener="#{transitMB.startSMIRFTransit}"></p:commandButton>
+								</p:column>
+								<p:column colspan="2">
+									<p:commandButton styleClass="button icon fa-stop" style="background: #f7fcb9; color: white;" value="finish"  update="growl" actionListener="#{transitMB.finishSchedule}"></p:commandButton>
+								</p:column>
+								<p:column colspan="2">
+									<p:commandButton styleClass="button icon fa-stop" style="background: #993300; color: white;" value="terminate"  update="growl" actionListener="#{transitMB.terminateSchedule}"></p:commandButton>
+								</p:column>
+								</p:row>
+								</p:panelGrid>
+								
+								
+								
+								
+								<p:growl id="growl" life="2000" />
+								
+								
+								</h:form>
+					
+			
+							</div>
+					</div>
+				</div>
+
+			<!-- Features -->
+				<div id="features-wrapper">
+					<div class="container">
+						<div class="row">
+							<div class="4u 12u(medium)">
+
+								<!-- Box -->
+									<section class="box feature">
+										<a href="#" class="image featured"><img src="images/pic01.jpg" alt="" /></a>
+										<div class="inner">
+											<header>
+												<h2>Put something here</h2>
+												<p>Maybe here as well I think</p>
+											</header>
+											<p>Phasellus quam turpis, feugiat sit amet in, hendrerit in lectus. Praesent sed semper amet bibendum tristique fringilla.</p>
+										</div>
+									</section>
+
+							</div>
+							<div class="4u 12u(medium)">
+
+								<!-- Box -->
+									<section class="box feature">
+										<a href="#" class="image featured"><img src="images/pic02.jpg" alt="" /></a>
+										<div class="inner">
+											<header>
+												<h2>An interesting title</h2>
+												<p>This is also an interesting subtitle</p>
+											</header>
+											<p>Phasellus quam turpis, feugiat sit amet in, hendrerit in lectus. Praesent sed semper amet bibendum tristique fringilla.</p>
+										</div>
+									</section>
+
+							</div>
+							<div class="4u 12u(medium)">
+
+								<!-- Box -->
+									<section class="box feature">
+										<a href="#" class="image featured"><img src="images/pic03.jpg" alt="" /></a>
+										<div class="inner">
+											<header>
+												<h2>Oh, and finally ...</h2>
+												<p>Here's another intriguing subtitle</p>
+											</header>
+											<p>Phasellus quam turpis, feugiat sit amet in, hendrerit in lectus. Praesent sed semper amet bibendum tristique fringilla.</p>
+										</div>
+									</section>
+
+							</div>
+						</div>
+					</div>
+				</div>
+
+			<!-- Main -->
+				<div id="main-wrapper">
+					<div class="container">
+						<div class="row 200%">
+							<div class="4u 12u(medium)">
+
+								<!-- Sidebar -->
+									<div id="sidebar">
+										<section class="widget thumbnails">
+											<h3>Interesting stuff</h3>
+											<div class="grid">
+												<div class="row 50%">
+													<div class="6u"><a href="#" class="image fit"><img src="images/pic04.jpg" alt="" /></a></div>
+													<div class="6u"><a href="#" class="image fit"><img src="images/pic05.jpg" alt="" /></a></div>
+													<div class="6u"><a href="#" class="image fit"><img src="images/pic06.jpg" alt="" /></a></div>
+													<div class="6u"><a href="#" class="image fit"><img src="images/pic07.jpg" alt="" /></a></div>
+												</div>
+											</div>
+											<a href="#" class="button icon fa-file-text-o">More</a>
+										</section>
+									</div>
+
+							</div>
+							<div class="8u 12u(medium) important(medium)">
+
+								<!-- Content -->
+									<div id="content">
+										<section class="last">
+											<h2>So what's this all about?</h2>
+											<p>This is <strong>Verti</strong>, a free and fully responsive HTML5 site template by <a href="http://html5up.net">HTML5 UP</a>.
+											Verti is released under the <a href="http://html5up.net/license">Creative Commons Attribution license</a>, so feel free to use it for any personal or commercial project you might have going on (just don't forget to credit us for the design!)</p>
+											<p>Phasellus quam turpis, feugiat sit amet ornare in, hendrerit in lectus. Praesent semper bibendum ipsum, et tristique augue fringilla eu. Vivamus id risus vel dolor auctor euismod quis eget mi. Etiam eu ante risus. Aliquam erat volutpat. Aliquam luctus mattis lectus sit amet phasellus quam turpis.</p>
+											<a href="#" class="button icon fa-arrow-circle-right">Continue Reading</a>
+										</section>
+									</div>
+
+							</div>
+						</div>
+					</div>
+				</div>
+
+			<!-- Footer -->
+				<div id="footer-wrapper">
+					<footer id="footer" class="container">
+						<div class="row">
+							<div class="3u 6u(medium) 12u$(small)">
+
+								<!-- Links -->
+									<section class="widget links">
+										<h3>Random Stuff</h3>
+										<ul class="style2">
+											<li><a href="#">Etiam feugiat condimentum</a></li>
+											<li><a href="#">Aliquam imperdiet suscipit odio</a></li>
+											<li><a href="#">Sed porttitor cras in erat nec</a></li>
+											<li><a href="#">Felis varius pellentesque potenti</a></li>
+											<li><a href="#">Nullam scelerisque blandit leo</a></li>
+										</ul>
+									</section>
+
+							</div>
+							<div class="3u 6u$(medium) 12u$(small)">
+
+								<!-- Links -->
+									<section class="widget links">
+										<h3>Random Stuff</h3>
+										<ul class="style2">
+											<li><a href="#">Etiam feugiat condimentum</a></li>
+											<li><a href="#">Aliquam imperdiet suscipit odio</a></li>
+											<li><a href="#">Sed porttitor cras in erat nec</a></li>
+											<li><a href="#">Felis varius pellentesque potenti</a></li>
+											<li><a href="#">Nullam scelerisque blandit leo</a></li>
+										</ul>
+									</section>
+
+							</div>
+							<div class="3u 6u(medium) 12u$(small)">
+
+								<!-- Links -->
+									<section class="widget links">
+										<h3>Random Stuff</h3>
+										<ul class="style2">
+											<li><a href="#">Etiam feugiat condimentum</a></li>
+											<li><a href="#">Aliquam imperdiet suscipit odio</a></li>
+											<li><a href="#">Sed porttitor cras in erat nec</a></li>
+											<li><a href="#">Felis varius pellentesque potenti</a></li>
+											<li><a href="#">Nullam scelerisque blandit leo</a></li>
+										</ul>
+									</section>
+
+							</div>
+							<div class="3u 6u$(medium) 12u$(small)">
+
+								<!-- Contact -->
+									<section class="widget contact last">
+										<h3>Contact Us</h3>
+										<ul>
+											<li><a href="#" class="icon fa-twitter"><span class="label">Twitter</span></a></li>
+											<li><a href="#" class="icon fa-facebook"><span class="label">Facebook</span></a></li>
+											<li><a href="#" class="icon fa-instagram"><span class="label">Instagram</span></a></li>
+											<li><a href="#" class="icon fa-dribbble"><span class="label">Dribbble</span></a></li>
+											<li><a href="#" class="icon fa-pinterest"><span class="label">Pinterest</span></a></li>
+										</ul>
+										<p>1234 Fictional Road<br />
+										Nashville, TN 00000<br />
+										(800) 555-0000</p>
+									</section>
+
+							</div>
+						</div>
+						<div class="row">
+							<div class="12u">
+								<div id="copyright">
+									<ul class="menu">
+										<li>&copy; Untitled. All rights reserved</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</footer>
+				</div>
+
+			</div>
+
+		<!-- Scripts -->
+
+			<!-- <script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script> -->
+			<script type="text/javascript"  src='js/sidereal.js'></script>
+			
+</h:body>
+
+</html>
