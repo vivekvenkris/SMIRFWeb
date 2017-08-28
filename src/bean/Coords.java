@@ -38,6 +38,32 @@ public class Coords {
 	 
 	 
 }
+ 
+ public Coords(Coords pointingCoords, Angle lst, boolean mdTransit) throws EmptyCoordinatesException, CoordinateOverrideException {
+	 
+	 this.angleLST = lst; 
+	 this.pointingTO = pointingCoords.getPointingTO();
+	 this.angleHA = EphemService.getHA(lst, this.pointingTO.getAngleRA());
+	 
+	 if(mdTransit){
+		 
+		 /**
+		  * if MD transit, get transit coords for md=0
+		  */
+		 
+		 CoordinateTO tempTO = new CoordinateTO(null, null, pointingCoords.getAngleNS(), new Angle(0.0,Angle.DEG));
+		 MolongloCoordinateTransforms.telToSky(tempTO);
+		 
+		 this.angleHA = tempTO.getAngleHA();
+	 }
+	 
+	
+	 CoordinateTO cto = new CoordinateTO(this.angleHA,this.pointingTO.getAngleDEC(), null,null);
+	 MolongloCoordinateTransforms.skyToTel(cto);
+	 this.angleNS = cto.getAngleNS();
+	 this.angleMD = cto.getAngleMD();
+ }
+
 
 public Coords(PointingTO pointingTO){
 	this.pointingTO = pointingTO;	 
@@ -46,6 +72,13 @@ public Coords(PointingTO pointingTO, LocalDateTime utcTime) throws EmptyCoordina
 	this(pointingTO, new Angle(EphemService.getRadLMSTforMolonglo(utcTime), Angle.HHMMSS));
 	utc = utcTime.format(DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 }
+
+/**
+ * Get Coordinates from telescope status. If the arms are in different directions, take the mean.
+ * @param status
+ * @throws CoordinateOverrideException
+ * @throws EmptyCoordinatesException
+ */
 
 public Coords(TCCStatus status) throws CoordinateOverrideException, EmptyCoordinatesException{
 	
@@ -63,9 +96,6 @@ public Coords(TCCStatus status) throws CoordinateOverrideException, EmptyCoordin
 	
 }
 
-public static void main(String[] args) throws TCCException, CoordinateOverrideException, EmptyCoordinatesException {
-	new Coords(new TCCStatusService().getTelescopeStatus());
-}
  
  public void recompute(Angle lst) throws EmptyCoordinatesException, CoordinateOverrideException{
 	 this.angleLST =lst;
@@ -85,6 +115,9 @@ public static void main(String[] args) throws TCCException, CoordinateOverrideEx
 	 this.angleNS = cto.getAngleNS();
 	 this.angleMD = cto.getAngleMD();
  }
+ 
+
+ 
  @Override
 	public String toString() {
 		//return  "NS= " +this.angleNS + " MD= "+ this.angleMD + " " +this.pointingTO.getPointingID() + " " + this.pointingTO.getPointingName() +"\n";
@@ -136,6 +169,7 @@ public static Comparator<Coords> compareMDNS = new Comparator<Coords>() {
 		return comp2;
 	}
 };
+
 
 
 public static List<Coords> sortCoordsByNearestDistanceTo(List<Coords> inputList, Coords nearTo){
