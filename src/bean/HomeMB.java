@@ -55,7 +55,6 @@ public class HomeMB {
 		
 		if(!Control.isPolling()) return;
 		
-		System.err.println(Control.isPolling() + " " + backendStatus);
 		
 		this.observation = Control.getCurrentObservation();
 		BackendStatus backendStatus = Control.getBackendStatus();

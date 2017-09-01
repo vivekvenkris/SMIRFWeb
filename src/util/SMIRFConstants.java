@@ -24,6 +24,9 @@ public interface SMIRFConstants {
 	double maxGalacticLatitude = Double.parseDouble(ConfigManager.getSmirfMap().get("MAX_GB")) * Constants.deg2Rad;
 
 	double tilingDiameter = Double.parseDouble(ConfigManager.getSmirfMap().get("TILING_DIAMETER")) * Constants.deg2Rad;
+	double tilingRadius = tilingDiameter/2.0;
+	
+	Integer maxFRBTrtansitTOBS = Integer.parseInt(ConfigManager.getSmirfMap().get("MAX_FRB_TRANSIT_TOBS"));
 
 
 	/* unique stitching constants */
@@ -32,6 +35,7 @@ public interface SMIRFConstants {
 	double thresholdPercent = Double.parseDouble(ConfigManager.getSmirfMap().get("STITCH_SPILLOVER_THRESHOLD"));
 
 	String PID = ConfigManager.getSmirfMap().get("PID");
+	String interimFRBTransitPID = ConfigManager.getSmirfMap().get("INTERIM_FRB_TRANSIT_PID");
 
 
 	int tobs = Integer.parseInt(ConfigManager.getSmirfMap().get("SURVEY_TOBS"));
@@ -43,6 +47,7 @@ public interface SMIRFConstants {
 
 
 	Integer highestPriority=1;
+	Integer lowestPriority=100;
 
 	String phaseCalibratorSymbol   = ConfigManager.getSmirfConventionsMap().get("PHASE_CAL_SYMBOL");
 	String fluxCalibratorSymbol    = ConfigManager.getSmirfConventionsMap().get("FLUX_CAL_SYMBOL");
@@ -51,6 +56,7 @@ public interface SMIRFConstants {
 	String galacticPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("GALACTIC_POINTING_SYMBOL");
 	String candidatePointingSymbol = ConfigManager.getSmirfConventionsMap().get("CANDIDATE_POINTING_SYMBOL");
 	String randomPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("USER_POINTING_SYMBOL");
+	String transitPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("INTERIM_TRANSIT_SYMBOL");
 
 	String SMIRFPointingPrefix = ConfigManager.getSmirfConventionsMap().get("SMIRF_POINTING_PREEFIX");
 	String fluxCalPointingPrefix = ConfigManager.getSmirfConventionsMap().get("FLUX_CAL_POINTING_PREFIX");
@@ -64,6 +70,11 @@ public interface SMIRFConstants {
 
 	String USER = "vivek";
 	String PASS = "4&.S1kz5";
+	
+	String dynamicTransitScheduler = "DT";
+	String staticTransitScheduler = "StT";
+	String candidateConfirmationTransitScheduler = "CcT";
+	String singleTransitScheduler = "SiT";
 
 
 

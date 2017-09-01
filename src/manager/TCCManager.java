@@ -5,33 +5,78 @@ import java.util.Collections;
 
 import org.javatuples.Pair;
 
+import bean.Angle;
+import bean.CoordinateTO;
+import bean.Coords;
 import bean.ObservationTO;
+import bean.PointingTO;
 import bean.TCCStatus;
+import control.Control;
+import exceptions.CoordinateOverrideException;
+import exceptions.EmptyCoordinatesException;
 import exceptions.TCCException;
+import service.EphemService;
+import service.TCCService;
 import service.TCCStatusService;
 import util.Constants;
 import util.TCCConstants;
 
 public class TCCManager {
+	
+	/**
+	 * If the East and West arm are pointing in different directions, make it come together before it tries to observe anything.
+	 * To the future Vivek: This is a bit crude, I know. This is because it might become unnecessarily complicated to precisely
+	 * observe a transit if I assume the mean of both the arms and calculate transit times.
+	 
+	 * @throws TCCException
+	 * @throws CoordinateOverrideException
+	 * @throws EmptyCoordinatesException
+	 */
+	public static void syncArmsToMedian() throws TCCException, CoordinateOverrideException, EmptyCoordinatesException{
+		
+		TCCStatus status = Control.getTccStatus();
+		
+		
+		System.err.println("Checking NS positions of drives East = " + status.getNs().getEast().getTilt().getDegreeValue() + " "
+				 + status.getNs().getWest().getTilt().getDegreeValue());
+
+		
+		if( (status.getNs().getEast().getTilt().getDegreeValue() - status.getNs().getWest().getTilt().getDegreeValue() ) > 
+		TCCConstants.OnSourceThresholdRadNS ){
+			
+			
+			TCCService service = TCCService.createTccInstance();
+			
+			Coords coords = new Coords(status);
+			
+			System.err.println("Driving telescope to mean position: " + coords.getAngleNS());
+			
+			service.pointNS(coords.getAngleNS());
+			
+			
+		}
+	}
 
 	public static Integer computeSlewTime(double srcRadNS, double srcRadMD) throws TCCException{
 		
-		TCCStatus tccStatus = new TCCStatusService().getTelescopeStatus();
+		TCCStatus tccStatus = Control.getTccStatus();
 		Pair<Double, Double> tiltMDNow = tccStatus.getTiltMD();
 		Pair<Double,Double> tiltNSNow = tccStatus.getTiltNS();
 		
 		int rampTime = 10;
-		//
-		//System.err.println("source:"+srcRadNS*Constants.rad2Deg + " "+srcRadMD*Constants.rad2Deg);
-		//System.err.println("status:" + " " + tiltNSNow.getValue0()*Constants.rad2Deg + " " + tiltNSNow.getValue1()*Constants.rad2Deg + " "
-		//+ tiltMDNow.getValue0()*Constants.rad2Deg + " "+tiltMDNow.getValue1()*Constants.rad2Deg );
-		Pair<Double,Double> slewTimeNS = new Pair<Double, Double>(Math.abs((Double)tiltNSNow.getValue(0) - srcRadNS)*Constants.rad2Deg/TCCConstants.slewRateNSFast
-				, Math.abs((Double)tiltNSNow.getValue(1) - srcRadNS)*Constants.rad2Deg/TCCConstants.slewRateNSFast);
+		
+		double nsDiff = Math.min((Double)tiltNSNow.getValue(0) - srcRadNS, (Double)tiltNSNow.getValue(1) - srcRadNS);
+		
+		
+		double speed = TCCConstants.slewRateNSSlow;
+		if(nsDiff*Constants.rad2Deg > 1.5) speed = TCCConstants.slewRateNSFast;
+	
+		Pair<Double,Double> slewTimeNS = new Pair<Double, Double>(Math.abs((Double)tiltNSNow.getValue(0) - srcRadNS)*Constants.rad2Deg/speed
+				, Math.abs((Double)tiltNSNow.getValue(1) - srcRadNS)*Constants.rad2Deg/speed);
 		
 		Pair<Double,Double> slewTimeMD = new Pair<Double, Double>(Math.abs((Double)tiltMDNow.getValue(0) - srcRadMD)*Constants.rad2Deg/TCCConstants.slewRateMD
 				, Math.abs((Double)tiltMDNow.getValue(1) - srcRadMD)*Constants.rad2Deg/TCCConstants.slewRateMD);
 		
-		//System.err.println("slew time:" + slewTimeNS.getValue0() + " "+slewTimeNS.getValue1()+ " "+slewTimeMD.getValue0()+ " "+slewTimeMD.getValue1());
 		
 		Double maxSlewTime = Collections.max(Arrays.asList(slewTimeNS.getValue0(),slewTimeNS.getValue1(),slewTimeMD.getValue0(),slewTimeMD.getValue1()));
 		return (int)(1.2*(maxSlewTime + 2*rampTime));
@@ -49,8 +94,31 @@ public class TCCManager {
 				
 	}
 	
+	public static int computeNSSlewTime(Angle ns1, Angle ns2){
 		
+		double nsDiff = Math.abs(ns1.getDegreeValue() - ns2.getDecimalHourValue());
 		
+		double speed = TCCConstants.slewRateNSSlow;
+		
+		if(nsDiff*Constants.rad2Deg > 1) speed = TCCConstants.slewRateNSFast;
+		
+		return (int)Math.round(nsDiff/speed);
+		
+	}
+		
+	public static int computeNSSlewTime(Angle ns1, Angle ns2, Double slewDegPerSecond){
+		
+		return (int)Math.round(Math.abs((ns1.getDegreeValue() - ns2.getDegreeValue())/slewDegPerSecond));
+		
+	}
+	
+	public static void pointNS(PointingTO pointingTO) throws EmptyCoordinatesException, CoordinateOverrideException, TCCException{
+		
+		CoordinateTO to = new CoordinateTO(0.0, pointingTO.getAngleDEC().getRadianValue(), null, null);
+		MolongloCoordinateTransforms.skyToTel(to);
+		
+		TCCService.createTccInstance().pointNS(to.getAngleNS());
+	}
 		
 		
 		

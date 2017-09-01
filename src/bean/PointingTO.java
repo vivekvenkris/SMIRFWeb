@@ -21,6 +21,14 @@ public class PointingTO {
 	private Integer priority;
 	private String type;
 	private Integer numObs = 0;
+	private boolean precessed;
+	
+	@Override
+	public boolean equals(Object obj) {
+		
+		if(obj instanceof PointingTO && ((PointingTO)obj).getPointingName().equals(this.pointingName)) return true;
+		return false;
+	}
 
 	@Override
 	public String toString() {
@@ -53,8 +61,8 @@ public class PointingTO {
 		this.angleDEC = DEC;
 		
 		this.type = SMIRFConstants.randomPointingSymbol;
-		this.priority =null;
-		this.numObs = null;
+		this.priority = SMIRFConstants.lowestPriority;
+		this.numObs = 0;
 
 		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
 		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
@@ -62,6 +70,14 @@ public class PointingTO {
 		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
 		
 	}
+	
+	public PointingTO(Angle RA, Angle DEC, String pointingName,String type){
+		this(RA, DEC);
+		this.pointingName = pointingName;
+		this.pointingID = -1;
+		this.type = type;
+	}
+
 	
 	
 	public PointingTO(Pointing pointing) {
@@ -113,6 +129,25 @@ public class PointingTO {
 		
 	}
 	
+	public PointingTO(TBSourceTO sourceTO){
+		
+		this.pointingID = -1;
+		this.pointingName = sourceTO.getPsrName();
+		this.angleDEC = sourceTO.getAngleDEC();
+		this.angleRA = sourceTO.getAngleRA();
+		this.type = SMIRFConstants.randomPointingSymbol;
+		this.priority = SMIRFConstants.lowestPriority;
+		
+		/**
+		 * Check this coordinate conversion. - 1950 and J2000 shit.
+		 */
+		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
+		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
+		if(this.angleLON.getRadianValue() > Math.PI ) this.angleLON.setRadValue(this.angleLON.getRadianValue() - 2*Math.PI);
+		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
+		
+	}
+	
 	public static List<PointingTO> getFluxCalPointingList( List<FluxCalibratorTO> fluxCalibratorTOs){
 		List<PointingTO> pointingTOs = new ArrayList<>();
 		for(FluxCalibratorTO fto: fluxCalibratorTOs) pointingTOs.add(new PointingTO(fto));
@@ -125,6 +160,9 @@ public class PointingTO {
 		return pointingTOs;
 	}
 	
+	public void incrementNumObs(){
+		numObs++;
+	}
 	
 	public Integer getPointingID() {
 		return pointingID;
@@ -184,6 +222,15 @@ public class PointingTO {
 	public void setNumObs(Integer numObs) {
 		this.numObs = numObs;
 	}
+
+	public boolean isPrecessed() {
+		return precessed;
+	}
+
+	public void setPrecessed(boolean precessed) {
+		this.precessed = precessed;
+	}
+	
 	
 
 }

@@ -205,9 +205,18 @@ public class Utilities {
 	public static boolean isWithinCircle(double x1, double y1, double x2, double y2, double radius){
 		
 		double ydist = Math.abs(y2 - y1);
-		double xdist = Math.abs(x2 - x1)/Math.cos(0.5*(y1+y2));
+		double xdist = Math.abs(x2 - x1)*Math.cos(0.5*Math.abs(y1+y2));
 
 		return ( (xdist*xdist + ydist*ydist) <= radius*radius);
+
+	}
+	
+	public static double equatorialDistance(double x1, double y1, double x2, double y2){
+		
+		double ydist = Math.abs(y2 - y1);
+		double xdist = Math.abs(x2 - x1) * Math.cos(0.5*Math.abs(y1+y2));
+
+		return ( (xdist*xdist + ydist*ydist));
 
 	}
 
@@ -219,7 +228,7 @@ public class Utilities {
 	}
 
 	public static double distance(double x1, double y1, double x2, double y2){
-		double xdist = Math.abs(x2 - x1);
+		double xdist = Math.abs(x2 - x1)/Math.cos(0.5*(y1+y2));
 		double ydist = Math.abs(y2 - y1);
 
 		return Math.sqrt(xdist*xdist + ydist*ydist);

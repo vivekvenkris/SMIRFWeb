@@ -42,28 +42,11 @@
 							<nav id="nav">
 								<ul>
 									<li ><a href="index.xhtml">Home</a></li>
-									<li ><a href="scheduler.xhtml">Scheduler</a></li>
+									<li ><a href="transit.xhtml">Transit Scheduler</a></li>
 									<li class="current"><a href="single.xhtml">Single</a></li>
-									<li>
-										<a href="#">Dropdown</a>
-										<ul>
-											<li><a href="#">Lorem ipsum dolor</a></li>
-											<li><a href="#">Magna phasellus</a></li>
-											<li>
-												<a href="#">Phasellus consequat</a>
-												<ul>
-													<li><a href="#">Lorem ipsum dolor</a></li>
-													<li><a href="#">Phasellus consequat</a></li>
-													<li><a href="#">Magna phasellus</a></li>
-													<li><a href="#">Etiam dolore nisl</a></li>
-												</ul>
-											</li>
-											<li><a href="#">Veroeros feugiat</a></li>
-										</ul>
-									</li>
+									
 									<li><a href="logs.html">Logs</a></li>
-									<li><a href="right-sidebar.html">Right Sidebar</a></li>
-									<li><a href="no-sidebar.html">No Sidebar</a></li>
+									
 								</ul>
       								<form id="clock" name="clock" style="font-size: larger;">
 									<ul style=" text-align: justify;">
@@ -159,15 +142,54 @@
 										<p:selectBooleanButton offLabel="No" onLabel="Yes" value="#{singleMB.tccEnabled}"></p:selectBooleanButton>
 										</p:column>
 									</p:row>
-	
+									
 									<p:row>
 										<p:column>
-											<p:outputLabel value="Do Post Observation Stuff ?"></p:outputLabel>
+											<p:outputLabel value="Enable Pulsar search ?"></p:outputLabel>
+										</p:column>
+										<p:column >
+										<p:selectBooleanButton offLabel="No" onLabel="Yes" value="#{singleMB.doPulsarSearch}"></p:selectBooleanButton>
+										</p:column>
+									</p:row>
+
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Enable Pulsar Timing ?"></p:outputLabel>
+										</p:column>
+										<p:column >
+										<p:selectBooleanButton offLabel="No" onLabel="Yes" value="#{singleMB.doTiming}"></p:selectBooleanButton>
+										</p:column>
+									</p:row>
+
+									<p:row>
+										<p:column>
+											<p:outputLabel value="MD Transit ?"></p:outputLabel>
+										</p:column>
+										<p:column >
+										<p:selectBooleanButton offLabel="No" onLabel="Yes" value="#{singleMB.mdTransit}"></p:selectBooleanButton>
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="NS mode"></p:outputLabel>
+										</p:column>
+										
+										<p:column>
+											<p:selectOneButton value="#{singleMB.nsSpeed}" style="width: 100%" rendered="true" requiredMessage="Please select tobs units">
+													<f:selectItems value="#{singleMB.nsSpeeds}"></f:selectItems>
+											</p:selectOneButton>											
+										</p:column>
+									</p:row>
+									
+									<p:row>
+										<p:column>
+											<p:outputLabel value="Observer"></p:outputLabel>
 										</p:column>
 										<p:column>
-											<p:selectBooleanButton offLabel="No" onLabel="Yes"
-												value="#{singleMB.doPostObservationStuff}"></p:selectBooleanButton>
+											<p:inputText value="#{singleMB.observer}" style="width: 100%"></p:inputText>
 										</p:column>
+										
 									</p:row>
 	
 	

@@ -48,6 +48,7 @@ public class TCCStatusService implements TCCConstants {
 			
 			}catch (Exception e) {
 				System.err.println("Telescope not driving, disabled or on target.Wee count = " + i);
+				System.err.println(e.getMessage());
 				exception = e;
 			}
 			Thread.sleep(2000);
@@ -61,12 +62,19 @@ public class TCCStatusService implements TCCConstants {
 		
 		try {
 			String xmlResponse = talkToAnansiStatusServer(TCCConstants.pingCommand);
-			return getStatusObj(xmlResponse);
+			return  new TCCStatus(xmlResponse); //getStatusObj(xmlResponse);
 		} catch (TCCException e) {
 			throw new TCCException("TCC status service failed: Cause:"+ e.getMessage(), ExceptionUtils.getStackTrace(e));
 		}
 	}
 	
+	/**
+	 * Use the better TCCStatus( String xmlMessage) instead.
+	 * @param xmlMessage
+	 * @return
+	 * @throws TCCException
+	 */
+	@Deprecated
 	public TCCStatus getStatusObj(String xmlMessage) throws TCCException{
 		try {
 		TCCStatus status = new TCCStatus();
@@ -92,16 +100,18 @@ public class TCCStatusService implements TCCConstants {
 		nsEast.setDriving(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//ns/east/driving")));
 		nsEast.setOnTarget(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//ns/east/on_target")));
 		nsEast.setStatus(Integer.parseInt(Utilities.getTextFromXpath(xmlMessage, "//ns/east/system_status")));
-		nsEast.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//ns/east/state") == "disabled");
-		if(!nsEast.getDisabled()) nsEast.setFast(Utilities.getTextFromXpath(xmlMessage, "//ns/east/state") == "fast");
+		nsEast.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//ns/east/state").equalsIgnoreCase("disabled"));
+		nsEast.setOffset(new Angle(Utilities.getTextFromXpath(xmlMessage, "//ns/east/offset"),Angle.RAD));
+		if(!nsEast.getDisabled()) nsEast.setFast(Utilities.getTextFromXpath(xmlMessage, "//ns/east/state").equals("fast"));
 		
 		nsWest.setTilt(new Angle(Utilities.getTextFromXpath(xmlMessage, "//ns/west/tilt"),Angle.RAD));
 		nsWest.setCount(Integer.parseInt(Utilities.getTextFromXpath(xmlMessage, "//ns/west/count")));
 		nsWest.setDriving(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//ns/west/driving")));
 		nsWest.setOnTarget(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//ns/west/on_target")));
 		nsWest.setStatus(Integer.parseInt(Utilities.getTextFromXpath(xmlMessage, "//ns/west/system_status")));
-		nsWest.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//ns/west/state") == "disabled");
-		if(!nsWest.getDisabled()) nsWest.setFast(Utilities.getTextFromXpath(xmlMessage, "//ns/west/state") == "fast");
+		nsWest.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//ns/west/state").equalsIgnoreCase("disabled"));
+		nsWest.setOffset(new Angle(Utilities.getTextFromXpath(xmlMessage, "//ns/west/offset"),Angle.RAD));
+		if(!nsWest.getDisabled()) nsWest.setFast(Utilities.getTextFromXpath(xmlMessage, "//ns/west/state").equals("fast"));
 
 		TCCStatus.Drive md = status.getMd();
 		TCCStatus.Arm mdEast = md.getEast();
@@ -113,16 +123,18 @@ public class TCCStatusService implements TCCConstants {
 		mdEast.setDriving(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//md/east/driving")));
 		mdEast.setOnTarget(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//md/east/on_target")));
 		mdEast.setStatus(Integer.parseInt(Utilities.getTextFromXpath(xmlMessage, "//md/east/system_status")));
-		mdEast.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//md/east/state") == "disabled");
-		if(!mdEast.getDisabled()) mdEast.setFast(Utilities.getTextFromXpath(xmlMessage, "//md/east/state") == "fast");
+		mdEast.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//md/east/state").equalsIgnoreCase("disabled"));
+		mdEast.setOffset(new Angle(Utilities.getTextFromXpath(xmlMessage, "//md/east/offset"),Angle.RAD));
+		if(!mdEast.getDisabled()) mdEast.setFast(Utilities.getTextFromXpath(xmlMessage, "//md/east/state").equals("fast"));
 		
 		mdWest.setTilt(new Angle(Utilities.getTextFromXpath(xmlMessage, "//md/west/tilt"),Angle.RAD));
 		mdWest.setCount(Integer.parseInt(Utilities.getTextFromXpath(xmlMessage, "//md/west/count")));
 		mdWest.setDriving(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//md/west/driving")));
 		mdWest.setOnTarget(Boolean.parseBoolean(Utilities.getTextFromXpath(xmlMessage, "//md/west/on_target")));
 		mdWest.setStatus(Integer.parseInt(Utilities.getTextFromXpath(xmlMessage, "//md/west/system_status")));
-		mdWest.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//md/west/state") == "disabled");
-		if(!mdWest.getDisabled()) mdWest.setFast(Utilities.getTextFromXpath(xmlMessage, "//md/west/state") == "fast");
+		mdWest.setDisabled(Utilities.getTextFromXpath(xmlMessage, "//md/west/state").equalsIgnoreCase("disabled"));
+		mdWest.setOffset(new Angle(Utilities.getTextFromXpath(xmlMessage, "//md/west/offset"),Angle.RAD));
+		if(!mdWest.getDisabled()) mdWest.setFast(Utilities.getTextFromXpath(xmlMessage, "//md/west/state").equals("fast"));
 		
 		status.setTiltMD(new Pair<Double, Double>(mdEast.getTilt().getRadianValue(),mdWest.getTilt().getRadianValue()));
 		status.setTiltNS(new Pair<Double, Double>(nsEast.getTilt().getRadianValue(),nsWest.getTilt().getRadianValue()));
@@ -139,7 +151,13 @@ public class TCCStatusService implements TCCConstants {
 		TCCStatusService service = new TCCStatusService();
 		TCCStatus status = service.getTelescopeStatus();
 		Utilities.prettyPrintXML(status.getXml());
+		
+		System.err.println(status.getNs().getEast().getOffset() + " " + status.getNs().getWest().getOffset());
+		System.err.println(status.getMd().getEast().getOffset() + " " + status.getMd().getWest().getOffset());
+		
 		System.exit(0);
+		
+		
 		 final String s = "<?xml version='1.0' encoding='ISO-8859-1'?>"
 	        		+" <tcc_status> "
 	        		+"   <overview> "

@@ -37,6 +37,15 @@ public class ObservationTO {
 	Angle fanbeamSpacing;
 	Coords coords;
 	ObservationSessionTO observingSession;
+	Boolean delayTracking;
+	String projectID;
+	Double degNSOffset;
+	
+	Boolean mdTransit;
+	Boolean doTiming;
+	Boolean doPulsarSearch;
+	Boolean backendEnabled;
+	Boolean tccEnabled;
 	
 	@Override
 	public String toString() {
@@ -49,10 +58,13 @@ public class ObservationTO {
 	
 	public ObservationTO() {
 		nfb = 352;
-		fanbeamSpacing = new Angle("0.01139601", Angle.DEG);
+		fanbeamSpacing = new Angle( "0.0113960114", Angle.DEG);
 		tiedBeamSources = new ArrayList<TBSourceTO>();
 		name = "";
 		observer = "";
+		delayTracking = true;
+		
+		mdTransit = doTiming = doPulsarSearch = true;
 		
 	}
 	
@@ -60,9 +72,47 @@ public class ObservationTO {
 		this();
 		this.coords = coords;
 		this.tobs = tobs;
+		this.angleRA = coords.getPointingTO().getAngleRA();
+		this.angleDEC = coords.getPointingTO().getAngleDEC();
+	}
+	
+	public ObservationTO(Coords coords, UserInputs ui, String backendType, String obsType,String projectID) throws ObservationException{
+		this(coords,null, ui.getTobsInSecs(), ui.getObserver(), backendType, obsType, projectID, ui.getNsOffsetInDeg(),
+				ui.getMdTransit(), ui.getDoPulsarTiming(), ui.getDoPulsarSearching(), ui.getEnableBackend(), ui.getEnableTCC());
+	}
+	
+	public ObservationTO(Coords coords, ObservationSessionTO observationSessionTO, Integer tobs, String observer, 
+			String backendType, String obsType, String projectID, Double degNSOffset, Boolean mdTransit,
+			Boolean doTiming, Boolean doPulsarSearch, Boolean backendEnabled, Boolean tccEnabled) throws ObservationException{
+		this();
+		PointingTO pointingTO = coords.getPointingTO();
+		
+		this.observingSession = observationSessionTO;
+		this.tobs = tobs;
+		this.observer = observer;
+		this.backendType = backendType;
+		this.obsType = obsType;
+		this.name = pointingTO.getPointingName();
+		this.angleDEC = pointingTO.getAngleDEC();
+		this.angleRA = pointingTO.getAngleRA();
+		this.coords = coords;
+		this.projectID = projectID;
+		
+		if(isTransitPointing()){
+			delayTracking = false;
+		}
+		
+		this.degNSOffset = degNSOffset;
+		this.mdTransit = mdTransit;
+		this.doTiming = doTiming;
+		this.doPulsarSearch = doPulsarSearch;
+		this.backendEnabled  = backendEnabled;
+		this.tccEnabled = tccEnabled;
+		
 	}
 	
 	public ObservationTO(Observation observation) {
+		this();
 		this.name = observation.getSourceName();
 		try {
 			String utc = observation.getUtc().contains(".") ? observation.getUtc() : observation.getUtc() + ".000";
@@ -154,6 +204,23 @@ public class ObservationTO {
 	
 	
 	
+	
+	public String getProjectID() {
+		return projectID;
+	}
+
+	public void setProjectID(String projectID) {
+		this.projectID = projectID;
+	}
+
+	public Boolean getDelayTracking() {
+		return delayTracking;
+	}
+
+	public void setDelayTracking(Boolean delayTracking) {
+		this.delayTracking = delayTracking;
+	}
+
 	public String getUtc() {
 		return utc;
 	}
@@ -335,4 +402,64 @@ public class ObservationTO {
 			throw new ObservationException("Incomplete information on observation type.");
 		}
 	}
+	
+	public boolean isTransitPointing() throws ObservationException{
+		try{
+			return this.coords.getPointingTO().getType().equals(SMIRFConstants.transitPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+
+	public Double getDegNSOffset() {
+		return degNSOffset;
+	}
+
+	public void setDegNSOffset(Double degNSOffset) {
+		this.degNSOffset = degNSOffset;
+	}
+
+	public Boolean getMdTransit() {
+		return mdTransit;
+	}
+
+	public void setMdTransit(Boolean mdTransit) {
+		this.mdTransit = mdTransit;
+	}
+
+	public Boolean getDoTiming() {
+		return doTiming;
+	}
+
+	public void setDoTiming(Boolean doTiming) {
+		this.doTiming = doTiming;
+	}
+
+	public Boolean getDoPulsarSearch() {
+		return doPulsarSearch;
+	}
+
+	public void setDoPulsarSearch(Boolean doPulsarSearch) {
+		this.doPulsarSearch = doPulsarSearch;
+	}
+
+	public Boolean getBackendEnabled() {
+		return backendEnabled;
+	}
+
+	public void setBackendEnabled(Boolean backendEnabled) {
+		this.backendEnabled = backendEnabled;
+	}
+
+	public Boolean getTccEnabled() {
+		return tccEnabled;
+	}
+
+	public void setTccEnabled(Boolean tccEnabled) {
+		this.tccEnabled = tccEnabled;
+	}
+
+
+	
+	
 }

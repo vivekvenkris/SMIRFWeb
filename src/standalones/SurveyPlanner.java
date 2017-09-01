@@ -23,7 +23,7 @@ public class SurveyPlanner {
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, PointingException, IOException, TCCException {
 		
 		if(DBService.getAllPointings().isEmpty()) {
-		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane();
+		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane(false);
 		System.err.println("tiled..");
 		}
 

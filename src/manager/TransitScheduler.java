@@ -12,6 +12,7 @@ import bean.CoordinateTO;
 import bean.Coords;
 import bean.ObservationTO;
 import bean.PointingTO;
+import bean.UserInputs;
 import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
@@ -39,6 +40,8 @@ import util.SMIRFConstants;
 public abstract class TransitScheduler extends AbstractScheduler {
 	
 public static Schedulable createInstance(String schedulerType) throws SchedulerException{
+	
+		Schedulable	scheduler = Control.getScheduler();
 		
 		if(scheduler != null) {
 		
@@ -69,6 +72,8 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			
 		}
 		
+		Control.setScheduler(scheduler);
+		
 		return scheduler;
 	}
 	
@@ -93,6 +98,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 					previousObservation.get();
 					if(end) break;
 					Control.setCurrentObservation(null);
+					previousObservation = null;
 
 				}
 				
@@ -120,7 +126,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				/**
 				 * Point to the NS of the next pointing, but do not track
 				 */
-				TCCManager.pointNS(next);
+				//TCCManager.pointNS(next);
 				
 				double waitTimeInHours = getWaitTimeInHours(next);
 				
@@ -132,19 +138,34 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				 */
 				double minObsGapinHours = BackendConstants.minTimeBetweenObsInSecs * Constants.sec2Hrs;
 				
+				System.err.println("Wait time in hours:" + waitTimeInHours);
+				System.err.println("Should wait " + waitTimeInHours * Constants.hrs2Sec + "seconds for this to start");
+				
 				if(waitTimeInHours > minObsGapinHours) doInterimFRBTransit( (int) (waitTimeInHours * Constants.hrs2Sec), next.getAngleDEC());
-				else 	Thread.sleep((long) (waitTimeInHours*Constants.hrs2Sec*1000));
+				else 	{
+					System.err.println("Waiting for pointing to enter the beam. Sleeping for " + waitTimeInHours*Constants.hrs2Sec*1000 );
+					Thread.sleep((long) (waitTimeInHours*Constants.hrs2Sec*1000));
+				}
 				
 				if(Control.isTerminateCall()) break;
 				
 				Coords coords = new Coords(next, EphemService.getAngleLMSTForMolongloNow());
+				
+				if(coords.getAngleMD().getRadianValue() > Constants.radMDToEndObs){
+					System.err.println("Skipping pointing " + coords.getPointingTO().getPointingName() + " as it is already gone out of beam.");
+					continue;
+				}
 				
 				ObservationTO observation = new ObservationTO(coords, userInputs,BackendConstants.smirfBackend,BackendConstants.tiedArrayFanBeam, SMIRFConstants.PID);
 				Control.setCurrentObservation(observation);
 		
 				if(userInputs.getDoPulsarSearching()) observationManager.waitForPreviousSMIRFSoups();
 				observationManager.startObserving(observation);
+				if(Control.isTerminateCall()) break;
+
 				DBManager.addObservationToDB(observation);
+				
+
 				
 				/**
 				 *  If pulsar search is enabled, do it.
@@ -158,6 +179,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			/**
 			 * Reset control flags -- finish and terminate to false.
 			 */
+			Control.reset();
 			System.err.println(" Dynamic transit ended.");
 			
 		} catch (TCCException | CoordinateOverrideException | EmptyCoordinatesException e) {
@@ -182,15 +204,43 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			Control.reset();
 			Control.setScheduler(null);
 			Control.setCurrentObservation(null);
+			System.err.println("Controls reset");
 		}
 		
 	}
 	
-	private void doInterimFRBTransit(Integer tobs, Angle angleDEC) 
+	private void doInterimFRBTransit(Integer tobs, Angle angleDEC) throws ObservationException, EmptyCoordinatesException, CoordinateOverrideException, 
+	InterruptedException, TCCException, BackendException, EphemException{
+		
+		Integer numObs = (int) (tobs*1.0 / SMIRFConstants.maxFRBTrtansitTOBS);
+		Integer tobsDifference = tobs - numObs*SMIRFConstants.maxFRBTrtansitTOBS;
+		
+		System.err.println("Doing FRB transits in the mean time.");
+		
+		int obs = 1; 
+		for(;obs <= numObs; obs++ ){
+			
+			System.err.println("Attempting FRB transit obs:" + obs);
+			
+			Integer thisTobs = SMIRFConstants.maxFRBTrtansitTOBS - BackendConstants.minTimeBetweenObsInSecs;
+			doInterimFRBTransit(thisTobs,obs,angleDEC);
+			
+			System.err.println("Please rest for 60 seconds, my dear backend.");
+			Thread.sleep(BackendConstants.minTimeBetweenObsInSecs * 1000);
+			
+		}
+		
+		if(tobsDifference > BackendConstants.minTobs ) doInterimFRBTransit(tobsDifference,obs,angleDEC);
+		else Thread.sleep(tobsDifference * 1000);
+
+		
+	}
+	
+	private void doInterimFRBTransit(Integer tobs,Integer obsNo, Angle angleDEC) 
 			throws ObservationException, EmptyCoordinatesException, CoordinateOverrideException, 
 					InterruptedException, TCCException, BackendException, EphemException{
 		
-		PointingTO pointingTO = new PointingTO(EphemService.getAngleLMSTForMolongloNow(), angleDEC,"FRB Transit",transitPointingSymbol);
+		PointingTO pointingTO = new PointingTO(EphemService.getAngleLMSTForMolongloNow(), angleDEC,"FRBTransit_"+obsNo,transitPointingSymbol);
 		ObservationTO observation = new ObservationTO(new Coords(pointingTO, EphemService.getAngleLMSTForMolongloNow()),null,
 				tobs, "IFTM", BackendConstants.smirfBackend,
 				BackendConstants.tiedArrayFanBeam, SMIRFConstants.interimFRBTransitPID, 0.0, 
@@ -218,6 +268,8 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 	
 	private double getWaitTimeInHours(PointingTO pointingTO) throws EmptyCoordinatesException, CoordinateOverrideException{
 		
+		System.err.println("Calculating wait time for " + pointingTO.getPointingName());
+		
 		/**
 		 * 1. Get local coordinates of the next pointing for LST = now.
 		 * 2. Get the corresponding HA for MD = 2 degrees. 
@@ -227,12 +279,13 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		/**
 		 * Get HA coordinates for MD ~ -1 deg ( so that the fan beams are all within the primary beam of 2 by 2 degrees ) .
 		 */
-		CoordinateTO coordinateTO = new CoordinateTO(null, null, coords.getAngleNS(), new Angle(Constants.radMDToStartObs, Angle.DEG));
+		CoordinateTO coordinateTO = new CoordinateTO(null, null, coords.getAngleNS(), new Angle(getRadStartMDPosition(), Angle.DEG));
 		MolongloCoordinateTransforms.telToSky(coordinateTO);
 		
 		double halfPowerHA = coordinateTO.getAngleHA().getDecimalHourValue();
 		double haNow = coords.getAngleHA().getDecimalHourValue();
 		
+		System.err.println(coordinateTO.getAngleHA() + " " + halfPowerHA + " " + coords.getAngleHA() + " " +haNow + " " );
 		
 		if(haNow < 0 && Math.abs(halfPowerHA) < Math.abs(haNow)){
 			double differenceHours =  Math.abs(Math.abs(haNow) - Math.abs(halfPowerHA));
@@ -241,6 +294,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		
 		return 0.0;
 	}
+	
 	
 	protected Angle getHAForCoordTransitAtMD(Coords coords, Angle angleMD) throws EmptyCoordinatesException, CoordinateOverrideException{
 				
@@ -318,5 +372,33 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 	}
 
 
+	
+	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
+		TransitScheduler scheduler = new TransitScheduler() {
+			
+			@Override
+			public PointingTO next() throws CoordinateOverrideException, EmptyCoordinatesException, TCCException,
+					NoSourceVisibleException, SchedulerException {
+				// TODO Auto-generated method stub
+				return null;
+			}
+			
+			@Override
+			public void init(UserInputs userInputs) throws SchedulerException {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public double getRadStartMDPosition() {
+				
+				return Constants.radMDEastHPBW;
+			}
+		};
+		double waitTimeInHours = scheduler.getWaitTimeInHours(DBManager.getPointingByUniqueName("SMIRF_0025-7249"));
+		
+		System.err.println("Wait time in hours:" + waitTimeInHours);
+		System.err.println("Should wait " + waitTimeInHours * Constants.hrs2Sec + "seconds for this to start");
+	}
 
 }

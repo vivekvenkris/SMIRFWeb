@@ -78,5 +78,14 @@ public class CandidateConfirmationTransitScheduler extends TransitScheduler {
 		this.pointingTOs = pointingTOs;
 
 	}
+	
+	@Override
+	public double getRadStartMDPosition() {
+		
+		return Constants.RadMolongloMDBeamWidth;
+		
+	}
+
+
 
 }

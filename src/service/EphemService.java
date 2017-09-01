@@ -117,7 +117,9 @@ public class EphemService {
 	}
 
 	public static Angle getHA(Angle lst, Angle ra){
-		return new Angle(lst.getRadianValue() - ra.getRadianValue(), Angle.HHMMSS);
+		double ha = lst.getRadianValue() - ra.getRadianValue();
+		if (ha > 12 * Constants.hrs2Deg * Constants.deg2Rad) ha -= (24 * Constants.hrs2Deg * Constants.deg2Rad);	
+		return new Angle(ha, Angle.HHMMSS);
 	}
 
 	public static Angle getRA(Angle lst, Angle ha){

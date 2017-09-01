@@ -15,6 +15,9 @@ public interface Schedulable {
 	PointingTO next() 
 			throws CoordinateOverrideException, EmptyCoordinatesException, 
 			TCCException, NoSourceVisibleException, SchedulerException;
+	
+	double getRadStartMDPosition();
+	
 	void finish();
 	void terminate();
 	

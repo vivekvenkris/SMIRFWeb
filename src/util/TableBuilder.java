@@ -9,9 +9,9 @@ public class TableBuilder
 {
     List<String[]> rows = new LinkedList<String[]>();
  
-    public void addRow(String... cols)
+    public void addRow(String cols)
     {
-        rows.add(cols);
+        rows.add(cols.split(" "));
     }
  
     private int[] colWidths()

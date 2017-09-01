@@ -118,6 +118,7 @@ public class TransitMB {
 		inputs.setObserver(observer);
 		inputs.setNsOffsetInDeg(nsOffsetDeg);
 		inputs.setNsSpeed(nsSpeed.equals("Fast") ? TCCConstants.slewRateNSFast : TCCConstants.slewRateNSSlow );
+		inputs.setPointingTOs(DBManager.getAllPointings());
 		
 		try {
 		scheduler = TransitScheduler.createInstance(SMIRFConstants.dynamicTransitScheduler);

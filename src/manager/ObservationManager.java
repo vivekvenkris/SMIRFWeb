@@ -32,10 +32,12 @@ import bean.Coords;
 import bean.ObservationTO;
 import bean.PointingTO;
 import bean.TBSourceTO;
+import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.DriveBrokenException;
 import exceptions.EmptyCoordinatesException;
+import exceptions.EphemException;
 import exceptions.InvalidFanBeamNumberException;
 import exceptions.ObservationException;
 import exceptions.TCCException;
@@ -53,15 +55,13 @@ import util.Switches;
 import util.Utilities;
 
 public class ObservationManager {
-	ExecutorService executorService = null;
 
-	public synchronized void startObserving(ObservationTO observation) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException{
-		startObserving(observation, true, true);
+	public synchronized void startObserving(ObservationTO observation) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException, EphemException{
+		startObserving(observation, observation.getTccEnabled(), observation.getBackendEnabled());
 	}
 
-	public synchronized void  startObserving(ObservationTO observation, boolean tccEnabled, boolean backendEnabled) throws TCCException, BackendException, InterruptedException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
+	private synchronized void  startObserving(ObservationTO observation, boolean tccEnabled, boolean backendEnabled) throws TCCException, BackendException, InterruptedException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, EphemException{
 
-		executorService = Executors.newFixedThreadPool(4);
 		Future<Boolean> backendReady = null;
 		Future<Boolean> tccReady = null;
 
@@ -84,7 +84,7 @@ public class ObservationManager {
 				public Boolean call() throws TCCException, InterruptedException{
 
 					System.err.println("Starting TCC.");
-					tccService.pointAndTrackSource(observation.getCoords().getPointingTO().getAngleRA().toHHMMSS(), observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
+					tccService.pointAndTrackSource(observation);
 
 					long startTime = System.currentTimeMillis();
 
@@ -99,8 +99,13 @@ public class ObservationManager {
 					int weeCount = 0;
 
 					while(true){
-
-						if(!tccStatusService.isTelescopeDriving()) break;
+						
+						if(Thread.currentThread().isInterrupted()) {
+							tccService.stopTelescope();
+							return false;
+						}
+						
+						if(!tccStatusService.isTelescopeDriving() ) break;
 
 						elapsedTime = (new Date()).getTime() - startTime;
 
@@ -110,7 +115,18 @@ public class ObservationManager {
 							if(!tccStatusService.isTelescopeDriving()) break;
 							throw new DriveBrokenException("Drive taking longer than expected to go to source.");
 						}
+						
+						try{
 						Thread.sleep(2000);
+						}catch (InterruptedException e) {
+							tccService.stopTelescope();
+							return false;
+						}
+						
+						if(Control.isTerminateCall()){
+							tccService.stopTelescope();
+							return false;
+						}
 					}
 					System.err.println("TCC reached.");
 					return true;
@@ -119,7 +135,7 @@ public class ObservationManager {
 
 			};
 
-			tccReady =  executorService.submit(getTCCReady);
+			tccReady =  Control.getExecutorService().submit(getTCCReady);
 
 
 		}
@@ -158,7 +174,7 @@ public class ObservationManager {
 					return true;
 				}
 			};
-			backendReady = executorService.submit(getBackendReady);
+			backendReady = Control.getExecutorService().submit(getBackendReady);
 		}
 
 		if(backendEnabled) {
@@ -188,9 +204,11 @@ public class ObservationManager {
 		
 		System.err.println("TCC Ready");
 
-
-		executorService.shutdown();
-
+		if(Control.isTerminateCall()){
+			return;
+		}
+		
+		
 		if(!observation.getCoords().getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol)) {
 			observation.setTiedBeamSources(getTBSourcesForObservation(observation,BackendConstants.maximumNumberOfTB));
 		}
@@ -204,6 +222,18 @@ public class ObservationManager {
 	}
 
 
+	
+	public synchronized void waitForObservationCompletion(ObservationTO observation) throws InterruptedException{
+		
+		long obsTime = observation.getTobs()*1000;
+		long startTime = observation.getUtcDate().getTime();
+		while(true) {
+			if( (new Date().getTime() - startTime) > obsTime || Control.isTerminateCall()) break; 
+			Thread.sleep(200);
+			if(Thread.currentThread().isInterrupted()) break;
+		}
+		
+	} 
 	
 	
 	public boolean stopObserving() throws TCCException, BackendException, InterruptedException{
@@ -222,9 +252,9 @@ public class ObservationManager {
 				tccService.stopTelescope();
 				System.err.println("all success!");
 				int i=0;
-				while(tccStatusService.getTelescopeStatus().isTelescopeDriving()){
+				while(!Control.getTccStatus().isTelescopeIdle()){
 					Thread.sleep(1000);
-					if(i++ >5) throw new TCCException("TCC doesn't stop after a stop command");
+					if(i++ > 10) throw new TCCException("TCC doesn't stop after a stop command");
 				};
 
 			}catch (TCCException  e) {
@@ -247,7 +277,14 @@ public class ObservationManager {
 		return true;
 
 	}
-
+/**
+ * Outdated. do not use
+ * @param observation
+ * @return
+ * @throws TCCException
+ * @throws BackendException
+ * @throws InterruptedException
+ */
 	@Deprecated
 	public boolean stopObserving2(ObservationTO observation) throws TCCException, BackendException, InterruptedException{
 
@@ -268,7 +305,6 @@ public class ObservationManager {
 					tccService.stopTelescope();
 					System.err.println("all success!");
 					System.err.println(Thread.currentThread().getName());
-					executorService.shutdown();
 					return true;
 
 				}
@@ -291,66 +327,131 @@ public class ObservationManager {
 		}
 	}
 
-	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
-		new ObservationManager().getTBSourcesForObservation(new ObservationTO(new Coords(new PointingTO(new Angle("17:45:00", Angle.HHMMSS), new Angle("-30:40:00", Angle.DDMMSS)), EphemService.getAngleLMSTForMolongloNow()),700), BackendConstants.maximumNumberOfTB);
+	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, EphemException {
+	
+	ObservationTO observationTO = new ObservationTO(
+			new Coords(DBManager.getPointingByUniqueName("SMIRF_1705-4442"), Utilities.getUTCLocalDateTime("2017-08-10-09:42:56.000")), 360);
+	observationTO.setMdTransit(true);
+	
+	new ObservationManager().getTBSourcesForObservation(observationTO, null);
 	}
 
-	public List<TBSourceTO> getTBSourcesForObservation(ObservationTO observation, Integer max) throws EmptyCoordinatesException, CoordinateOverrideException{
+	public List<TBSourceTO> getTBSourcesForObservation(ObservationTO observation, Integer max) throws EmptyCoordinatesException, CoordinateOverrideException, EphemException{
 	
 		System.err.println("Getting TB sources for observation");
 		List<TBSourceTO> tbSources = PSRCATManager.getTbSources();
 		List<TBSourceTO> shortListed = new ArrayList<>();
 		
-		Coords coords = observation.getCoords();
-		double radPTRA = coords.getPointingTO().getAngleRA().getRadianValue();
-		double radPTDEC = coords.getPointingTO().getAngleDEC().getRadianValue();
+		Coords pointingCoords = observation.getCoords();
 		
+		double radPTRA = pointingCoords.getPointingTO().getAngleRA().getRadianValue();
+		double radPTDEC = pointingCoords.getPointingTO().getAngleDEC().getRadianValue();
+		
+		/**
+		 * If it is a flux cal observation, make sure we add the flux cal as a TB source. 
+		 */
 		if(observation.getCoords().getPointingTO().getType().equals(SMIRFConstants.fluxCalibratorSymbol)){
 			
 			TBSourceTO tbSourceTO = PSRCATManager.getTBSouceByName(observation.getCoords().getPointingTO().getPointingName());
 			shortListed.add(tbSourceTO);
 			
 		}
+		/**
+		 * Refresh coordinates for LST = now
+		 */
+		if(observation.getMdTransit()) {
+			System.err.println("Changing coords to MD = 0 as this is a transit observation.");
+			//EphemService.getAngleLMSTForMolongloNow()
+			pointingCoords = new Coords(pointingCoords, pointingCoords.getAngleLST(), true);
+		}
+		else pointingCoords.recomputeForNow();
 		
-		coords.recomputeForNow();
-		/* first check if the source is within the 4 degree circle of the pointing center in RA/DEC, if so, coordinate transform it and check if it is 
-		 	within the primary beam in NS/MD coordinates*/
+		Coords coords = pointingCoords;
+		
+		/**
+		 * first check if the source is within the 4 degree circle of the pointing center in RA/DEC
+		 * if so, coordinate transform it and check if it is  within the primary beam in NS/MD coordinates
+		 */
 
-		System.err.println(tbSources.size());
 		
 		for(TBSourceTO tbSourceTO: tbSources){
-
+						
 			double radTBRA = tbSourceTO.getAngleRA().getRadianValue();
 			double radTBDEC = tbSourceTO.getAngleDEC().getRadianValue();
+			
+			boolean withinCircle = Utilities.isWithinCircle(radPTRA, radPTDEC, radTBRA, radTBDEC, Constants.RadMolongloMDBeamWidth/2.0);
+			
+			
+			if(withinCircle){
 
+				TBSourceTO tempTBSourceTO = EphemService.precessTBSourceToNow(tbSourceTO);
 
-			if( Utilities.isWithinCircle(radPTRA, radPTDEC, radTBRA, radTBDEC, Constants.RadMolongloMDBeamWidth/2.0)){
-
-
-				CoordinateTO tbCoordinateTO = new CoordinateTO(coords.getAngleHA(), coords.getPointingTO().getAngleDEC(), null, null);			
+				CoordinateTO tbCoordinateTO = new CoordinateTO( EphemService.getHA(coords.getAngleLST(), tempTBSourceTO.getAngleRA()), tempTBSourceTO.getAngleDEC(), null, null);			
 				MolongloCoordinateTransforms.skyToTel(tbCoordinateTO);
-
-				if (Utilities.isWithinEllipse(coords.getAngleNS().getRadianValue(), coords.getAngleMD().getRadianValue(), 
+				
+				/**
+				 * Check if NS_diff < 2, MD_diff < 4, within ellipse 
+				 * To future Vivek: Sorry for being so crude. 
+				 */
+				
+		
+				
+				boolean withinNS = Math.abs(coords.getAngleNS().getRadianValue() - tbCoordinateTO.getAngleNS().getRadianValue() ) <= Constants.RadMolongloNSBeamWidth/2.0;
+				
+				boolean withinMD = Math.abs(coords.getAngleMD().getRadianValue() - tbCoordinateTO.getAngleMD().getRadianValue() ) <= Constants.RadMolongloMDBeamWidth/2.0;
+				
+				boolean withinEllipse = Utilities.isWithinEllipse(coords.getAngleNS().getRadianValue(), coords.getAngleMD().getRadianValue(), 
 						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), 
-						Constants.RadMolongloNSBeamWidth/2.0, Constants.RadMolongloMDBeamWidth/2.0)){
-
-					if(!shortListed.contains(tbSourceTO)) shortListed.add(tbSourceTO);
+						Constants.RadMolongloNSBeamWidth/2.0, Constants.RadMolongloMDBeamWidth/2.0);
+				
+				System.err.println( tbSourceTO.getPsrName() + " " + withinNS + " " + withinMD + " " + withinEllipse);
+				
+				if( withinNS && withinMD && withinEllipse){
+					
+					if(!shortListed.contains(tbSourceTO)) {
+						shortListed.add(tbSourceTO);
+						System.err.println("Adding " + tbSourceTO.getPsrName() + "at " + 
+								Constants.rad2Deg * Utilities.distance(coords.getAngleNS(), coords.getAngleMD(), 
+										tbCoordinateTO.getAngleNS(), tbCoordinateTO.getAngleMD()) + " Degrees");
+						
+					}
+					
 				}
+
+				
 			}
 		}
 
 		System.err.println("TB sources in the beam: " + shortListed);
-
-
-		shortListed = shortListed.stream().sorted(
-				Comparator.comparing(a ->  ((TBSourceTO)a).getPriority()).reversed()
-						  .thenComparing(a -> ((TBSourceTO)a).getFluxAt843MHz()).reversed())
-						  .collect(Collectors.toList());
-
-		//		shortListed = shortListed.stream().sorted(Comparator.comparing(a ->  Utilities.getEuclideanDistance(radPTRA, radPTDEC,
-		//				a.getAngleRA().getRadianValue(), a.getAngleDEC().getRadianValue()))).collect(Collectors.toList());
-
-
+		
+		shortListed.sort(Comparator.comparing(TBSourceTO::getPriority).reversed()
+						.thenComparing(Comparator.comparing(TBSourceTO::getFluxAt843MHz).reversed())
+						.thenComparing(Comparator.comparing(f -> {
+							TBSourceTO t = ((TBSourceTO)f);
+							Coords c = null;
+							try {
+								c = new Coords(new PointingTO(t),observation.getCoords().getAngleLST());
+							} catch (EmptyCoordinatesException | CoordinateOverrideException e) {
+								e.printStackTrace();
+							}
+							return Math.abs(c.getAngleHA().getDecimalHourValue());
+						}))
+						.thenComparing(a -> {
+							try {
+								return ((TBSourceTO)a).getAbsoluteDistanceFromBoresight(coords);
+							} catch (EmptyCoordinatesException | CoordinateOverrideException e) {
+								e.printStackTrace();
+								return 1e10;
+							}
+						})
+						);
+		
+		
+		
+//		if(shortListed.contains(PSRCATManager.getTBSouceByName("J1243-6423"))){
+//			shortListed.remove(PSRCATManager.getTBSouceByName("J1243-6423"));
+//		}
+//		shortListed.add(0, PSRCATManager.getTBSouceByName("J1243-6423"));
 		System.err.println("Sorted TB sources in the beam: " + shortListed);
 		if(max !=null) {
 			System.err.println("Chosen TB sources:  " + shortListed.subList(0, Math.min(BackendConstants.maximumNumberOfTB, shortListed.size())));
@@ -360,6 +461,172 @@ public class ObservationManager {
 
 		return shortListed;
 	}
+	
+	public void waitForPreviousSMIRFSoups() throws IOException, InterruptedException{
+		
+		 Integer maxUtcOnQueue = Integer.parseInt(ConfigManager.getSmirfMap().get("NEPENTHES_MAX_UTC_QUEUE"));
+
+		for(Entry<String,Map<Integer,Integer> > nepenthesServer: BackendConstants.bfNodeNepenthesServers.entrySet()){
+
+			String hostname = nepenthesServer.getKey();
+			
+			for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
+				
+				int size = 0;
+				do { 
+				System.err.println("Attempting to connect to " + nepenthesServer.getValue());
+				Socket socket = new Socket();
+				
+				socket.connect(new InetSocketAddress(nepenthesServer.getKey(), bsEntry.getValue()),10000);
+				System.err.println("Connected to " + nepenthesServer.getValue());
+				
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+				
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_STATUS_PREFIX"));
+				
+				size = Integer.parseInt(in.readLine());
+				
+				System.err.println(nepenthesServer.getValue() + "has " + size + " UTCs on queue");
+				
+				out.flush();
+				out.close();
+				in.close();
+				socket.close();
+				
+				if(size > maxUtcOnQueue) Thread.sleep(2000);
+				
+				}while( size > maxUtcOnQueue );
+				
+				
+				
+				
+			}
+		}
+	}
+
+
+
+	
+	public boolean sendUniqStitchesForObservation(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException, UnknownHostException, IOException, InvalidFanBeamNumberException{
+
+		SMIRF_GetUniqStitches getUniqStitches = new SMIRF_GetUniqStitches();
+		List<Point> points = getUniqStitches.generateUniqStitches(observation);
+
+		System.err.println("Unique points for observation: " + points.size());
+
+		Map<Integer, Set<Integer>> fanbeamsToTransfer = new HashMap<>();
+		Set<Integer> edgeBeams = new HashSet<>();
+		
+		if(Control.isTerminateCall()) return false;
+
+
+		for(Point p: points){
+
+			if(!p.getBeamSearcher().equals(ConfigManager.getEdgeBS())) continue;
+
+			Integer fanbeam = p.getStartFanBeam().intValue();
+
+			Integer bs =  ConfigManager.getBeamSearcherForFB(fanbeam);
+
+			Set<Integer> fanbeams = fanbeamsToTransfer.getOrDefault(bs, new LinkedHashSet<>());
+
+			fanbeams.add(fanbeam);
+
+			fanbeamsToTransfer.put(bs, fanbeams);
+
+			Set<Integer> traversedFBs = p.getTraversalList().stream().map(t -> t.getFanbeam().intValue()).collect(Collectors.toSet());
+
+			for(Integer fb: traversedFBs){
+
+				fanbeams  = fanbeamsToTransfer.getOrDefault(ConfigManager.getBeamSearcherForFB(fb), new LinkedHashSet<>());
+				fanbeams.add(fb);
+				fanbeamsToTransfer.put(ConfigManager.getBeamSearcherForFB(fb), fanbeams);
+				edgeBeams.addAll(fanbeams);
+
+			}
+
+			edgeBeams.addAll(fanbeams);
+
+
+		}
+
+		for(Point p: points){
+
+			Set<Integer> traversedFBs = p.getTraversalList().stream().map(t -> t.getFanbeam().intValue()).collect(Collectors.toSet());
+			if(edgeBeams.containsAll(traversedFBs)) p.setBeamSearcher(ConfigManager.getEdgeBS());
+
+		}
+
+		for(Entry<String,Map<Integer,Integer> > nepenthesServer: BackendConstants.bfNodeNepenthesServers.entrySet()){
+
+			String hostname = nepenthesServer.getKey();
+			for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
+				System.err.println("Attempting to connect to " + nepenthesServer.getValue());
+				Socket socket = new Socket();
+				socket.connect(new InetSocketAddress(nepenthesServer.getKey(), bsEntry.getValue()),10000);
+				System.err.println("Connected to " + nepenthesServer.getValue());
+
+				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+				BufferedReader in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+
+				/***
+				 * Format is the following:
+				 * utc: <UTC_START>
+				 * values
+				 */
+				String utcStr = ( observation.getUtc().contains(".") ) ? observation.getUtc().split("\\.")[0] : observation.getUtc();
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_UTC_PREFIX") + utcStr);
+
+				int numPoints = 0;
+				for(Point p: points) {
+
+					if(! p.getBeamSearcher().equals(bsEntry.getKey())) continue;
+
+					out.println(p);
+					out.flush();
+
+					numPoints++;
+
+				}
+
+				System.err.println(numPoints + " points for " + hostname + ":" + nepenthesServer.getValue());
+
+				//out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_RSYNC_PREFIX"));
+
+				Set<Integer> fanbeams = fanbeamsToTransfer.get(bsEntry.getKey());
+				if(fanbeams != null && !fanbeams.isEmpty()) { 
+					for(Integer fanbeam: fanbeams){
+
+						out.println(ConfigManager.getBeamSubDir(utcStr,fanbeam));
+
+						System.err.println(ConfigManager.getBeamSubDir(utcStr,fanbeam) );
+					}
+				}
+				
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_SRCNAME_PREFIX"));
+				out.println("SOURCE  "+ observation.getCoords().getPointingTO().getPointingName());
+
+
+				out.println(ConfigManager.getSmirfMap().get("NEPENTHES_END"));
+
+				out.flush();
+				out.close();
+
+				in.close();
+				socket.close();
+			}
+
+
+
+
+		}
+		return true;
+	}
+
+
+
 
 
 	@Deprecated
@@ -398,7 +665,7 @@ public class ObservationManager {
 	public static boolean observable(ObservationTO observation, String utc) throws TCCException, EmptyCoordinatesException, CoordinateOverrideException{
 		Angle HANow = observation.getHAForUTC(utc);
 		if(Math.abs(HANow.getDecimalHourValue())>6){ 
-			//System.err.println("HA >6: "+ HANow.getDecimalHourValue());
+			System.err.println("cant observe -----------   HA >6: "+ HANow.getDecimalHourValue());
 			return false;
 		}
 
@@ -406,7 +673,7 @@ public class ObservationManager {
 		MolongloCoordinateTransforms.skyToTel(coordsNow);
 		//System.err.println( "*************" +observation.getCoords().getPointingTO().getPointingName() +" " +coordsNow.getRadMD()*Constants.rad2Deg  + " " +coordsNow.getRadNS()*Constants.rad2Deg );
 		if(coordsNow.getRadMD() < SMIRFConstants.minRadMD || coordsNow.getRadMD() > SMIRFConstants.maxRadMD) {
-			//System.err.println("coords begin > limit");
+			System.err.println("cant observe ---------- coords begin > limit md = " + coordsNow.getRadMD());
 			return false;
 		}
 
@@ -416,14 +683,14 @@ public class ObservationManager {
 		int totalSecs = obsTime + slewTime + 60;
 		Angle HAend = observation.getHAForUTCPlusOffset(utc,totalSecs);
 		if(Math.abs(HAend.getDecimalHourValue())>6) {
-			//System.err.println("HA end  > 6");
+			System.err.println(" cant observe ---------- HA end  > 6" + + HAend.getDecimalHourValue());
 			return false;
 		}
 
 		CoordinateTO coordsEnd  = new CoordinateTO(HAend.getRadianValue(), observation.getCoords().getPointingTO().getAngleDEC().getRadianValue(),null,null);
 		MolongloCoordinateTransforms.skyToTel(coordsEnd);
 		if(coordsEnd.getRadMD() < SMIRFConstants.minRadMD || coordsEnd.getRadMD() > SMIRFConstants.maxRadMD) {
-			//System.err.println("coords end > limit");
+			System.err.println(" cant observe ---------- coords end > limit md = "  + coordsEnd.getRadMD());
 			return false;
 		}
 

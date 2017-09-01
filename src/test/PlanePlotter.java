@@ -1,30 +1,26 @@
 package test;
 
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FontFormatException;
-import java.awt.Shape;
 import java.awt.event.ActionEvent;
-import java.awt.geom.Ellipse2D;
-import java.beans.PropertyChangeListener;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import org.apache.commons.math3.analysis.function.Abs;
-import org.jfree.chart.*;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.labels.XYToolTipGenerator;
@@ -32,11 +28,9 @@ import org.jfree.chart.plot.DefaultDrawingSupplier;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
-import org.jfree.data.xy.XYDataItem;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.util.ShapeUtilities;
 
 import bean.FluxCalibratorTO;
 import bean.PhaseCalibratorTO;
@@ -48,7 +42,7 @@ import manager.DBManager;
  * @see http://stackoverflow.com/questions/8430747
  * @see http://stackoverflow.com/questions/8048652
  * @see http://stackoverflow.com/questions/7231824
- * @see http://stackoverflow.com/questions/7205742
+ * @see http://stackoverflow.com/questions/7205742 O
  * @see http://stackoverflow.com/questions/7208657
  * @see http://stackoverflow.com/questions/7071057
  * @see http://stackoverflow.com/questions/8736553

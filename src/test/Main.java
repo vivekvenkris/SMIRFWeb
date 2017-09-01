@@ -2,16 +2,92 @@ package test;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import bean.Angle;
+import bean.CoordinateTO;
+import bean.ObservationSessionTO;
+import bean.PointingTO;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import exceptions.PointingException;
 import exceptions.TCCException;
+import manager.DBManager;
+import manager.MolongloCoordinateTransforms;
+import manager.TransitScheduleManager;
+import service.EphemService;
 import util.BackendConstants;
+import util.Constants;
+import util.TCCConstants;
+import util.Utilities;
 
 public class Main {
 	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException {
+
+		List<String> points = Files.readAllLines(Paths.get("/home/vivek/frb.points"));
+		
+		List<PointingTO> tos = points.stream().map(f -> {
+			String s = f;
+			String[] chunks = s.trim().split(" ");
+			return new PointingTO(new Angle(chunks[0], Angle.HHMMSS), new Angle(chunks[1], Angle.DDMMSS));
+		}).collect(Collectors.toList());
+		
+		System.err.println("Initial size: " + tos.size());
+		
+		List<PointingTO> shortlisted = new ArrayList<>();
+		
+		tos.forEach(f -> {
+			
+			boolean done = false;
+			
+			for ( PointingTO p: shortlisted){
+				double distance = Math.sqrt(Utilities.equatorialDistance(p.getAngleRA().getRadianValue(),p.getAngleDEC().getRadianValue(),
+						f.getAngleRA().getRadianValue(), f.getAngleDEC().getRadianValue()));
+				
+				if(distance < (1.0 * Constants.deg2Rad)){
+					done  = true;
+					System.err.println(p.getAngleRA() + " " + p.getAngleDEC() + " covers " + f.getAngleRA() + " " + f.getAngleDEC());
+					break;
+				}
+			}
+			if(!done) shortlisted.add(f);
+			
+		});
+		
+		shortlisted.forEach(f -> System.out.println(f.getAngleRA() + " " + f.getAngleDEC()));
+		
+		System.err.println("Final size: " + shortlisted.size());
+
+		
+	}
+	
+}	
+
+//CoordinateTO to = new CoordinateTO(0.0, new Angle("0.0",Angle.DEG, Angle.DDMMSS).getRadianValue(), null, null);
+//
+//MolongloCoordinateTransforms.skyToTel(to);
+//
+//System.err.println(to.getAngleNS().getDegreeValue() + " " + to.getAngleMD().getDegreeValue());
+
+//		TransitScheduleManager manager = new TransitScheduleManager();
+//		String utc = EphemService.getUtcStringNow();
+//		ObservationSessionTO observationSessionTO = new ObservationSessionTO(utc, "VVK", 360 , 36000, null, false, false, false, 0);
+//		DBManager.addSessionToDB(observationSessionTO);
+//
+//		manager.start(36000, 360, "VVK", true, true, true, true, observationSessionTO, 
+//				 TCCConstants.slewRateNSFast ,0.0);
+//		
+
+//		List<Integer> a = new ArrayList<>();
+//		for ( int i=0; i< 100; i++ ) a.add(i);
+//		
+//		System.err.println(a.stream().filter(f -> f.intValue() < 0).collect(Collectors.toList()));
+
 
 //		ScheduleManager scheduleManager = new ScheduleManager();
 //		//scheduleManager.Calibrate("CJXXXX_XXXX");
@@ -21,12 +97,13 @@ public class Main {
 //		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", ""));
 //		System.err.println(instant.toString().replaceAll("T", "-").replaceAll("Z", "").charAt(19));
 //		scheduleManager.startSMIRFScheduler(instant.toString().replaceAll("T", "-").replaceAll("Z", ""), 900, SMIRFConstants.tobs, "VVK");
-		System.err.println(InetAddress.getLocalHost().getHostName());
-		System.err.println(BackendConstants.maximumNumberOfTB);
-		System.err.println("Test");
+//		System.err.println(InetAddress.getLocalHost().getHostName());
+//		System.err.println(BackendConstants.maximumNumberOfTB);
+//		System.err.println("Test");
+//		
+//	System.err.println(EphemService.getAngleLMSTForMolongloNow());
 
-	}
-}
+
 //		ObservationManager manager = new ObservationManager();	
 
 //		Observation observation = new Observation();

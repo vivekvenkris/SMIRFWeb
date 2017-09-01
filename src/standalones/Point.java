@@ -15,6 +15,7 @@ public class Point{
 	Double startNS;
 	Double endFanBeam;
 	Double endNS;
+	String line;
 	//Map<Integer, List<Traversal>> traversalMap = new HashMap<Integer, List<Traversal>>();
 	List<Traversal> traversalList = new ArrayList<>();
 	boolean uniq;
@@ -24,7 +25,7 @@ public class Point{
 	public Point(String pointString) {
 		
 		String[] chunks = pointString.split(" ");
-		
+		line = pointString;
 		ra = chunks[0];
 		dec = chunks[1];
 		
@@ -43,6 +44,16 @@ public class Point{
 			
 		}
 		
+	}
+	
+	public String getFBPercents(){
+		
+		String pointStr = "";
+		
+		for(Traversal t : this.getTraversalList()){
+			pointStr += ( t.getFanbeam() + " " + t.getPercent() + "\n");
+		}
+		return pointStr;
 	}
 	
 	public String getRa() {
@@ -102,6 +113,12 @@ public class Point{
 	}
 	
 	
+	public String getLine() {
+		return line;
+	}
+	public void setLine(String line) {
+		this.line = line;
+	}
 	@Override
 	public String toString() {
 		Point pt = this;

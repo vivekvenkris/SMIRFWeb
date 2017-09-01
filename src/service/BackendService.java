@@ -75,7 +75,8 @@ public class BackendService implements BackendConstants {
 
 
 		defaultParams.put("observer","SMIRFWeb-"+ observation.getObserver());
-		defaultParams.put("boresight_project_id",SMIRFConstants.PID);
+		
+		defaultParams.put("boresight_project_id",observation.getProjectID());
 
 		defaultParams.put("boresight_source_name",observation.getName());
 		defaultParams.put("boresight_ra",observation.getCoords().getPointingTO().getAngleRA().toHHMMSS());
@@ -96,7 +97,7 @@ public class BackendService implements BackendConstants {
 			for(TBSourceTO tbs: observation.getTiedBeamSources()){
 				String tbParamStr = tbParams[index];
 				String tbStr = "tb"+index;
-				defaultParams.put(tbStr+"_project_id", tbs.getProjectID());
+				defaultParams.put(tbStr+"_project_id", observation.getProjectID());
 				defaultParams.put(tbStr+"_mode", "PSR");
 				defaultParams.put("antenna_weights", "true");
 				defaultParams.put(tbStr+"_proc_file","mopsr.dspsr.cpu");
@@ -126,11 +127,15 @@ public class BackendService implements BackendConstants {
 				if(index >= BackendConstants.maximumNumberOfTB -1 ) break;
 				index ++;
 			}
+			/**
+			 * Do not break here as tied array fanbeam requires fanbeam case too.
+			 */
 		case fanBeam:
-			defaultParams.put("fb_project_id", SMIRFConstants.PID);
+			defaultParams.put("fb_project_id", observation.getProjectID());
 			defaultParams.put("fb_mode", "PSR");
 			defaultParams.put("fb_nbeams",observation.getNfb().toString());
 			defaultParams.put("fb_spacing", observation.getFanbeamSpacing().getDegreeValue().toString());
+			defaultParams.put("delay_tracking", observation.getDelayTracking().toString());
 			template+=fabBeamParams;
 			break;
 		}
@@ -163,7 +168,7 @@ public class BackendService implements BackendConstants {
 		}catch (ConnectException e) {
 			throw new BackendException("Backend failed: Cause: " , ExceptionUtils.getStackTrace(e));  
 		}catch (ParseException e) {
-			throw new BackendException("Backend failed: Cause: could not parse UTC = "+response+" from backend." , ExceptionUtils.getStackTrace(e));  
+			throw new BackendException("Backend failed with Error: = "+response , ExceptionUtils.getStackTrace(e));  
 		}
 		
 	}
@@ -191,6 +196,7 @@ public class BackendService implements BackendConstants {
 
 	}
 	
+	@Deprecated
 	public String getBackendStatusForHomePage() throws BackendException {
 		try{
 			String response = this.sendCommand(BackendService.query,"");
@@ -224,7 +230,7 @@ public class BackendService implements BackendConstants {
 		}
 	}
 
-	public String talkToBackend(String xmlMessage) throws BackendException, ConnectException{
+	public synchronized String talkToBackend(String xmlMessage) throws BackendException, ConnectException{
 		try{
 			String xmlResponse = Utilities.talkToServer(xmlMessage, backendIP, backendPort);
 			return xmlResponse;		
@@ -380,7 +386,10 @@ public class BackendService implements BackendConstants {
 					new InputStreamReader(p.getErrorStream()));
 			String line = null;
 			while ((line = in.readLine()) != null) {
+				
 				System.out.println(line);
+				
+				if(Thread.currentThread().isInterrupted()) return;
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -461,8 +470,8 @@ public class BackendService implements BackendConstants {
 		defaultParams.put("east_md_angle_units","degrees");
 		defaultParams.put("west_md_angle_units","degrees");
 
-		defaultParams.put("west_tracking", "true");
-		defaultParams.put("east_tracking", "true");    
+		defaultParams.put("west_tracking", "false");
+		defaultParams.put("east_tracking", "false");    
 		
 		defaultParams.put("corr_dump_time_units", "seconds");
 		defaultParams.put("corr_dump_time", "60");

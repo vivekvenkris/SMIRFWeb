@@ -43,9 +43,11 @@ import bean.ObservationTO;
 import bean.PhaseCalibratorTO;
 import bean.Pointing;
 import bean.PointingTO;
+import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
+import exceptions.EphemException;
 import exceptions.InvalidFanBeamNumberException;
 import exceptions.ObservationException;
 import exceptions.PointingException;
@@ -67,25 +69,14 @@ import util.Utilities;
 
 public class ScheduleManager implements SMIRFConstants {
 
-	static ObservationTO currentObservation = null;
+//	static ObservationTO currentObservation = null;
 	static String schedulerMessages = "";
-	private boolean finishCall = false;
-	private boolean terminateCall = false;
+//	private boolean finishCall = false;
+//	private boolean terminateCall = false;
 	Future<Boolean> scheduler = null;
 
-	public void observeTestPSR(){
-
-		/***
-		 *  Get where you are.
-		 *  Get nearest pulsar
-		 *  observe for x minutes
-		 *  save data somewhere with session ID
-		 *  
-		 */
-
-	}
-
-	public void startObserving(PointingTO selectedPointing, int tobs,String observer, Boolean tccEnabled, Boolean backendEnabled, Boolean  doPostObservationStuff) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException, IOException{
+	public void startObserving(PointingTO selectedPointing, int tobs,String observer, Boolean tccEnabled, Boolean backendEnabled, 
+			Boolean  doPostObservationStuff, Boolean mdTransit, Boolean doTiming, Boolean doPulsarSearch) throws TCCException, BackendException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, InterruptedException, IOException{
 		ObservationManager manager = new ObservationManager();
 		ExecutorService executorService = Executors.newFixedThreadPool(4);
 
@@ -107,15 +98,22 @@ public class ScheduleManager implements SMIRFConstants {
 				observation.setCoords(new Coords(selectedPointing));
 				observation.setObserver(observer);
 				observation.setTobs(tobs);
+				observation.setMdTransit(mdTransit);
+				observation.setDoPulsarSearch(doPulsarSearch);
+				observation.setDoTiming(doTiming);
+				observation.setBackendEnabled(backendEnabled);
+				observation.setTccEnabled(tccEnabled);
+				
 				if(observation.getObsType().equals(SMIRFConstants.phaseCalibratorSymbol)) observation.setTobs(SMIRFConstants.phaseCalibrationTobs);
 				if(observation.getObsType().equals(SMIRFConstants.fluxCalibratorSymbol)) observation.setTobs(SMIRFConstants.fluxCalibrationTobs);
-				currentObservation = observation;
 				
-				waitForPreviousObservations();
-				manager.startObserving(observation, tccEnabled, backendEnabled);
+				Control.setCurrentObservation(observation);
+				
+				waitForPreviousSMIRFSoups();
+				manager.startObserving(observation);
 				DBManager.addObservationToDB(observation);
 
-				if(!observation.isPhaseCalPointing() && doPostObservationStuff){
+				if(!observation.isPhaseCalPointing() && doPulsarSearch){
 					Callable<Boolean> getStictchesReady = new Callable<Boolean>() {
 
 						@Override
@@ -131,16 +129,13 @@ public class ScheduleManager implements SMIRFConstants {
 					};
 					executorService.submit(getStictchesReady);
 				}
-
-				long obsTime = observation.getTobs()*1000;
-				long startTime = backendEnabled ?  observation.getUtcDate().getTime() : new Date().getTime();
-				while(!((new Date().getTime() - startTime) > obsTime)) {
-					if(terminateCall) {
-						terminateCall = finishCall = false;
-						currentObservation = null;
-						return false; 
-					}
-					Thread.sleep(100);
+				manager.waitForObservationCompletion(observation);
+				
+				if(Control.isTerminateCall()) {
+					Control.setTerminateCall(false);
+					Control.setFinishCall(false);
+					Control.setCurrentObservation(null);
+					return false; 
 				}
 
 				System.err.println("observation over.");
@@ -152,8 +147,9 @@ public class ScheduleManager implements SMIRFConstants {
 				DBManager.makeObservationComplete(observation);
 
 				System.err.println("stopped.");	
-				currentObservation = null;
-				finishCall = terminateCall = false;
+				Control.setCurrentObservation(null);
+				Control.setTerminateCall(false);
+				Control.setFinishCall(false);
 				return true;
 			}
 		};
@@ -201,20 +197,26 @@ public class ScheduleManager implements SMIRFConstants {
 
 						observation.setCoords(coords);
 						observation.setObserver(observer);
+						observation.setMdTransit(false);
+						observation.setDoPulsarSearch(true);
+						observation.setDoTiming(true);
+						observation.setBackendEnabled(backendEnabled);
+						observation.setTccEnabled(tccEnabled);
+
 						if(coords.getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol)) observation.setTobs(SMIRFConstants.phaseCalibrationTobs);
 						if(coords.getPointingTO().getType().equals(SMIRFConstants.fluxCalibratorSymbol)) observation.setTobs(SMIRFConstants.fluxCalibrationTobs);
-						currentObservation = observation;
+						Control.setCurrentObservation(observation);
 
 						try{
-							waitForPreviousObservations();
-							manager.startObserving(observation, tccEnabled, backendEnabled);
+							waitForPreviousSMIRFSoups();
+							manager.startObserving(observation);
 							DBManager.addObservationToDB(observation);
 
 
 						}catch (ObservationException e) {
 							// add log that the pointing was not observable.
 							e.printStackTrace();
-							continue;
+							break;
 						}
 
 						Future<Boolean> sendStitches = null;
@@ -241,10 +243,10 @@ public class ScheduleManager implements SMIRFConstants {
 						long obsTime = observation.getTobs()*1000;
 						long startTime = observation.getUtcDate().getTime();
 						while(true) {
-							if( (new Date().getTime() - startTime) > obsTime || terminateCall) break; 
+							if( (new Date().getTime() - startTime) > obsTime || Control.isTerminateCall()) break; 
 							Thread.sleep(200);
 						}
-						if(terminateCall) break;
+						if(Control.isTerminateCall()) break;
 
 						System.err.println("observation over.");
 
@@ -262,15 +264,16 @@ public class ScheduleManager implements SMIRFConstants {
 
 						System.err.println("stopped.");
 
-						if(finishCall || terminateCall) {
+						if(Control.isFinishCall() || Control.isTerminateCall()) {
 							break;
 						}
 					}
 				}catch( Exception e){
 					e.printStackTrace();
 				}
-				currentObservation = null;
-				finishCall = terminateCall = false;
+				Control.setCurrentObservation(null);
+				Control.setFinishCall(false);
+				Control.setTerminateCall(false);
 				return true;
 			}
 		};
@@ -316,7 +319,7 @@ public class ScheduleManager implements SMIRFConstants {
 	}
 	
 
-	public void waitForPreviousObservations() throws IOException, InterruptedException{
+	public void waitForPreviousSMIRFSoups() throws IOException, InterruptedException{
 		
 		 Integer maxUtcOnQueue = Integer.parseInt(ConfigManager.getSmirfMap().get("NEPENTHES_MAX_UTC_QUEUE"));
 
@@ -623,38 +626,7 @@ public class ScheduleManager implements SMIRFConstants {
 
 
 
-	public static ObservationTO getCurrentObservation() {
-		return currentObservation;
-	}
-
-	public static void setCurrentObservation(ObservationTO currentObservation) {
-		ScheduleManager.currentObservation = currentObservation;
-	}
-
-	public boolean isFinishCall() {
-		return finishCall;
-	}
-
-	public void setFinishCall(boolean finishCall) {
-		this.finishCall = finishCall;
-	}
-
-	public boolean isTerminateCall() {
-		return terminateCall;
-	}
-
-	public void setTerminateCall(boolean terminateCall) {
-		this.terminateCall = terminateCall;
-	}
-
-	public void terminate(){
-		terminateCall = true;
-	}
-
-	public void finish(){
-		finishCall = true;
-	}
-
+	
 
 	public Future<Boolean> getScheduler() {
 		return scheduler;
@@ -667,7 +639,7 @@ public class ScheduleManager implements SMIRFConstants {
 
 
 	@Deprecated
-	public boolean Calibrate(Integer calibratorID, Integer tobs, String observer) throws TCCException, BackendException, InterruptedException, IOException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException{
+	public boolean Calibrate(Integer calibratorID, Integer tobs, String observer) throws TCCException, BackendException, InterruptedException, IOException, EmptyCoordinatesException, CoordinateOverrideException, ObservationException, EphemException{
 
 		PhaseCalibratorTO calibratorTO = new PhaseCalibratorTO(DBService.getCalibratorByID(calibratorID));
 		ObservationTO observation = new ObservationTO();
@@ -679,11 +651,13 @@ public class ScheduleManager implements SMIRFConstants {
 		observation.setBackendType(BackendConstants.globalBackend);
 		observation.setObserver(observer);
 		observation.setObsType(BackendConstants.correlation);
+		observation.setMdTransit(false);
+
 		System.err.println("starting observation...");
 
 
 		ObservationManager manager = new ObservationManager();
-		currentObservation = observation;
+		Control.setCurrentObservation(observation);
 		manager.startObserving(observation);
 
 

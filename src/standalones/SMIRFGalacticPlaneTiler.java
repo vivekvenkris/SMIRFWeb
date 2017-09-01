@@ -12,7 +12,7 @@ import util.SMIRFConstants;
 
 public class SMIRFGalacticPlaneTiler implements SMIRFConstants{
 	
-	public static void SMIRF_tileGalacticPlane() {
+	public static void SMIRF_tileGalacticPlane(boolean updateDB) {
 		List<Pointing> gridPoints = new ArrayList<>();
 		double radius = tilingDiameter/2.0; 
 		double side = radius;
@@ -35,10 +35,10 @@ public class SMIRFGalacticPlaneTiler implements SMIRFConstants{
 			}
 		}
 		
-		DBService.addPointingsToDB(gridPoints);
+		if(updateDB) DBService.addPointingsToDB(gridPoints);
 	}
 	public static void main(String[] args) {
-		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane();
+		SMIRFGalacticPlaneTiler.SMIRF_tileGalacticPlane(false);
 	}
 
 }

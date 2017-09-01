@@ -8,11 +8,14 @@ public interface BackendConstants {
 
 	String backendIP = ConfigManager.getSmirfMap().get("BACKEND_IP");
 	int   backendPort = Integer.parseInt(ConfigManager.getSmirfMap().get("BACKEND_PORT"));
+	int   backendStatusPort = Integer.parseInt(ConfigManager.getSmirfMap().get("BACKEND_STATUS_PORT"));
 	
 	String query = "query";
 	String prepare = "prepare";
 	String start = "start";
 	String stop = "stop";
+	String state = "state";
+	String startUTC = "utc_start";
 	String bootUp = "startMopsr();";
 	String shutDown = "stopMopsr();";
 	int maxIter = 5;
@@ -28,6 +31,9 @@ public interface BackendConstants {
 	String globalBackend = ConfigManager.getSmirfMap().get("GLOBAL_BACKEND");
 	String smirfBackend = ConfigManager.getSmirfMap().get("SMIRF_BACKEND");
 	String otherBackends = "other";
+	
+	Integer minTimeBetweenObsInSecs = 60;
+	Integer minTobs = 60;
 	
 	String dadaAtLocalhost = "dada@localhost";
 	
@@ -67,14 +73,14 @@ public interface BackendConstants {
 	String westArmParams = 
 			"<west_arm_parameters>" + 
 					"<tracking>${west_tracking}</tracking>" +
-					"<ns_tilt units='${west_ns_tilt_units}'> ${west_ns_tilt}</ns_tilt>" +
+					"<ns_tilt units='${west_ns_tilt_units}'>${west_ns_tilt}</ns_tilt>" +
 					"<md_angle units='${west_md_angle_units}'>${west_md_angle}</md_angle>" +
 			"</west_arm_parameters>";
 	
 	String eastArmParams =
 			"<east_arm_parameters>" + 
 					"<tracking>${east_tracking}</tracking>" +
-					"<ns_tilt units='${east_ns_tilt_units}'> ${east_ns_tilt}</ns_tilt>" +
+					"<ns_tilt units='${east_ns_tilt_units}'>${east_ns_tilt}</ns_tilt>" +
 					"<md_angle units='${east_md_angle_units}'>${east_md_angle}</md_angle>" +
 			"</east_arm_parameters>";
 	

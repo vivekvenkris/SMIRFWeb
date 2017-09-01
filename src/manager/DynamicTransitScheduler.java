@@ -270,12 +270,13 @@ public class DynamicTransitScheduler extends TransitScheduler{
 	 * @throws TCCException
 	 * @throws NoSourceVisibleException
 	 */
+	@Override
 	public PointingTO next() throws CoordinateOverrideException, EmptyCoordinatesException, TCCException, NoSourceVisibleException{
 
 		/**
 		 * Get all pointings from database
 		 */
-		List<PointingTO> gridPoints = DBManager.getAllPointings();
+		List<PointingTO> gridPoints = userInputs.getPointingTOs(); 
 		
 		/**
 		 * Sort the pointings based on num observations already done
@@ -444,7 +445,7 @@ public class DynamicTransitScheduler extends TransitScheduler{
 		 		.thenComparing(Comparator.comparing( f -> { 
 		 			Coords c = ((Coords)f);
 		 			return c.getAngleHA().getDecimalHourValue(); 
-		 		})).reversed())
+		 		}).reversed()))
 		 	.filter(f -> {
 				try {
 					return f.getAngleHA().getDecimalHourValue() < getHAForCoordTransitAtMD((Coords)f, Constants.radMDToEndObs).getDecimalHourValue();
@@ -520,7 +521,12 @@ public class DynamicTransitScheduler extends TransitScheduler{
 
 	
 	
-
+	@Override
+	public double getRadStartMDPosition() {
+		
+		return Constants.radMDToStartObs;
+		
+	}
 
 
 

@@ -1,38 +1,45 @@
 package bean;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.faces.application.FacesMessage;
+import javax.faces.application.FacesMessage.Severity;
 import javax.faces.bean.ApplicationScoped;
 import javax.faces.bean.ManagedBean;
 import javax.faces.context.FacesContext;
 import javax.faces.event.ActionEvent;
 
+import control.Control;
 import exceptions.BackendException;
 import exceptions.TCCException;
 import manager.DBManager;
 import manager.ObservationManager;
+import manager.Schedulable;
 import manager.ScheduleManager;
+import manager.StaticTransitScheduler;
+import manager.TransitScheduler;
 import service.BackendService;
 import service.EphemService;
 import service.TCCService;
 import util.BackendConstants;
 import util.SMIRFConstants;
+import util.TCCConstants;
 @ManagedBean
 @ApplicationScoped
 public class SingleMB {
 	String utc;
 	String enteredUTC;
-	Boolean utcRendered = false;
+	Boolean utcRendered;
 	Integer tobs;
 	Integer tobsUnits;
 
-	Boolean tccEnabled = true;
-	Boolean backendEnabled = true;
-	Boolean doPostObservationStuff = true;
+	Boolean tccEnabled;
+	Boolean backendEnabled;
 
-	String observer = "VVK";
-
+	String observer = "The SMIRF Lord";
 
 	List<String> pointingTypes;
 	String selectedPointingType;
@@ -40,21 +47,44 @@ public class SingleMB {
 	List<PointingTO> pointings;
 	PointingTO selectedPointing;
 	String selectedPointingName;
-	ScheduleManager manager = new ScheduleManager();
 
+	Schedulable scheduler = null;
+
+	Boolean doPulsarSearch;
+	Boolean doTiming;
+	Boolean mdTransit;
+	
+	Double nsOffsetInDeg;
+	String nsSpeed;
+	List<String> nsSpeeds;
 
 	public SingleMB(){
 		utc = "now";
 		utcRendered = false;
-		tobs = 720;
+		tobs = SMIRFConstants.tobs;
 		tobsUnits = 1;
+		
+		mdTransit = doPulsarSearch = doTiming = tccEnabled = backendEnabled = true;
 
 		pointingTypes = DBManager.getAllPointingTypes();
 		pointingTypes.add(SMIRFConstants.phaseCalibratorSymbol);
 		pointingTypes.add(SMIRFConstants.fluxCalibratorSymbol);
+		
 		pointings = DBManager.getAllPointings();
+		pointings = pointings.stream()
+				.sorted(Comparator.comparing(f -> ((PointingTO)f).getAngleRA().getDecimalHourValue()))
+				.collect(Collectors.toList());
+		
 		pointings.addAll(PointingTO.getFluxCalPointingList(DBManager.getAllFluxCalibrators()));
 		pointings.addAll(PointingTO.getPhaseCalPointingList(DBManager.getAllPhaseCalibrators()));
+		
+		nsSpeeds = new ArrayList<>();
+		nsSpeeds.add("Fast");
+		nsSpeeds.add("Slow");
+		nsSpeed = nsSpeeds.get(0);
+		
+		nsOffsetInDeg = 0.0;
+		
 
 	}
 
@@ -75,8 +105,15 @@ public class SingleMB {
 		if(selectedPointingType.equals("All")){
 
 			pointings = DBManager.getAllPointings();
+			
+			pointings = pointings.stream()
+			.sorted(Comparator.comparing(f -> ((PointingTO)f).getAngleRA().getDecimalHourValue()))
+			.collect(Collectors.toList());
+			
 			pointings.addAll(PointingTO.getFluxCalPointingList(DBManager.getAllFluxCalibrators()));
 			pointings.addAll(PointingTO.getPhaseCalPointingList(DBManager.getAllPhaseCalibrators()));
+			
+			
 
 		}
 		else if(selectedPointingType.equals(SMIRFConstants.phaseCalibratorSymbol)){
@@ -113,9 +150,13 @@ public class SingleMB {
 			selectedPointing = DBManager.getPhaseCalByUniqueName(selectedPointingName);
 
 		}
+		else{
+			selectedPointing =  DBManager.getPointingByUniqueName(selectedPointingName);
+		}
 	}
 
 	public void startObservation(ActionEvent event){
+		
 		try{
 			System.err.println(selectedPointing);
 			System.err.println(tobs);
@@ -124,7 +165,36 @@ public class SingleMB {
 			System.err.println(tccEnabled);
 			System.err.println(backendEnabled);
 			
-			manager.startObserving(selectedPointing,tobs*tobsUnits,observer,tccEnabled,backendEnabled,doPostObservationStuff);
+			UserInputs inputs = new UserInputs();
+			
+			if(mdTransit != true) {
+				System.err.println("Tracking scheduler not supported yet.");
+				addMessage("Tracking scheduler not supported yet. set md transit = true.");
+				return;
+			}
+			
+			inputs.setSchedulerType(SMIRFConstants.staticTransitScheduler);
+			
+			inputs.setUtcStart(EphemService.getUtcStringNow());
+			inputs.setTobsInSecs(tobs * tobsUnits);
+			inputs.setSessionTimeInSecs(null);
+			
+			inputs.setDoPulsarSearching(doPulsarSearch);
+			inputs.setDoPulsarTiming(doTiming);
+			inputs.setEnableTCC(tccEnabled);
+			inputs.setEnableBackend(backendEnabled);
+			inputs.setMdTransit(mdTransit);
+			inputs.setObserver(observer);
+			inputs.setNsOffsetInDeg(nsOffsetInDeg);
+			inputs.setNsSpeed(nsSpeed.equals("Fast") ? TCCConstants.slewRateNSFast : TCCConstants.slewRateNSSlow );
+			inputs.addToList(selectedPointing);
+			
+			scheduler = TransitScheduler.createInstance(SMIRFConstants.staticTransitScheduler);
+			
+			scheduler.init(inputs);
+			scheduler.start();
+			
+			
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -133,29 +203,22 @@ public class SingleMB {
 
 
 	public void terminateObservation(ActionEvent event){
-		manager.terminate();
-		while(manager.getScheduler()!= null && manager.getScheduler().isDone());
-		try {
+		
+		if(Control.getScheduler() !=null){
 			
-			BackendService.createBackendInstance().stopBackend();
-			TCCService.createTccInstance().stopTelescope();
-
-		} catch (BackendException e) {
-			
-			e.printStackTrace();
-			addMessage(e.getMessage());
-
-			
-		} catch (TCCException e) {
-			
-			e.printStackTrace();
-			addMessage(e.getMessage());
-
+			Control.getScheduler().terminate();
+			addMessage("Terminated.");
+			return;
 		}
 		
-		addMessage("Terminated.");
+		addMessage("No scheduler running to terminate.");
+	
 	}
 
+	public void addMessage(String summary, Severity severity) {
+		FacesMessage message = new FacesMessage(severity, summary,  null);
+		FacesContext.getCurrentInstance().addMessage(null, message);
+	}
 
 	public void addMessage(String summary) {
 		FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary,  null);
@@ -263,12 +326,71 @@ public class SingleMB {
 		this.backendEnabled = backendEnabled;
 	}
 
-	public Boolean getDoPostObservationStuff() {
-		return doPostObservationStuff;
+
+
+	public String getObserver() {
+		return observer;
 	}
 
-	public void setDoPostObservationStuff(Boolean doPostObservationStuff) {
-		this.doPostObservationStuff = doPostObservationStuff;
+	public void setObserver(String observer) {
+		this.observer = observer;
+	}
+
+
+	public Boolean getDoPulsarSearch() {
+		return doPulsarSearch;
+	}
+
+	public void setDoPulsarSearch(Boolean doPulsarSearch) {
+		this.doPulsarSearch = doPulsarSearch;
+	}
+
+	public Boolean getDoTiming() {
+		return doTiming;
+	}
+
+	public void setDoTiming(Boolean doTiming) {
+		this.doTiming = doTiming;
+	}
+
+	public Boolean getMdTransit() {
+		return mdTransit;
+	}
+
+	public void setMdTransit(Boolean mdTransit) {
+		this.mdTransit = mdTransit;
+	}
+
+	public Schedulable getScheduler() {
+		return scheduler;
+	}
+
+	public void setScheduler(Schedulable scheduler) {
+		this.scheduler = scheduler;
+	}
+
+	public Double getNsOffsetInDeg() {
+		return nsOffsetInDeg;
+	}
+
+	public void setNsOffsetInDeg(Double nsOffsetInDeg) {
+		this.nsOffsetInDeg = nsOffsetInDeg;
+	}
+
+	public String getNsSpeed() {
+		return nsSpeed;
+	}
+
+	public void setNsSpeed(String nsSpeed) {
+		this.nsSpeed = nsSpeed;
+	}
+
+	public List<String> getNsSpeeds() {
+		return nsSpeeds;
+	}
+
+	public void setNsSpeeds(List<String> nsSpeeds) {
+		this.nsSpeeds = nsSpeeds;
 	}
 
 

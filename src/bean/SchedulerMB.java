@@ -20,6 +20,7 @@ import org.primefaces.model.chart.LegendPlacement;
 import org.primefaces.model.chart.LineChartModel;
 import org.primefaces.model.chart.LineChartSeries;
 
+import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
@@ -179,7 +180,7 @@ public class SchedulerMB implements Serializable {
 			Coords phaseCalCoords = null;
 			Coords fluxCalCoords = null;
 			
-			Coords lastCoords = new Coords( new TCCStatusService().getTelescopeStatus());
+			Coords lastCoords = new Coords( Control.getTccStatus());
 			
 			if(this.phaseCal) {
 				
@@ -287,7 +288,7 @@ public class SchedulerMB implements Serializable {
 
 	public void terminateSchedule(ActionEvent event){
 		
-		manager.terminate();
+		Control.setTerminateCall(true);
 		
 		while(manager.getScheduler()!= null && manager.getScheduler().isDone());
 		
@@ -295,6 +296,7 @@ public class SchedulerMB implements Serializable {
 			
 			BackendService.createBackendInstance().stopBackend();
 			TCCService.createTccInstance().stopTelescope();
+
 
 		} catch (BackendException e) {
 			
@@ -310,18 +312,18 @@ public class SchedulerMB implements Serializable {
 		}
 		
 		try {
-			manager.cancelSmirfingObservation(ScheduleManager.getCurrentObservation());
+			manager.cancelSmirfingObservation(Control.getCurrentObservation());
 		} catch (IOException e) {
 			e.printStackTrace();
 			addMessage(e.getMessage());
 
 		}
-		
+		Control.setTerminateCall(false);
 		addMessage("Terminated.");
 	}
 
 	public void finishSchedule(ActionEvent event){
-		manager.finish();
+		Control.setFinishCall(true);
 		addMessage("Schedule will finish at the end of this observation.");
 
 	}

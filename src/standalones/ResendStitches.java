@@ -18,11 +18,16 @@ import util.ConfigManager;
 public class ResendStitches {
 	public static void main(String[] args) {
 		
-		List<String> utcs = Arrays.asList( new String[]{"2017-05-23-07:20:42","2017-05-23-07:34:10","2017-05-23-07:46:46" } );
+		//List<String> utcs = Arrays.asList( new String[]{ "2017-05-25-15:39:21", "2017-05-25-15:52:17", "2017-05-25-16:05:41" } );
+		//List<String> utcs = Arrays.asList( new String[]{ "2017-05-25-15:52:17", "2017-05-25-16:05:41", "2017-05-25-16:18:13" } );
+//		List<String> utcs = Arrays.asList( new String[]{  "2017-05-26-14:55:40", "2017-05-26-15:08:56" } );
+		//List<String> utcs = Arrays.asList( new String[]{ "2017-05-26-12:43:32" } );
+		//List<String> utcs = Arrays.asList( new String[]{  "2017-05-27-15:02:52", "2017-05-27-15:15:36","2017-05-27-15:28:32" } );
+		List<String> utcs = Arrays.asList( new String[]{ "2017-05-29-12:46:48", "2017-05-29-12:59:28" , "2017-05-29-13:12:12" } );
 		
 		for(String utc : utcs){
 			try {
-				restartSmirfingObservation(utc);
+				restartSmirfingObservation(utc.trim());
 			} catch (IOException e) { 
 				e.printStackTrace();
 			}

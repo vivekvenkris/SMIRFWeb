@@ -49,6 +49,10 @@ public class PSRCATManager implements PSRCATConstants{
 					}
 					else if(name.equals(RAJ))  tbSourceTO.setAngleRA(new Angle(value, Angle.HHMMSS));
 					else if(name.equals(DECJ))  tbSourceTO.setAngleDEC(new Angle(value, Angle.DDMMSS));
+					else if(name.equals(F0)) tbSourceTO.setF0(Double.parseDouble(value));
+					else if(name.equals(P0)) tbSourceTO.setP0(Double.parseDouble(value));
+					else if(name.equals(DM)) tbSourceTO.setDM(Double.parseDouble(value));
+				
 					
 					
 					tbSourceTO.addToEphemerides(line);

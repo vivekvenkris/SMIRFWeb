@@ -8,6 +8,7 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.context.FacesContext;
 import javax.faces.event.ActionEvent;
 
+import control.Control;
 import manager.DBManager;
 import manager.ScheduleManager;
 import service.EphemService;
@@ -66,7 +67,7 @@ public class TestMB {
 			System.err.println(backendEnabled);
 			
 			
-			manager.startObserving(new PointingTO(0, "SMIRFTest", raString, decString) ,tobs*tobsUnits,observer,tccEnabled,backendEnabled,doPostObservationStuff);
+			//manager.startObserving(new PointingTO(0, "SMIRFTest", raString, decString) ,tobs*tobsUnits,observer,tccEnabled,backendEnabled,doPostObservationStuff);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -75,7 +76,7 @@ public class TestMB {
 
 
 	public void terminateObservation(ActionEvent event){
-		manager.terminate();
+		Control.setTerminateCall(true);
 		while(manager.getScheduler()!= null && manager.getScheduler().isDone());
 		addMessage("Terminated.");
 	}

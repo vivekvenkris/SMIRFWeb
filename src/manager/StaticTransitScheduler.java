@@ -10,6 +10,7 @@ import exceptions.NoSourceVisibleException;
 import exceptions.ScheduleEndedException;
 import exceptions.SchedulerException;
 import exceptions.TCCException;
+import util.Constants;
 import util.SMIRFConstants;
 
 public class StaticTransitScheduler extends TransitScheduler {
@@ -45,7 +46,15 @@ public class StaticTransitScheduler extends TransitScheduler {
 		}
 		
 		this.pointingTOs = pointingTOs;
+		this.index = 0;
 
+	}
+
+	@Override
+	public double getRadStartMDPosition() {
+		
+		return Constants.radMDEastHPBW;
+		
 	}
 
 	

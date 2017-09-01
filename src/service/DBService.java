@@ -23,6 +23,7 @@ import bean.Pointing;
 import bean.TBSourceTO;
 import manager.DBManager;
 import manager.PSRCATManager;
+import sun.security.x509.OIDName;
 import util.SMIRFConstants;
 import util.Utilities;
 
@@ -30,6 +31,7 @@ public class DBService implements SMIRFConstants {
 	private static EntityManagerFactory emFactory = Persistence.createEntityManagerFactory("SMIRFWeb");
 
 	public static void addPointingsToDB(List<Pointing> gridPoints){
+		
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction( ).begin( );
 		for(Pointing pointing: gridPoints){

@@ -1,6 +1,9 @@
 package bean;
 
+import exceptions.CoordinateOverrideException;
+import exceptions.EmptyCoordinatesException;
 import util.SMIRFConstants;
+import util.Utilities;
 
 public class TBSourceTO {
 	
@@ -11,11 +14,19 @@ public class TBSourceTO {
 		public DSPSRParameters(){
 			
 		}
+		
 		public DSPSRParameters(Double dm, Double periodSecs, Double acceleration) {
 			this.periodSecs = periodSecs;
 			this.DM = dm;
 			this.acceleration = acceleration;
 		}
+		
+		public DSPSRParameters(DSPSRParameters dspsrParameters) {
+			this.periodSecs = dspsrParameters.getPeriodSecs();
+			this.DM = dspsrParameters.getDM();
+			this.acceleration = dspsrParameters.getAcceleration();
+		}
+		
 		public Double getPeriodSecs() {
 			return periodSecs;
 		}
@@ -42,10 +53,21 @@ public class TBSourceTO {
 	Angle angleDEC;
 	DSPSRParameters dspsrParams;
 	String psrName;
-	String projectID;
 	String ephemerides;
 	Integer priority;
 	Double fluxAt843MHz;
+	boolean precessed;
+	
+	Double DM;
+	Double F0;
+	Double P0;
+	
+	public double getAbsoluteDistanceFromBoresight(Coords boresight) throws EmptyCoordinatesException, CoordinateOverrideException{
+		
+		Coords tb = new Coords(new PointingTO(this.getAngleRA(), this.getAngleDEC()), boresight.getAngleLST());
+		return Math.abs(Utilities.distance(boresight.getAngleNS().getRadianValue(), boresight.getAngleMD().getRadianValue(), 
+				tb.getAngleNS().getRadianValue(), tb.getAngleMD().getRadianValue()));
+	}
 	
 	@Override
 	public boolean equals(Object obj) {
@@ -61,12 +83,28 @@ public class TBSourceTO {
 	
 	
 	public TBSourceTO() {
-		projectID = SMIRFConstants.PID;
 		priority = 1;
 		ephemerides = "";
-
-
 	}
+	
+	
+
+	public TBSourceTO(TBSourceTO to){
+		
+		this.angleRA = to.getAngleRA();
+		this.angleDEC = to.getAngleDEC();
+		if(to.getDspsrParams() != null) 
+				this.dspsrParams = new DSPSRParameters(to.getDspsrParams());
+		this.psrName = to.getPsrName();
+		this.ephemerides = to.getEphemerides();
+		this.priority = to.getPriority();
+		this.fluxAt843MHz = to.getFluxAt843MHz();
+		this.precessed = to.isPrecessed();
+		DM = to.getDM();
+		F0 = to.getF0();
+		P0 = to.getP0();
+	}
+	
 	public TBSourceTO(String jname){
 		this();
 		psrName = jname;
@@ -96,12 +134,7 @@ public class TBSourceTO {
 	public void setDspsrParams(DSPSRParameters dspsrParams) {
 		this.dspsrParams = dspsrParams;
 	}
-	public String getProjectID() {
-		return projectID;
-	}
-	public void setProjectID(String projectID) {
-		this.projectID = projectID;
-	}
+	
 	public String getPsrName() {
 		return psrName;
 	}
@@ -133,6 +166,44 @@ public class TBSourceTO {
 
 	public void setFluxAt843MHz(Double fluxAt843MHz) {
 		this.fluxAt843MHz = fluxAt843MHz;
+	}
+
+
+	public Double getDM() {
+		return DM;
+	}
+
+
+	public void setDM(Double dM) {
+		DM = dM;
+	}
+
+
+	public Double getF0() {
+		return F0;
+	}
+
+
+	public void setF0(Double f0) {
+		F0 = f0;
+	}
+
+
+	public Double getP0() {
+		return P0;
+	}
+
+
+	public void setP0(Double p0) {
+		P0 = p0;
+	}
+
+	public boolean isPrecessed() {
+		return precessed;
+	}
+
+	public void setPrecessed(boolean precessed) {
+		this.precessed = precessed;
 	}
 
 	
