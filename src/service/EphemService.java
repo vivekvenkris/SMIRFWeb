@@ -178,8 +178,8 @@ public class EphemService {
 		
 		outTO.setPrecessed(true);
 		
-		System.err.println("Precessed " + tbSourceTO.getAngleRA() + " -> " + outTO.getAngleRA() + " and " +
-				tbSourceTO.getAngleDEC() +  " -> " + outTO.getAngleDEC());
+//		System.err.println("Precessed " + tbSourceTO.getAngleRA() + " -> " + outTO.getAngleRA() + " and " +
+//				tbSourceTO.getAngleDEC() +  " -> " + outTO.getAngleDEC());
 		
 		return outTO;
 		

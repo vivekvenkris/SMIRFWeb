@@ -404,7 +404,7 @@ public class ObservationManager {
 						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), 
 						Constants.RadMolongloNSBeamWidth/2.0, Constants.RadMolongloMDBeamWidth/2.0);
 				
-				System.err.println( tbSourceTO.getPsrName() + " " + withinNS + " " + withinMD + " " + withinEllipse);
+				//System.err.println( tbSourceTO.getPsrName() + " " + withinNS + " " + withinMD + " " + withinEllipse);
 				
 				if( withinNS && withinMD && withinEllipse){
 					
