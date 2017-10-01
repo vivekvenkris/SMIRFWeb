@@ -1,5 +1,7 @@
 package manager;
 
+import java.util.List;
+
 import bean.PointingTO;
 import bean.UserInputs;
 import exceptions.CoordinateOverrideException;
@@ -18,6 +20,8 @@ public interface Schedulable {
 	
 	double getRadStartMDPosition();
 	
+	List<PointingTO>  getDefaultPointings();
+		
 	void finish();
 	void terminate();
 	

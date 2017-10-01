@@ -86,6 +86,12 @@ public class CandidateConfirmationTransitScheduler extends TransitScheduler {
 		
 	}
 
+	@Override
+	public List<PointingTO> getDefaultPointings() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 
 }

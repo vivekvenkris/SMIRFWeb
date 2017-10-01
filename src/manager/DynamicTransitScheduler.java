@@ -339,10 +339,10 @@ public class DynamicTransitScheduler extends TransitScheduler{
 					if(today.contains(f.getPointingTO())) return false;
 					
 					/**
-					 * Dont look too much in the future. Limit yourself to the next 90 minutes of pointings.
+					 * Dont look too much in the future. Limit yourself to the next x minutes of pointings. ( default = 90)
 					 */
 					
-					if (f.getAngleHA().getDecimalHourValue() < -1.5) return false; 
+					if (f.getAngleHA().getDecimalHourValue() < futureLookUpTimeInHours()) return false; 
 					return true;
 
 				}).collect(Collectors.toList());
@@ -528,7 +528,19 @@ public class DynamicTransitScheduler extends TransitScheduler{
 		
 	}
 
+	
+	protected double futureLookUpTimeInHours() {
+		
+		/* negative because this is in the future */
+		return -1.5;
+	}
 
+	@Override
+	public List<PointingTO> getDefaultPointings() {
+		return DBManager.getAllPointings().stream().filter(f -> f.getPointingName().contains(SMIRFConstants.SMIRFPointingPrefix)).collect(Collectors.toList());
+	}
+
+	
 
 
 }

@@ -67,6 +67,11 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			scheduler = new CandidateConfirmationTransitScheduler();
 			break;
 
+		case pulsarDynamicTransitScheduler:
+			
+			scheduler = new PulsarDynamicTransitScheduler();
+			break;
+			
 		default:
 			throw new SchedulerException("No such scheduler type.");
 			
@@ -125,6 +130,9 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				
 				/**
 				 * Point to the NS of the next pointing, but do not track
+				 * The point NS code is still not working, I think I have a captialisation issue in the XML I send to the TCC.
+				 * Should check at some point, but for now, lets just track a LST, DEC instead. The FRB transit will have no difference as
+				 * delaytracking = false.
 				 */
 				//TCCManager.pointNS(next);
 				
@@ -393,6 +401,13 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			public double getRadStartMDPosition() {
 				
 				return Constants.radMDEastHPBW;
+			}
+
+
+			@Override
+			public List<PointingTO> getDefaultPointings() {
+				// TODO Auto-generated method stub
+				return null;
 			}
 		};
 		double waitTimeInHours = scheduler.getWaitTimeInHours(DBManager.getPointingByUniqueName("SMIRF_0025-7249"));

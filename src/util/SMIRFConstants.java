@@ -57,10 +57,14 @@ public interface SMIRFConstants {
 	String candidatePointingSymbol = ConfigManager.getSmirfConventionsMap().get("CANDIDATE_POINTING_SYMBOL");
 	String randomPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("USER_POINTING_SYMBOL");
 	String transitPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("INTERIM_TRANSIT_SYMBOL");
+	String psrPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("PSR_POINTING_SYMBOL");
 
 	String SMIRFPointingPrefix = ConfigManager.getSmirfConventionsMap().get("SMIRF_POINTING_PREEFIX");
 	String fluxCalPointingPrefix = ConfigManager.getSmirfConventionsMap().get("FLUX_CAL_POINTING_PREFIX");
 	String phaseCalPointingPrefix = ConfigManager.getSmirfConventionsMap().get("PHASE_CAL_POINTING_PREFIX");
+	String pulsarPointingPrefix = ConfigManager.getSmirfConventionsMap().get("PSR_POINTING_PREEFIX");
+
+
 
 
 	/* JDBC & JPA constants */
@@ -74,6 +78,7 @@ public interface SMIRFConstants {
 	String dynamicTransitScheduler = "DT";
 	String staticTransitScheduler = "StT";
 	String candidateConfirmationTransitScheduler = "CcT";
+	String pulsarDynamicTransitScheduler = "PDT";
 	String singleTransitScheduler = "SiT";
 
 

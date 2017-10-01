@@ -1,5 +1,6 @@
 package manager;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import bean.PointingTO;
@@ -55,6 +56,11 @@ public class StaticTransitScheduler extends TransitScheduler {
 		
 		return Constants.radMDEastHPBW;
 		
+	}
+
+	@Override
+	public List<PointingTO> getDefaultPointings() {
+		return new ArrayList<PointingTO>();
 	}
 
 	
