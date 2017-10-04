@@ -15,7 +15,7 @@ import javax.persistence.Table;
 @Table(name="observations")
 public class Observation {
 	@Id
-	@GeneratedValue(strategy= GenerationType.AUTO)
+	@GeneratedValue(strategy= GenerationType.IDENTITY)
 	@Column(name = "obs_id")
 	private Integer observationID;
 	
