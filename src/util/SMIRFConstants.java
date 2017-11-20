@@ -58,6 +58,7 @@ public interface SMIRFConstants {
 	String randomPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("USER_POINTING_SYMBOL");
 	String transitPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("INTERIM_TRANSIT_SYMBOL");
 	String psrPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("PSR_POINTING_SYMBOL");
+	String frbFieldPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("FRB_FIELD_POINTING_SYMBOL");
 
 	String SMIRFPointingPrefix = ConfigManager.getSmirfConventionsMap().get("SMIRF_POINTING_PREEFIX");
 	String fluxCalPointingPrefix = ConfigManager.getSmirfConventionsMap().get("FLUX_CAL_POINTING_PREFIX");
