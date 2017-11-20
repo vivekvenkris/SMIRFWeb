@@ -56,6 +56,19 @@ public class Pointing{
 		this.angleDEC = new Angle(sc.delta,Angle.DDMMSS);
 	}
 	
+	public Pointing(PointingTO pointingTO){
+		this.pointingName = pointingTO.getPointingName();
+		this.angleLAT = pointingTO.getAngleLAT();
+		this.angleLON = pointingTO.getAngleLON();
+		this.angleRA = pointingTO.getAngleRA();
+		this.angleDEC = pointingTO.getAngleDEC();
+		
+		this.type = pointingTO.getType();
+		this.priority = pointingTO.getPriority();
+		this.numObs = pointingTO.getNumObs();
+		
+	}
+	
 	
 	@Override
 	public String toString() {
