@@ -150,7 +150,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				System.err.println("Should wait " + waitTimeInHours * Constants.hrs2Sec + "seconds for this to start");
 				
 				if(waitTimeInHours > minObsGapinHours) doInterimFRBTransit( (int) (waitTimeInHours * Constants.hrs2Sec), next.getAngleDEC());
-				else 	{
+				else if(waitTimeInHours > 0) 	{
 					System.err.println("Waiting for pointing to enter the beam. Sleeping for " + waitTimeInHours*Constants.hrs2Sec*1000 );
 					Thread.sleep((long) (waitTimeInHours*Constants.hrs2Sec*1000));
 				}
@@ -254,6 +254,8 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				BackendConstants.tiedArrayFanBeam, SMIRFConstants.interimFRBTransitPID, 0.0, 
 				true, true, false, true, true);
 		
+		if(Control.isTerminateCall()) return;
+		
 		Control.setCurrentObservation(observation);
 
 		
@@ -274,7 +276,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		DBManager.makeObservationComplete(observation);
 	}
 	
-	private double getWaitTimeInHours(PointingTO pointingTO) throws EmptyCoordinatesException, CoordinateOverrideException{
+	public double getWaitTimeInHours(PointingTO pointingTO) throws EmptyCoordinatesException, CoordinateOverrideException{
 		
 		System.err.println("Calculating wait time for " + pointingTO.getPointingName());
 		
@@ -292,9 +294,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		
 		double halfPowerHA = coordinateTO.getAngleHA().getDecimalHourValue();
 		double haNow = coords.getAngleHA().getDecimalHourValue();
-		
-		System.err.println(coordinateTO.getAngleHA() + " " + halfPowerHA + " " + coords.getAngleHA() + " " +haNow + " " );
-		
+				
 		if(haNow < 0 && Math.abs(halfPowerHA) < Math.abs(haNow)){
 			double differenceHours =  Math.abs(Math.abs(haNow) - Math.abs(halfPowerHA));
 			return differenceHours;
@@ -322,6 +322,15 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		return getHAForCoordTransitAtMD(new Coords(pointingTO,angleLST), angleMD);
 	}
 
+	
+	/**
+	 * Get a HA sorted coordslist for a pointing list for the given LST
+	 * @param gridPoints
+	 * @param initLST
+	 * @param initTelPosition
+	 * @param nsSpeed
+	 * @return
+	 */
 	protected static List<Coords> getCoordsListForLST(List<PointingTO> gridPoints, Angle initLST, CoordinateTO initTelPosition, Double nsSpeed){
 		
 		return gridPoints
