@@ -90,6 +90,8 @@ public class StatusPooler implements ServletContextListener {
 		
 		 poller = Control.getExecutorService().submit(pollingThread);
 		 Control.setPolling();
+		 
+		 System.err.println("*******Status pooler started*******");
 		
 	}
 	
