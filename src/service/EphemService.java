@@ -118,7 +118,11 @@ public class EphemService {
 
 	public static Angle getHA(Angle lst, Angle ra){
 		double ha = lst.getRadianValue() - ra.getRadianValue();
-		if (ha > 12 * Constants.hrs2Deg * Constants.deg2Rad) ha -= (24 * Constants.hrs2Deg * Constants.deg2Rad);	
+		double turn = 24 * Constants.hrs2Deg * Constants.deg2Rad;
+		
+		if (Math.abs(ha) > 12 * Constants.hrs2Deg * Constants.deg2Rad) {
+			ha = (ha > 0)? ha -turn : ha + turn;	
+		}
 		return new Angle(ha, Angle.HHMMSS);
 	}
 
