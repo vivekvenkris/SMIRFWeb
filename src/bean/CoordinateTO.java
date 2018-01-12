@@ -16,6 +16,7 @@ public class CoordinateTO {
 	}
 	
 	public CoordinateTO(Angle HA, Angle Dec, Angle NS, Angle MD) {
+				
 		if(HA != null ) this.radHA = HA.getRadianValue();
 		if(Dec != null) this.radDec = Dec.getRadianValue();
 		if(NS != null ) this.radNS = NS.getRadianValue();
