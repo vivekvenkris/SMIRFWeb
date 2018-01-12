@@ -34,10 +34,13 @@ public class DynamicTransitScheduler extends TransitScheduler{
 	@Override
 	public void init(UserInputs userInputs) throws SchedulerException {
 		this.userInputs = userInputs;
+		
+		this.userInputs.setPointingTOs(getDefaultPointings());
 
-		if(!userInputs.getSchedulerType().equals(SMIRFConstants.dynamicTransitScheduler)){
-			throw new SchedulerException("Mismatch between scheduler object and type");
-		}
+
+//		if(!userInputs.getSchedulerType().equals(SMIRFConstants.dynamicTransitScheduler)){
+//			throw new SchedulerException("Mismatch between scheduler object and type");
+//		}
 
 	}
 
@@ -50,7 +53,7 @@ public class DynamicTransitScheduler extends TransitScheduler{
 		/**
 		 * Get all pointings from database
 		 */
-		List<PointingTO> gridPoints = DBManager.getAllPointings();
+		List<PointingTO> gridPoints = userInputs.getPointingTOs();
 
 		System.err.println("All pointings: " + gridPoints.size());
 
@@ -273,6 +276,7 @@ public class DynamicTransitScheduler extends TransitScheduler{
 	@Override
 	public PointingTO next() throws CoordinateOverrideException, EmptyCoordinatesException, TCCException, NoSourceVisibleException{
 
+		
 		/**
 		 * Get all pointings from database
 		 */
@@ -313,7 +317,6 @@ public class DynamicTransitScheduler extends TransitScheduler{
 
 		Angle initLST = EphemService.getAngleLMSTForMolongloNow();
 		if(Control.isThereAnActiveObservation()) initLST.addSolarSeconds(userInputs.getTobsInSecs());
-
 
 		List<Coords> coords = getCoordsListForLST(gridPoints, initLST, initTelPosition, userInputs.getNsSpeed());
 
@@ -537,10 +540,16 @@ public class DynamicTransitScheduler extends TransitScheduler{
 
 	@Override
 	public List<PointingTO> getDefaultPointings() {
+		System.err.println("Setting default pointings for SMIRF only scheduler");
 		return DBManager.getAllPointings().stream().filter(f -> f.getPointingName().contains(SMIRFConstants.SMIRFPointingPrefix)).collect(Collectors.toList());
 	}
 
-	
+public static void main(String[] args) {
+	System.err.println( DBManager.getAllPointings().stream().
+			filter(f -> f.getPointingName().contains(SMIRFConstants.SMIRFPointingPrefix)).
+			collect(Collectors.toList()));
+
+}
 
 
 }
