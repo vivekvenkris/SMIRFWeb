@@ -64,7 +64,10 @@ public class Coords {
 	 this.angleMD = cto.getAngleMD();
  }
 
-
+/**
+ * This does not set the LST = NOW! 
+ * @param pointingTO
+ */
 public Coords(PointingTO pointingTO){
 	this.pointingTO = pointingTO;	 
 }
