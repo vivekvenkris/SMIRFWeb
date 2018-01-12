@@ -12,23 +12,63 @@ import bean.Angle;
 import bean.CoordinateTO;
 import bean.ObservationSessionTO;
 import bean.PointingTO;
+import bean.UserInputs;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
+import exceptions.NoSourceVisibleException;
 import exceptions.PointingException;
+import exceptions.SchedulerException;
 import exceptions.TCCException;
+import listeners.StatusPooler;
 import manager.DBManager;
+import manager.DynamicTransitScheduler;
 import manager.MolongloCoordinateTransforms;
+import manager.Schedulable;
 import manager.TransitScheduleManager;
+import manager.TransitScheduler;
 import service.EphemService;
 import util.BackendConstants;
 import util.Constants;
+import util.SMIRFConstants;
 import util.TCCConstants;
 import util.Utilities;
 
 public class Main {
-	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException {
+	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException, NoSourceVisibleException, SchedulerException {
+		
+		StatusPooler poller = new StatusPooler();
+		poller.startPollingThread();
+		
+		TransitScheduler s2 = new DynamicTransitScheduler();
+		
+		UserInputs inputs = new UserInputs();
+		
+		inputs.setSchedulerType(SMIRFConstants.dynamicTransitScheduler);
+		
+		inputs.setTobsInSecs(360);
+		inputs.setSessionTimeInSecs(3600 );
+		
+		inputs.setDoPulsarSearching(true);
+		inputs.setDoPulsarTiming(true);
+		inputs.setEnableTCC(true);
+		inputs.setEnableBackend(true);
+		inputs.setMdTransit(true);
+		inputs.setObserver("VVK");
+		inputs.setNsOffsetInDeg(0.0);
+		inputs.setNsSpeed("FAST".equals("Fast") ? TCCConstants.slewRateNSFast : TCCConstants.slewRateNSSlow );
+		inputs.setPointingTOs(new ArrayList<>());
+		s2.init(inputs);
+		PointingTO to = s2.next();
+		System.err.println(s2.getWaitTimeInHours(to));
+		
+		System.exit(0);
 
+		
+		System.err.println(Constants.RadMolongloMDBeamWidthForFB * Constants.rad2Deg / 511);
+		
+		System.exit(0);
+		
 		List<String> points = Files.readAllLines(Paths.get("/home/vivek/frb.points"));
 		
 		List<PointingTO> tos = points.stream().map(f -> {
@@ -62,6 +102,8 @@ public class Main {
 		shortlisted.forEach(f -> System.out.println(f.getAngleRA() + " " + f.getAngleDEC()));
 		
 		System.err.println("Final size: " + shortlisted.size());
+		
+		
 
 		
 	}
