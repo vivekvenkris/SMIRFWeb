@@ -57,8 +57,11 @@ public class ObservationTO {
 	}
 	
 	public ObservationTO() {
-		nfb = 352;
-		fanbeamSpacing = new Angle( "0.0113960114", Angle.DEG);
+		nfb = 352; 
+		//fanbeamSpacing = new Angle( "0.0113960114", Angle.DEG);
+		//nfb = 512;
+		double spacing  = Constants.RadMolongloMDBeamWidthForFB * Constants.rad2Deg  / (nfb-1);
+		fanbeamSpacing = new Angle( spacing + "", Angle.DEG); //Added by WF/CF... To Vivek, maybe we could put this in a .cfg file
 		tiedBeamSources = new ArrayList<TBSourceTO>();
 		name = "";
 		observer = "";
