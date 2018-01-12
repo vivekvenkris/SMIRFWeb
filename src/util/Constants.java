@@ -48,8 +48,8 @@ public interface Constants {
 	Double radMDEastHPBW = - RadMolongloMDBeamWidth/2.0;
 	Double radMDWestHPBW = + RadMolongloMDBeamWidth/2.0;
 	
-	Double radMDToStartObs = -RadMolongloMDBeamWidth/SMIRFConstants.tilingDiameter / 2.0 ;
-	Double radMDToEndObs   = +RadMolongloMDBeamWidth/SMIRFConstants.tilingDiameter / 2.0 ;
+	Double radMDToStartObs = - (RadMolongloMDBeamWidth/ 2.0 - SMIRFConstants.tilingRadius) ;
+	Double radMDToEndObs   = + RadMolongloMDBeamWidth/ 2.0  - SMIRFConstants.tilingRadius;
 
 	
 	
