@@ -1,34 +1,26 @@
 package bean;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.faces.application.FacesMessage;
 import javax.faces.bean.ApplicationScoped;
 import javax.faces.bean.ManagedBean;
-import javax.faces.context.FacesContext;
 import javax.faces.event.ActionEvent;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import control.Control;
-import exceptions.BackendException;
 import exceptions.SchedulerException;
-import exceptions.TCCException;
 import manager.DBManager;
 import manager.Schedulable;
-import manager.TransitScheduleManager;
 import manager.TransitScheduler;
-import service.BackendService;
 import service.EphemService;
-import service.TCCService;
 import util.SMIRFConstants;
 import util.TCCConstants;
 
 @ManagedBean
 @ApplicationScoped
-public class TransitMB {
+public class TransitMB extends BaseMB {
 	
 	String utc;
 	String enteredUTC;
@@ -80,15 +72,7 @@ public class TransitMB {
 		
 	}
 	
-	public void addMessage(String summary) {
-		FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary,  null);
-		FacesContext.getCurrentInstance().addMessage(null, message);
-	}
-
-	public void addMessage(String summary, String detail) {
-		FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary,  detail);
-		FacesContext.getCurrentInstance().addMessage(null, message);
-	}
+	
 	
 	public void startSMIRFTransit(ActionEvent event){
 		
@@ -118,7 +102,7 @@ public class TransitMB {
 		inputs.setObserver(observer);
 		inputs.setNsOffsetInDeg(nsOffsetDeg);
 		inputs.setNsSpeed(nsSpeed.equals("Fast") ? TCCConstants.slewRateNSFast : TCCConstants.slewRateNSSlow );
-		inputs.setPointingTOs(DBManager.getAllPointings());
+		inputs.setPointingTOs(new ArrayList<>());
 		
 		try {
 		scheduler = TransitScheduler.createInstance(SMIRFConstants.dynamicTransitScheduler);
@@ -130,11 +114,7 @@ public class TransitMB {
 			System.err.println("Exception starting schedluer");
 			addMessage("Scheduler could not be started. Reason: " + e.getMessage(), ExceptionUtils.getStackTrace(e));
 		}
-
-
-//		manager.start(duration * durationUnits, tobs, observer, enableTCC, enableBackend, doPulsarSearch, true, observationSessionTO, 
-//				nsSpeed.equals("Fast") ? TCCConstants.slewRateNSFast : TCCConstants.slewRateNSSlow, nsOffsetDeg );
-//		
+		
 		
 	}
 	
