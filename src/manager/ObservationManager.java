@@ -148,8 +148,8 @@ public class ObservationManager {
 
 				@Override
 				public Boolean call() throws BackendException {
-
-					if(Switches.simulate) return true;
+					
+					if(Switches.simulate || true) return true;
 
 					boolean isON = backendStatus.isON();
 					if(isON){
