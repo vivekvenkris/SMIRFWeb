@@ -106,6 +106,10 @@ public class DBManager {
 		DBService.makeObservationComplete(observationTO);
 	}
 	
+	public static PointingTO incrementPointingObservations(Integer pointingID){
+		return new PointingTO(DBService.incrementPointingObservations(pointingID));
+	}
+	
 	public static void incrementCompletedObservation(ObservationSessionTO observationSessionTO){
 		if(observationSessionTO == null ) return;
 		DBService.incrementCompletedObservation(observationSessionTO);
