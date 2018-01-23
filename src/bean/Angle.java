@@ -22,9 +22,9 @@ public class Angle{
 		this.toStringUnits = toStringUnits;
 	}
 	
-	public void addSolarSeconds(int seconds){
+	public Angle addSolarSeconds(int seconds){
 		this.radValue = (this.getDecimalHourValue() + (seconds * SECONDS_IN_A_SOLAR_DAY / SECONDS_IN_A_SIDEREAL_DAY )*Constants.sec2Hrs) * Constants.hrs2Rad;
-		
+		return this;
 	}
 	
 	@Override
@@ -98,6 +98,7 @@ public class Angle{
 	public void fromDDMMSS(String ddmmss){
 		String[] dms = ddmmss.split(":");
 		int sign = (Integer.parseInt(dms[0])>0)? 1:-1;
+		if(Integer.parseInt(dms[0]) == 0) sign =  (dms[0].contains("-"))? -1:1; 
 		radValue = 0.0;
 		if(dms.length >=1) radValue+= Integer.parseInt(dms[0])*Constants.deg2Rad; 
 		if(dms.length >=2) radValue+= sign*Integer.parseInt(dms[1])*Constants.deg2Rad/60.0;		
