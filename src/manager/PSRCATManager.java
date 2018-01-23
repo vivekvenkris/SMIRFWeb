@@ -2,23 +2,29 @@ package manager;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import bean.Angle;
-import bean.ObservationTO;
 import bean.TBSourceTO;
+import mailer.Mailer;
 import util.ConfigManager;
 import util.PSRCATConstants;
 
 public class PSRCATManager implements PSRCATConstants{
 	private static List<TBSourceTO> tbSources = new ArrayList<>();
+	private static List<TBSourceTO> timingProgramme = new ArrayList<>();
 	static{
-		loadDB();
+		try {
+			loadDB();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static TBSourceTO getTBSouceByName(String jname){
@@ -26,7 +32,11 @@ public class PSRCATManager implements PSRCATConstants{
 		return index == -1 ? null : tbSources.get(index);
 	}
 	
-	public static  List<TBSourceTO> loadDB(){
+	public static  List<TBSourceTO> loadDB() throws IOException{
+		
+		List<String> timingProgrammePulsars = Files.readAllLines(Paths.get(ConfigManager.getSmirfMap().get("TIMING_PROGRAMME")));
+
+		
 		for(String psrcatDB: psrcatDBs){
 			BufferedReader br = null;
 			int count = 0;
@@ -43,6 +53,10 @@ public class PSRCATManager implements PSRCATConstants{
 						if(tbSourceTO != null 
 								&& tbSourceTO.getAngleRA() !=null && tbSourceTO.getAngleDEC() !=null){
 								tbSources.add(tbSourceTO);
+								
+								if(timingProgrammePulsars.contains(tbSourceTO.getPsrName())) {
+									timingProgramme.add(tbSourceTO);
+								}
 						}
 						tbSourceTO = new TBSourceTO();
 						tbSourceTO.setPsrName(value);
@@ -103,8 +117,6 @@ public class PSRCATManager implements PSRCATConstants{
 				}
 			}
 			
-			
-			
 		}
 		
 		if(( file = ConfigManager.getSmirfMap().get("PULSAR_FLUX_LIST")) !=null){
@@ -142,6 +154,7 @@ public class PSRCATManager implements PSRCATConstants{
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+					Mailer.sendEmail(e);
 				}
 			}
 			
@@ -150,11 +163,14 @@ public class PSRCATManager implements PSRCATConstants{
 		}
 
 		
-		
 		return tbSources;
 	}
 	
-	public static List<TBSourceTO> refresh(){
+	public static List<TBSourceTO> getTimingProgrammeSources() {
+		return timingProgramme;
+	}
+	
+	public static List<TBSourceTO> refresh() throws IOException{
 		loadDB();
 		return tbSources;
 	}
@@ -162,6 +178,8 @@ public class PSRCATManager implements PSRCATConstants{
 	public static List<TBSourceTO> getTbSources() {
 		return tbSources;
 	}
+	
+	
 
 	public static void setTbSources(List<TBSourceTO> tbSources) {
 		PSRCATManager.tbSources = tbSources;
@@ -169,7 +187,7 @@ public class PSRCATManager implements PSRCATConstants{
 	
 	public static void main(String[] args) {
 		
-		tbSources.stream().map(t-> (t.getPsrName() + " " + t.getFluxAt843MHz())).collect(Collectors.toList());
+		timingProgramme.stream().map(t-> (t.getPsrName() + " " + t.getFluxAt843MHz())).collect(Collectors.toList());
 		
 	}
 	
