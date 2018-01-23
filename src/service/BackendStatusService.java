@@ -32,7 +32,7 @@ public class BackendStatusService implements BackendConstants{
 			return response;		
 		}
 		catch (Exception e) {
-			throw new BackendException("Backend failed: Cause:"+ e.getMessage(), ExceptionUtils.getStackTrace(e));
+			throw new BackendException(" Backend failed: Cause: "+ e.getMessage(), ExceptionUtils.getStackTrace(e));
 		}
 	}
 	
