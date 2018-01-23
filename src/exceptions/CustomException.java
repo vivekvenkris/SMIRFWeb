@@ -1,11 +1,17 @@
 package exceptions;
 
+import java.io.File;
+import java.util.List;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-public class CustomException extends Exception{
+import mailer.InlineAttachment;
+
+public abstract class CustomException extends Exception{
 	String message;
 	String trace;
 	Object statusObject;
+	String level;
 	
 	protected CustomException(String message, String trace, Object statusObject) {
 		this.message = message;
@@ -68,6 +74,19 @@ public class CustomException extends Exception{
 	public void setStatusObject(Object statusObject) {
 		this.statusObject = statusObject;
 	}
+
+	public String getLevel() {
+		return level;
+	}
+
+	public void setLevel(String level) {
+		this.level = level;
+	}
+	
+	abstract public String getEmailSubject();
+	abstract public String getEmailBody();
+	abstract public List<InlineAttachment> getEmailInline();
+	abstract public List<File> getEmailAttachments();
 	
 	
 
