@@ -117,7 +117,7 @@ public class SMIRFTransitSimulator implements SMIRFConstants{
 	
 	public static int computeNSSlewTime(Angle ns1, Angle ns2){
 		
-		Double slewDegPerSecond = TCCConstants.slewRateNSSlow;
+		Double slewDegPerSecond = TCCConstants.slewRateNSFast;
 		
 		return (int)Math.round(Math.abs((ns1.getDegreeValue() - ns2.getDegreeValue())/slewDegPerSecond));
 		
