@@ -41,6 +41,7 @@ import exceptions.EphemException;
 import exceptions.InvalidFanBeamNumberException;
 import exceptions.ObservationException;
 import exceptions.TCCException;
+import mailer.Mailer;
 import service.BackendService;
 import service.EphemService;
 import service.TCCService;
@@ -109,7 +110,7 @@ public class ObservationManager {
 
 						elapsedTime = (new Date()).getTime() - startTime;
 
-						System.err.println("slewing for the past "+ elapsedTime/1000.0 + " seconds");
+						System.err.print("\r slewing for the past "+ elapsedTime/1000.0 + " seconds...");
 
 						if(elapsedTime > maxSlewTime) {
 							if(!tccStatusService.isTelescopeDriving()) break;
@@ -120,6 +121,7 @@ public class ObservationManager {
 						Thread.sleep(2000);
 						}catch (InterruptedException e) {
 							tccService.stopTelescope();
+							Mailer.sendEmail(e);
 							return false;
 						}
 						
@@ -186,6 +188,8 @@ public class ObservationManager {
 					throw (BackendException)t;
 				}
 				e.printStackTrace();
+				Mailer.sendEmail(e);
+
 			}
 		}
 		System.err.println("Backend Ready");
@@ -199,6 +203,7 @@ public class ObservationManager {
 					throw (TCCException)t;
 				}
 				e.printStackTrace();
+				Mailer.sendEmail(e);
 			}
 		}
 		
@@ -339,7 +344,12 @@ public class ObservationManager {
 	public List<TBSourceTO> getTBSourcesForObservation(ObservationTO observation, Integer max) throws EmptyCoordinatesException, CoordinateOverrideException, EphemException{
 	
 		System.err.println("Getting TB sources for observation");
-		List<TBSourceTO> tbSources = PSRCATManager.getTbSources();
+		
+		//List<TBSourceTO> tbSources = PSRCATManager.getTbSources();
+/**
+ *  As if 14 Jan 2018, we will use only the Timing programme list of pulsars.
+ */
+		List<TBSourceTO> tbSources = PSRCATManager.getTimingProgrammeSources();
 		List<TBSourceTO> shortListed = new ArrayList<>();
 		
 		Coords pointingCoords = observation.getCoords();
