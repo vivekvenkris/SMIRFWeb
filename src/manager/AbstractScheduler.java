@@ -1,14 +1,23 @@
 package manager;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import bean.ObservationTO;
+import bean.PointingTO;
 import bean.UserInputs;
 import control.Control;
+import exceptions.CoordinateOverrideException;
+import exceptions.EmptyCoordinatesException;
+import exceptions.InvalidFanBeamNumberException;
 import exceptions.SchedulerException;
+import mailer.Mailer;
+import service.DBService;
 import service.TCCService;
 import util.SMIRFConstants;
 
@@ -21,18 +30,25 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 	protected Future<Boolean> sendStitches = null;
 	
 	protected TCCService tccService = TCCService.createTccInstance();
+	
+	protected List<PointingTO> thisSession = new ArrayList<PointingTO>();
+
+	
 
 	protected Callable<Boolean> sendStitchesThread = new Callable<Boolean>() {
 
 		@Override
-		public Boolean call() throws Exception {
-			try { 
-				System.err.println("Sending stitches for observation - " + Control.getCurrentObservation());
-				return observationManager.sendUniqStitchesForObservation( Control.getCurrentObservation());
-			}catch (Exception e) {
-				e.printStackTrace();
-				throw e;
-			}
+		public Boolean call() throws Exception{
+				try {
+					System.err.println("Sending stitches for observation - " + Control.getCurrentObservation());
+					return observationManager.sendUniqStitchesForObservation( Control.getCurrentObservation());
+				} catch (EmptyCoordinatesException | CoordinateOverrideException | InvalidFanBeamNumberException
+						| IOException e) {
+					e.printStackTrace();
+					Mailer.sendEmail(e);
+					throw e;
+				}
+			
 		}
 
 	};
@@ -49,6 +65,7 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 			}catch(InterruptedException e){
 				System.err.println("Observation interrupted before completion");	
 				observationManager.stopObserving();
+				Mailer.sendEmail(e);
 				return false;
 			}
 			
@@ -63,6 +80,8 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 
 			DBManager.makeObservationComplete(observation);
 			DBManager.incrementCompletedObservation(observation.getObservingSession());
+			DBManager.incrementPointingObservations(observation.getCoords().getPointingTO().getPointingID());
+
 
 			return true;
 		}
