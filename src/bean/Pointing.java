@@ -47,6 +47,8 @@ public class Pointing{
 	@Column(name = "num_obs")
 	private Integer numObs = 0;
 	
+	private Integer tobs;
+	
 	public Pointing(){}
 	public Pointing(Angle lat, Angle lon) {
 		SphericalCoordinate sc = JSOFA.jauG2icrs(lon.getRadianValue(), lat.getRadianValue());
@@ -66,8 +68,11 @@ public class Pointing{
 		this.type = pointingTO.getType();
 		this.priority = pointingTO.getPriority();
 		this.numObs = pointingTO.getNumObs();
+		this.tobs = pointingTO.getTobs();
 		
 	}
+	
+	
 	
 	
 	@Override
@@ -75,7 +80,17 @@ public class Pointing{
 		return this.angleLAT.getDegreeValue() + " "+ this.angleLON.getDegreeValue() + " " + this.angleRA + " "+ this.angleDEC + "\n";
 	}
 
+	
+	
 
+	public Integer getTobs() {
+		return tobs;
+	}
+	public void setTobs(Integer tobs) {
+		this.tobs = tobs;
+	}
+	
+	
 	public Angle getAngleLAT() {
 		return angleLAT;
 	}

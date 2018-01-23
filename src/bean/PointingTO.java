@@ -6,6 +6,7 @@ import java.util.List;
 import org.jastronomy.jsofa.JSOFA;
 import org.jastronomy.jsofa.JSOFA.SphericalCoordinate;
 
+import exceptions.ObservationException;
 import service.EphemService;
 import util.SMIRFConstants;
 
@@ -22,6 +23,15 @@ public class PointingTO {
 	private String type;
 	private Integer numObs = 0;
 	private boolean precessed;
+	private Integer tobs;
+	
+	public Integer getTobs() {
+		return tobs;
+	}
+	public void setTobs(Integer tobs) {
+		this.tobs = tobs;
+	}
+	
 	
 	@Override
 	public boolean equals(Object obj) {
@@ -45,6 +55,7 @@ public class PointingTO {
 		this.priority =10;
 		this.type = SMIRFConstants.randomPointingSymbol;
 		this.numObs = 0;
+		this.tobs = SMIRFConstants.tobs;
 		
 		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
 		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
@@ -63,6 +74,7 @@ public class PointingTO {
 		this.type = SMIRFConstants.randomPointingSymbol;
 		this.priority = SMIRFConstants.lowestPriority;
 		this.numObs = 0;
+		this.tobs = SMIRFConstants.tobs;
 
 		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
 		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
@@ -90,6 +102,8 @@ public class PointingTO {
 		this.priority = pointing.getPriority();
 		this.type = pointing.getType();
 		this.numObs = pointing.getNumObs();
+		this.tobs = pointing.getTobs();
+
 
 	}
 	
@@ -231,6 +245,65 @@ public class PointingTO {
 		this.precessed = precessed;
 	}
 	
+	public boolean isGalacticPointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.galacticPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
 	
+	public boolean isSMCPointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.smcPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	
+	public boolean isLMCPointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.lmcPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isPhaseCalPointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.phaseCalibratorSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isFluxCalPointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.fluxCalibratorSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isCandidatePointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.candidatePointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public boolean isSMIRFPointing() throws ObservationException{
+		try{
+			String type = this.getType();
+			return (SMIRFConstants.smcPointingSymbol + SMIRFConstants.lmcPointingSymbol + SMIRFConstants.galacticPointingSymbol).contains(type);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	
+	public boolean isTransitPointing() throws ObservationException{
+		try{
+			return this.equals(SMIRFConstants.transitPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
 
 }
