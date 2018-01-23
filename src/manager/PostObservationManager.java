@@ -17,10 +17,10 @@ public class PostObservationManager {
 	}
 	
 	public static void doPostObservationStuff(ObservationTO observation) throws ObservationException, IOException, InterruptedException{
-		if(observation.isSurveyPointing()){
-			DBService.incrementPointingObservations(observation.getCoords().getPointingTO().getPointingID());
-			// call peasoup controller.
-			}
+//		if(observation.isSurveyPointing()){
+//			DBService.incrementPointingObservations(observation.getCoords().getPointingTO().getPointingID());
+//			// call peasoup controller.
+//			}
 		if(observation.isPhaseCalPointing()){
 			CalibrateAndUpdateDelays(observation);
 		}
