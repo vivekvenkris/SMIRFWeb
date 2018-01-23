@@ -124,9 +124,10 @@ public Coords(TCCStatus status) throws CoordinateOverrideException, EmptyCoordin
  @Override
 	public String toString() {
 		//return  "NS= " +this.angleNS + " MD= "+ this.angleMD + " " +this.pointingTO.getPointingID() + " " + this.pointingTO.getPointingName() +"\n";
-		return  " " +this.angleNS + "  "+ this.angleMD + " " + " " +this.pointingTO.getAngleRA().getDegreeValue() + " " + this.pointingTO.getAngleDEC().getDegreeValue() + " " 
-				+this.pointingTO.getPointingID() + " " + this.pointingTO.getPointingName() + " " + this.pointingTO.getType();
-	} 
+//		return  " " +this.angleNS + "  "+ this.angleMD + " " + " " +this.pointingTO.getAngleRA().getDegreeValue() + " " + this.pointingTO.getAngleDEC().getDegreeValue() + " " 
+//				+this.pointingTO.getPointingID() + " " + this.pointingTO.getPointingName() + " " + this.pointingTO.getType();
+	 return this.pointingTO.getPointingName();
+ } 
  
  @Override
 	public boolean equals(Object obj) {
