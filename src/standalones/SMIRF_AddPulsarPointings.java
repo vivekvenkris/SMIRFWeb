@@ -19,7 +19,7 @@ public class SMIRF_AddPulsarPointings {
 	
 	public static void main(String[] args) throws IOException {
 		
-		List<String> psrNames = Files.readAllLines(Paths.get("/home/vivek/SMIRF/db/528psrs.txt"));
+		List<String> psrNames = Files.readAllLines(Paths.get("/home/vivek/SMIRF/temp.psrs"));
 	
 		
 		List<PointingTO> tos = psrNames.stream().map( f ->  {
