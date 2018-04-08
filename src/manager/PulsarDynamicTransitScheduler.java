@@ -18,7 +18,7 @@ public class PulsarDynamicTransitScheduler extends DynamicTransitScheduler{
 	
 	@Override
 	public List<PointingTO> getDefaultPointings() {
-		List<PointingTO> list= DBManager.getAllPointingsForPointingType(SMIRFConstants.psrPointingSymbol);
+		List<PointingTO> list= DBManager.getAllPointingsForPointingType(SMIRFConstants.pulsarPointingSymbol);
 		list.addAll(DBManager.getAllPointingsForPointingType(SMIRFConstants.frbFieldPointingSymbol));
 		return list;
 	}
