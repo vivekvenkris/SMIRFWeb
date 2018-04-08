@@ -15,17 +15,41 @@ import bean.TCCStatus;
 import util.Utilities;
 
 public class DriveBrokenException extends TCCException {
+	
+	String arm;
+	String drive;
 
-	public DriveBrokenException(String message, String trace) {
+	public DriveBrokenException(String message, String trace, String arm, String drive) {
+		
 		super(message, trace);
+		this.arm = arm;
+		this.drive = drive;
 	}
-	public DriveBrokenException(String message) {
+	public DriveBrokenException(String message, String arm, String drive) {
 		super(message);
+		this.arm = arm;
+		this.drive = drive;
 	}
-	public DriveBrokenException(String message, String trace,TCCStatus status) {
+	public DriveBrokenException(String message, String trace,TCCStatus status, String arm, String drive) {
 		super(message, trace,status);
+		this.arm = arm;
+		this.drive = drive;
 		
 		Utilities.prettyPrintXML(status.getXml());
 		
 	}
+	public String getArm() {
+		return arm;
+	}
+	public void setArm(String arm) {
+		this.arm = arm;
+	}
+	public String getDrive() {
+		return drive;
+	}
+	public void setDrive(String drive) {
+		this.drive = drive;
+	}
+	
+	
 }
