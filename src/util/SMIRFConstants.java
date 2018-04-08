@@ -34,8 +34,11 @@ public interface SMIRFConstants {
 	int BF08 = ConfigManager.getServerNumberForServerName( ConfigManager.getEdgeNode() );
 	double thresholdPercent = Double.parseDouble(ConfigManager.getSmirfMap().get("STITCH_SPILLOVER_THRESHOLD"));
 
-	String PID = ConfigManager.getSmirfMap().get("PID");
+	String PID = ConfigManager.getSmirfMap().get("SMIRF_PID");
 	String interimFRBTransitPID = ConfigManager.getSmirfMap().get("INTERIM_FRB_TRANSIT_PID");
+	String nonSMIRFPointingPID = ConfigManager.getSmirfMap().get("NON_SMIRF_POINTING_PID");
+	String frbFollowUpPID = ConfigManager.getSmirfMap().get("FRB_FOLLOW_UP_PID");
+	String frbTransitPID = ConfigManager.getSmirfMap().get("FRB_TRANSIT_PID");
 
 
 	int tobs = Integer.parseInt(ConfigManager.getSmirfMap().get("SURVEY_TOBS"));
@@ -57,8 +60,9 @@ public interface SMIRFConstants {
 	String candidatePointingSymbol = ConfigManager.getSmirfConventionsMap().get("CANDIDATE_POINTING_SYMBOL");
 	String randomPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("USER_POINTING_SYMBOL");
 	String transitPointingSymbol    = ConfigManager.getSmirfConventionsMap().get("INTERIM_TRANSIT_SYMBOL");
-	String psrPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("PSR_POINTING_SYMBOL");
+	String pulsarPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("PSR_POINTING_SYMBOL");
 	String frbFieldPointingSymbol  = ConfigManager.getSmirfConventionsMap().get("FRB_FIELD_POINTING_SYMBOL");
+	String SMIRFPointingSymbols = smcPointingSymbol + lmcPointingSymbol + galacticPointingSymbol + candidatePointingSymbol;
 
 	String SMIRFPointingPrefix = ConfigManager.getSmirfConventionsMap().get("SMIRF_POINTING_PREEFIX");
 	String fluxCalPointingPrefix = ConfigManager.getSmirfConventionsMap().get("FLUX_CAL_POINTING_PREFIX");
@@ -71,7 +75,7 @@ public interface SMIRFConstants {
 	/* JDBC & JPA constants */
 
 	String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	String DB_URL = "jdbc:mysql://localhost/mpsr_ksp_survey";
+	String DB_URL = "jdbc:mysql://localhost/observations";
 
 	String USER = "vivek";
 	String PASS = "4&.S1kz5";
@@ -81,6 +85,14 @@ public interface SMIRFConstants {
 	String candidateConfirmationTransitScheduler = "CcT";
 	String pulsarDynamicTransitScheduler = "PDT";
 	String singleTransitScheduler = "SiT";
+	String interfacedDynamicScheduler = "IDT";
+	
+	
+	String levelInfo = "I";
+	String levelFatal = "F";
+	String levelDebug = "D";
+	String levelWarn = "W";
+	String levelCandidate = "C";
 
 
 
