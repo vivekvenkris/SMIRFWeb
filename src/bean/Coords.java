@@ -39,6 +39,7 @@ public class Coords {
 	 
 }
  
+
  public Coords(Coords pointingCoords, Angle lst, boolean mdTransit) throws EmptyCoordinatesException, CoordinateOverrideException {
 	 
 	 this.angleLST = lst; 
