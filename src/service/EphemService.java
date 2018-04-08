@@ -18,6 +18,7 @@ import bean.Angle;
 import bean.CoordinateTO;
 import bean.PointingTO;
 import bean.TBSourceTO;
+import control.Control;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
 import exceptions.EphemException;
@@ -47,13 +48,14 @@ public class EphemService {
 	}
 
 	public static double getMJDForUTC(String utcStr){
-		if(!utcStr.contains(".")) utcStr += (utcStr + ".000");
+		if(!utcStr.contains(".")) utcStr +=  ".000";
 		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
 		return mjd;
 	}
 
 	public static double getMJDForUTC(String utcStr, int offsetSecondsFromUTC){
+		if(!utcStr.contains(".")) utcStr +=  ".000";
 		LocalDateTime utc = LocalDateTime.parse(utcStr, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
 		utc = utc.plusSeconds(offsetSecondsFromUTC);
 		double mjd = utc.getLong(JulianFields.MODIFIED_JULIAN_DAY) +(utc.getHour()*3600+utc.getMinute()*60+utc.getSecond())/86400.0;
@@ -87,6 +89,14 @@ public class EphemService {
 
 
 	public static Angle getAngleLMSTForMolongloNow(){
+		
+		if(Control.getEmulateForUTC() != null) {
+			
+			System.err.println("emulating for UTC" +Control.getEmulateForUTC() + " " + new Angle(getRadLMSTforMolonglo(Control.getEmulateForUTC()),Angle.HHMMSS) );
+			
+			return new Angle(getRadLMSTforMolonglo(Control.getEmulateForUTC()),Angle.HHMMSS);
+		}
+		
 		return new Angle(getRadLMSTForMolongloNow(),Angle.HHMMSS);
 	}
 
