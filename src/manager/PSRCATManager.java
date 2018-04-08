@@ -32,6 +32,11 @@ public class PSRCATManager implements PSRCATConstants{
 		return index == -1 ? null : tbSources.get(index);
 	}
 	
+	public static TBSourceTO getTimingProgrammeSouceByName(String jname){
+		int index = timingProgramme.indexOf(new TBSourceTO(jname));
+		return index == -1 ? null : timingProgramme.get(index);
+	}
+	
 	public static  List<TBSourceTO> loadDB() throws IOException{
 		
 		List<String> timingProgrammePulsars = Files.readAllLines(Paths.get(ConfigManager.getSmirfMap().get("TIMING_PROGRAMME")));
@@ -185,8 +190,9 @@ public class PSRCATManager implements PSRCATConstants{
 		PSRCATManager.tbSources = tbSources;
 	}
 	
-	public static void main(String[] args) {
-		
+	public static void main(String[] args) throws IOException {
+		List<String> timingProgrammePulsars = Files.readAllLines(Paths.get(ConfigManager.getSmirfMap().get("TIMING_PROGRAMME")));
+
 		timingProgramme.stream().map(t-> (t.getPsrName() + " " + t.getFluxAt843MHz())).collect(Collectors.toList());
 		
 	}
