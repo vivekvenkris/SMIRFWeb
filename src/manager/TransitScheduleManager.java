@@ -37,7 +37,7 @@ import util.BackendConstants;
 import util.Constants;
 import util.SMIRFConstants;
 import util.TCCConstants;
-
+@Deprecated
 public class TransitScheduleManager extends ScheduleManager{
 	
 	static String schedulerMessages = "";
@@ -106,7 +106,7 @@ public class TransitScheduleManager extends ScheduleManager{
 			
 			System.err.println("Driving telescope to mean position: " + coords.getAngleNS());
 			
-			service.pointNS(coords.getAngleNS());
+			service.pointNS(coords.getAngleNS(), TCCConstants.BOTH_ARMS);
 			
 			
 		}
@@ -281,7 +281,13 @@ public class TransitScheduleManager extends ScheduleManager{
 		
 		
 		manager.startObserving(observation);
-		DBManager.addObservationToDB(observation);
+		
+		if(Control.isTerminateCall()) {
+			System.err.println("Terminate call initated. Exiting IFTM");
+			return;
+		}
+		
+		if(observation.getUtc() != null) DBManager.addObservationToDB(observation);
 
 		
 		System.err.println("FRB Transit Observation started. Running for tobs = " + tobs);
@@ -293,7 +299,10 @@ public class TransitScheduleManager extends ScheduleManager{
 		Control.setCurrentObservation(null);
 
 		
-		if(Control.isTerminateCall()) return;
+		if(Control.isTerminateCall()) {
+			System.err.println("Terminate call initated. Exiting IFTM");
+			return;
+		}
 
 		DBManager.makeObservationComplete(observation);
 		
