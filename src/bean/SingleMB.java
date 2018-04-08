@@ -9,6 +9,7 @@ import javax.faces.application.FacesMessage;
 import javax.faces.application.FacesMessage.Severity;
 import javax.faces.bean.ApplicationScoped;
 import javax.faces.bean.ManagedBean;
+import javax.faces.bean.RequestScoped;
 import javax.faces.context.FacesContext;
 import javax.faces.event.ActionEvent;
 
@@ -28,7 +29,7 @@ import util.BackendConstants;
 import util.SMIRFConstants;
 import util.TCCConstants;
 @ManagedBean
-@ApplicationScoped
+@RequestScoped
 public class SingleMB {
 	String utc;
 	String enteredUTC;
