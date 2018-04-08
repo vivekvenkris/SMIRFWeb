@@ -101,7 +101,7 @@ public class ObservationTO {
 		this.coords = coords;
 		this.projectID = projectID;
 		
-		if(isTransitPointing()){
+		if(!coords.getPointingTO().isSMIRFPointing() && !coords.getPointingTO().isFRBFollowUpPointing()){
 			delayTracking = false;
 		}
 		
@@ -119,9 +119,9 @@ public class ObservationTO {
 		this.name = observation.getSourceName();
 		try {
 			String utc = observation.getUtc().contains(".") ? observation.getUtc() : observation.getUtc() + ".000";
-			this.utc = new SimpleDateFormat(BackendConstants.backendUTCFormat)
-					.format(new SimpleDateFormat(BackendConstants.backendUTCMySQLFormat)
-							.parse(utc));
+			this.utc =  utc.charAt(10) == '-' ? utc : new SimpleDateFormat(BackendConstants.backendUTCFormat)
+																			.format(new SimpleDateFormat(BackendConstants.backendUTCMySQLFormat)
+																			.parse(utc));
 		} catch (ParseException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
