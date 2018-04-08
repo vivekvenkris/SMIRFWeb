@@ -40,7 +40,9 @@ public class TCCManager {
 		System.err.println("Checking NS positions of drives East = " + status.getNs().getEast().getTilt().getDegreeValue() + " "
 				 + status.getNs().getWest().getTilt().getDegreeValue());
 
-		
+		/**
+		 * If the difference in position is greater than the threshold.
+		 */
 		if( (status.getNs().getEast().getTilt().getDegreeValue() - status.getNs().getWest().getTilt().getDegreeValue() ) > 
 		TCCConstants.OnSourceThresholdRadNS ){
 			
@@ -51,7 +53,7 @@ public class TCCManager {
 			
 			System.err.println("Driving telescope to mean position: " + coords.getAngleNS());
 			
-			service.pointNS(coords.getAngleNS());
+			service.pointNS(coords.getAngleNS(), TCCConstants.BOTH_ARMS); 
 			
 			
 		}
@@ -96,7 +98,7 @@ public class TCCManager {
 	
 	public static int computeNSSlewTime(Angle ns1, Angle ns2){
 		
-		double nsDiff = Math.abs(ns1.getDegreeValue() - ns2.getDecimalHourValue());
+		double nsDiff = Math.abs(ns1.getDegreeValue() - ns2.getDegreeValue());
 		
 		double speed = TCCConstants.slewRateNSSlow;
 		
@@ -117,7 +119,7 @@ public class TCCManager {
 		CoordinateTO to = new CoordinateTO(0.0, pointingTO.getAngleDEC().getRadianValue(), null, null);
 		MolongloCoordinateTransforms.skyToTel(to);
 		
-		TCCService.createTccInstance().pointNS(to.getAngleNS());
+		TCCService.createTccInstance().pointNS(to.getAngleNS(), TCCConstants.BOTH_ARMS);
 	}
 		
 		
