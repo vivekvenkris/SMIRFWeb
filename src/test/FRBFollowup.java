@@ -22,7 +22,7 @@ public class FRBFollowup {
 public static void main(String[] args) {
 	
 	StatusPooler poll = new StatusPooler();
-	poll.startPollingThread();
+	poll.startPollingThreads();
 	
 
 	try{
