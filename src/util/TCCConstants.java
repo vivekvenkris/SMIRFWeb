@@ -4,6 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public interface TCCConstants {
+	
+	String  eZ80NSIP = ConfigManager.getSmirfMap().get("EZ80_NS_IP");
+	String  eZ80MDIP = ConfigManager.getSmirfMap().get("EZ80_MD_IP");
+
+	
 	String  tccControllerIP = ConfigManager.getSmirfMap().get("TCC_CONTROL_IP");
 	Integer tccControllerPort = Integer.parseInt(ConfigManager.getSmirfMap().get("TCC_CONTROL_PORT"));
 	
@@ -14,6 +19,7 @@ public interface TCCConstants {
 	String WEST = "west";
 	String NS = "ns";
 	String MD = "md";
+	String BOTH_ARMS = "eastwest";
 	
 	String track = "point";
 	String stop = "stop";
