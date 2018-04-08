@@ -12,6 +12,8 @@ public abstract class CustomException extends Exception{
 	String trace;
 	Object statusObject;
 	String level;
+	String extra;
+	
 	
 	protected CustomException(String message, String trace, Object statusObject) {
 		this.message = message;
@@ -83,6 +85,16 @@ public abstract class CustomException extends Exception{
 		this.level = level;
 	}
 	
+	
+	
+	public String getExtra() {
+		return extra;
+	}
+
+	public void setExtra(String extra) {
+		this.extra = extra;
+	}
+
 	abstract public String getEmailSubject();
 	abstract public String getEmailBody();
 	abstract public List<InlineAttachment> getEmailInline();
