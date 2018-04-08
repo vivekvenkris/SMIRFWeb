@@ -9,7 +9,9 @@ public interface Constants {
 	Double arcSec2Deg = 1/(60.0*60.0);
 	 
 	Double sec2Hrs = 1/(60.0*60.0);
-	Double hrs2Sec = 1/sec2Hrs;
+	Double hrs2Day = 1/(24.0);
+
+	Double hrs2Sec = 3600.0;
 
 	Double hrs2Deg = 15.0;
 	Double hrs2Rad = hrs2Deg*deg2Rad;
