@@ -21,19 +21,34 @@ public class SMIRF_AddPulsarPointings {
 		
 		List<String> psrNames = Files.readAllLines(Paths.get("/home/vivek/SMIRF/temp.psrs"));
 	
+		List<PointingTO> pointings = DBManager.getAllPointings();
 		
 		List<PointingTO> tos = psrNames.stream().map( f ->  {
+			
+			for( PointingTO p: pointings) {
+				if(p.getPointingName().contains(f)) {
+					System.err.println("Skipping" + f);
+					return null;
+				}
+				
+			}
+			
+			System.err.println("Adding...." + f);
+			
 			TBSourceTO to = PSRCATManager.getTBSouceByName(f);
 			if(to==null) return null;
 			PointingTO pto = new PointingTO(to);
 			pto.setPointingID(null);
 			pto.setPointingName("PSR_"+pto.getPointingName());;
-			pto.setType(SMIRFConstants.psrPointingSymbol);
+			pto.setType(SMIRFConstants.pulsarPointingSymbol);
 			pto.setPriority(SMIRFConstants.highestPriority);
+			pto.setNumObs(0);
+			pto.setTobs(SMIRFConstants.tobs);
 			return pto;
 		}).filter(f->f !=null).collect(Collectors.toList());
 		
 		DBService.addPointingsToDB(tos.stream().map(f -> new Pointing(f)).collect(Collectors.toList()));
+		
 		/***
 		 * 		List<String> psrNames = Files.readAllLines(Paths.get("/home/vivek/SMIRF/db/528psrs.txt"));
 
