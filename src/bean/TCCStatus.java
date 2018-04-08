@@ -3,6 +3,7 @@ package bean;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.javatuples.Pair;
 
@@ -24,7 +25,36 @@ public class TCCStatus {
 	Pair<Double, Double> tiltNS;
 	Pair<Boolean,Boolean> speedNS;
 	String xml;
+	
+	public String getNSMDPositionString() {
+		
+		String status = "NSMD position (all in degrees): \n";
+		
+		status += "NS_East: " + this.getNs().getEast().getTilt().getDegreeValue() + "\n";
+		status += "NS_West: " + this.getNs().getWest().getTilt().getDegreeValue() + "\n";
+		status += "MD_East: " + this.getMd().getEast().getTilt().getDegreeValue() + "\n";
+		status += "MD_West: " + this.getMd().getWest().getTilt().getDegreeValue() + "\n";
+		
+		return status;
+	}
+	
+	public Angle getNSPosition(String arm) {
+		if(arm.equals(TCCConstants.EAST)) return this.getNs().getEast().getTilt();
+		else if(arm.equals(TCCConstants.WEST)) return this.getNs().getWest().getTilt();
+		else if(arm.equals(TCCConstants.BOTH_ARMS)) {
+			
+			return (new Angle(0.5 * (this.getNs().getEast().getTilt().getRadianValue() 
+					+ this.getNs().getWest().getTilt().getRadianValue()),Angle.DEG));
+		
+		}
+		return null;
+	}
 
+	@Override
+	public String toString() {
+		
+		return this.getOverview();
+	}	
 
 	public TCCStatus() {
 		coordinates = new SourceCoordinates();
@@ -98,13 +128,16 @@ public class TCCStatus {
 			this.setSpeedNS(new Pair<Boolean,Boolean>(nsEast.getFast(),nsWest.getFast()));
 			
 			
-			if(this.isTelescopeIdle())          this.status = "Idle";
 			
+			
+			if(this.isTelescopeIdle())   this.status = "Idle";
+
 			else if(this.isTelescopeDriving()) this.status =  "Driving";
 			
-			else if(this.isTelescopeTracking()) this.status =  "=Tracking";
+			else if(this.isTelescopeTracking()) this.status =  "Tracking";
+
 			
-			else this.status = "Problem";
+			else this.status = "Tracking";
 
 		} catch(Exception e){
 			e.printStackTrace();
@@ -113,17 +146,31 @@ public class TCCStatus {
 	}
 
 	public Boolean isTelescopeIdle(){
-		return !(this.ns.getEast().getDriving() || this.ns.getWest().getDriving() || this.md.getEast().getDriving() || this.md.getWest().getDriving());
+		
+		Boolean eastNSIdle = this.ns.getEast().getDriving() && this.ns.getEast().getDisabled();
+		Boolean westNSIdle = this.ns.getWest().getDriving() && this.ns.getWest().getDisabled();
+		Boolean eastMDIdle = this.md.getEast().getDriving() && this.md.getEast().getDisabled();
+		Boolean westMDIdle = this.md.getWest().getDriving() && this.md.getWest().getDisabled();
+		
+		return !(eastNSIdle || westNSIdle || eastMDIdle || westMDIdle);
+		
+		//return !(this.ns.getEast().getDriving() || this.ns.getWest().getDriving() || this.md.getEast().getDriving() || this.md.getWest().getDriving());
 	}
 
-	public Boolean isTelescopeDriving() throws TCCException, InterruptedException{
+	public Boolean isTelescopeDriving() throws DriveBrokenException, InterruptedException{
+		
+		DriveBrokenException nsEast = null, nsWest = null, mdEast = null, mdWest = null; 
 
 		boolean isEastNSDriving = this.ns.getEast().getDriving();
+		
+		
 
 		if(!isEastNSDriving){
 			if(!this.ns.getEast().getDisabled() && !isEastNSTracking()) {
 
-				throw new DriveBrokenException("East arm NS was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
+				if(!this.ns.getEast().getStatus().equals(240)) nsEast =  new DriveBrokenException(
+						"East arm NS was not driving, disabled or on target ", 
+						ExceptionUtils.getStackTrace(new Exception()),this, TCCConstants.EAST, TCCConstants.NS);
 			}
 		}
 
@@ -131,7 +178,8 @@ public class TCCStatus {
 
 		if(!isWestNSDriving){
 			if(!this.ns.getWest().getDisabled() && !isWestNSTracking())
-				throw new DriveBrokenException("West arm NS was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
+				if(!this.ns.getWest().getStatus().equals(240)) nsWest = new DriveBrokenException("West arm NS was not driving, disabled or on target ", 
+						ExceptionUtils.getStackTrace(new Exception()),this,TCCConstants.WEST, TCCConstants.NS);
 		}
 
 
@@ -140,16 +188,51 @@ public class TCCStatus {
 
 		if(!isEastMDDriving){
 			if(!this.md.getEast().getDisabled() && !isEastMDTracking())
-				throw new DriveBrokenException("East arm MD was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
+				mdEast = new DriveBrokenException("East arm MD was not driving, disabled or on target ",
+						ExceptionUtils.getStackTrace(new Exception()),this,TCCConstants.EAST, TCCConstants.MD);
 		}
 
 		boolean isWestMDDriving =  this.md.getWest().getDriving();
 
 		if(!isWestMDDriving ){
 			if(!this.md.getWest().getDisabled() && !isWestMDTracking())
-				throw new DriveBrokenException("West arm MD was not driving, disabled or on target ", ExceptionUtils.getStackTrace(new Exception()),this);
+				mdWest = new DriveBrokenException("West arm MD was not driving, disabled or on target ", 
+						ExceptionUtils.getStackTrace(new Exception()),this,TCCConstants.WEST, TCCConstants.MD);
 		}
 
+		if(nsEast != null && nsWest != null ) {
+			
+			String error  = this.getNs().getError();
+			if(StringUtils.containsIgnoreCase(error, "east")) throw nsEast;
+			
+			else if(StringUtils.containsIgnoreCase(error, "west")) throw nsWest;
+			
+			else throw new DriveBrokenException("East and West NS drives were not driving, disabled or on target ", 
+					ExceptionUtils.getStackTrace(new Exception()),this,TCCConstants.BOTH_ARMS, TCCConstants.NS);
+			
+		}
+		
+		else if ( nsEast != null ) throw nsEast;
+		
+		else if ( nsWest != null ) throw nsWest;
+		
+		
+		if(mdEast != null && mdWest != null ) {
+			
+			String error  = this.getMd().getError();
+			if(StringUtils.containsIgnoreCase(error, "east")) throw mdEast;
+			
+			else if(StringUtils.containsIgnoreCase(error, "west")) throw mdWest;
+			
+			else throw new DriveBrokenException("East and West MD drives were not driving, disabled or on target ", 
+					ExceptionUtils.getStackTrace(new Exception()),this,TCCConstants.BOTH_ARMS, TCCConstants.MD);
+			
+		}
+		
+		else if ( mdEast != null ) throw mdEast;
+		
+		else if ( mdWest != null ) throw mdWest;
+		
 
 		return isEastMDDriving || isWestMDDriving || isEastNSDriving || isWestNSDriving;
 	}
@@ -197,22 +280,28 @@ public class TCCStatus {
 
 		double sourceRadNS = this.coordinates.getNs().getRadianValue();
 		double sourceRadMD = this.coordinates.getEw().getRadianValue();
+		
 
 		double eastRadNS = this.ns.getEast().getTilt().getRadianValue();
-		if(Math.abs(eastRadNS - sourceRadNS) > TCCConstants.OnSourceThresholdRadNS)
-			new DriveBrokenException("East NS seems to have been broken while tracking");
+		if(Math.abs(eastRadNS - sourceRadNS) > TCCConstants.OnSourceThresholdRadNS 
+				&& !this.ns.getEast().getDisabled())
+			throw new DriveBrokenException("East NS seems to have been broken while tracking",TCCConstants.EAST, TCCConstants.NS);
 
 		double westRadNS = this.ns.getWest().getTilt().getRadianValue();
-		if(Math.abs(westRadNS - sourceRadNS) > TCCConstants.OnSourceThresholdRadNS)
-			new DriveBrokenException("West NS seems to have been broken while tracking");
+		if(Math.abs(westRadNS - sourceRadNS) > TCCConstants.OnSourceThresholdRadNS
+				&& !this.ns.getWest().getDisabled())
+			throw new DriveBrokenException("West NS seems to have been broken while tracking",TCCConstants.WEST, TCCConstants.NS);
 
 		double eastRadMD = this.md.getEast().getTilt().getRadianValue();
-		if(Math.abs(eastRadMD - sourceRadMD) > TCCConstants.OnSourceThresholdRadMD)
-			new DriveBrokenException("East MD seems to have been broken while tracking");
+		if(Math.abs(eastRadMD - sourceRadMD) > TCCConstants.OnSourceThresholdRadMD
+				&& !this.md.getEast().getDisabled()) 
+			throw new DriveBrokenException("East MD seems to have been broken while tracking",TCCConstants.EAST, TCCConstants.MD);
 
 		double westRadMD = this.md.getWest().getTilt().getRadianValue();
-		if(Math.abs(westRadMD - sourceRadMD) > TCCConstants.OnSourceThresholdRadMD)
-			new DriveBrokenException("West MD seems to have been broken while tracking");
+		if(Math.abs(westRadMD - sourceRadMD) > TCCConstants.OnSourceThresholdRadMD
+				&& !this.md.getWest().getDisabled())
+			throw new DriveBrokenException("West MD seems to have been broken while tracking",TCCConstants.WEST, TCCConstants.MD);
+		 
 		return true;
 
 	}
