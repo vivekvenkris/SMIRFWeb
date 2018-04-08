@@ -25,6 +25,13 @@ public class SchedulerException extends CustomException {
 		this.level = SMIRFConstants.levelWarn;
 
 	}
+	
+	public SchedulerException(String message, String level, String trace){
+		super();
+		this.level = level;
+
+	}
+
 
 	@Override
 	public String getEmailSubject() {
