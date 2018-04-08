@@ -49,6 +49,7 @@ import org.xml.sax.SAXException;
 
 import bean.Angle;
 import exceptions.CoordinateOverrideException;
+import exceptions.CustomException;
 import exceptions.EmptyCoordinatesException;
 
 public class Utilities {
@@ -155,7 +156,7 @@ public class Utilities {
 		return xmlResponse;
 	}
 
-	public static String runShellProcess(String process, String input, String waitFor) throws IOException, InterruptedException{
+	public static String runShellProcess(String process, boolean waitFor) throws IOException, InterruptedException{
 		String[] cmd = new String[]{"/bin/csh","-c",process};
 		Process p = Runtime.getRuntime().exec(cmd);
 
@@ -167,7 +168,7 @@ public class Utilities {
 		while ((line = in.readLine()) != null) {
 			str+=line;
 		}
-		p.waitFor();
+		if(waitFor)p.waitFor();
 		return str;
 	}
 
@@ -257,8 +258,14 @@ public class Utilities {
 		}
 		return result;
 	}
-
+	
 	public static void prettyPrintXML(String xml){
+		System.err.println(getPrettyPrintXML(xml));
+
+	}
+
+
+	public static String getPrettyPrintXML(String xml){
 		Transformer transformer;
 		try {
 			transformer = TransformerFactory.newInstance().newTransformer();
@@ -269,7 +276,7 @@ public class Utilities {
 			DOMSource source = new DOMSource(Utilities.parseXml(xml));
 			transformer.transform(source, result);
 			String xmlString = result.getWriter().toString();
-			System.err.println(xmlString);
+			return xmlString;
 			
 		} catch (TransformerConfigurationException | TransformerFactoryConfigurationError e) {
 			// TODO Auto-generated catch block
@@ -278,6 +285,9 @@ public class Utilities {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		return "Problem with XML pretty print";
+
 
 	}
 
@@ -293,6 +303,15 @@ public class Utilities {
 		{
 			throw new RuntimeException(e);
 		}
+	}
+	
+	public static String buildEmailBodyTextFromException(CustomException e) {
+		String body = " SMIRF threw a " + e.getClass().getSimpleName() + " during operation. \n";
+		
+		body += " <h1> Message:" + e.getMessage() + "</h1> <br/>";
+		
+		body += " exception stack trace:" + e.getTrace() + "<br/><br/>";
+		return body;
 	}
 
 }
