@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,8 @@ public class ConfigManager {
 	private static Map<String, String> mopsrBpMap;
 	private static Map<String, String> mopsrBpCornerturnMap;
 	private static Map<String, String> mopsrBsMap;
+	
+	private static List<String> nodes;
 	
 	//node, bs, start FB, end FB
 	private static Map<String, Map<Integer, Pair<Integer, Integer > > > beamBoundariesMap = new HashMap<>();
@@ -155,7 +158,13 @@ public class ConfigManager {
 
 		}
 		
-				
+		try {
+			String reply = Utilities.runShellProcess("cd ~dada/linux_64/share/; cat mopsr_aq.cfg mopsr_bf.cfg mopsr_bp.cfg mopsr_bs.cfg | awk '{print $2\" \"}' | grep mpsr | sort | uniq", true);
+			nodes = new ArrayList<>(Arrays.asList(reply.split(" ")));
+					
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}		
 	}
 	
 	public static String getBeamSubDir(String utc, Integer fanbeam){
@@ -318,6 +327,14 @@ public class ConfigManager {
 
 	public static Integer getEdgeBS() {
 		return edgeBS;
+	}
+
+	public static List<String> getNodes() {
+		return nodes;
+	}
+
+	public static void setNodes(List<String> nodes) {
+		ConfigManager.nodes = nodes;
 	}
 
 	
