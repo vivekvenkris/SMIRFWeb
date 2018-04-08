@@ -13,7 +13,11 @@ public class Angle{
 	private static final Double SECONDS_IN_A_SOLAR_DAY = 24*3600 + 0.0;
 	Double radValue; // always in radians
 	String toStringUnits;
-		
+	
+	public Angle clone() {
+		return new Angle(this.radValue,this.toStringUnits);
+	}
+	
 	public Angle(Double radValue, String toStringUnits){
 		this.radValue = radValue;
 		this.toStringUnits = toStringUnits;
@@ -87,8 +91,10 @@ public class Angle{
 	}
 	
 	public void fromHHMMSS(String hhmmss){
-		String[] hms = hhmmss.split(":");
 		radValue = 0.0;
+		if(hhmmss.equals("0.0")) return; // fix for tcc giving bad values int he beginning
+
+		String[] hms = hhmmss.split(":");
 		if(hms.length >=1) radValue +=  Integer.parseInt(hms[0])*15*Constants.deg2Rad;
 		if(hms.length >=2) radValue +=  Integer.parseInt(hms[1])*15*Constants.deg2Rad/60.0;
 		if(hms.length >=3) radValue +=  Double.parseDouble(hms[2])*15*Constants.deg2Rad/3600.0;
@@ -96,10 +102,14 @@ public class Angle{
 	}
 	
 	public void fromDDMMSS(String ddmmss){
+		
+		radValue = 0.0;
+		if(ddmmss.equals("0.0")) return; // fix for tcc giving bad values in the beginning
+
+		
 		String[] dms = ddmmss.split(":");
 		int sign = (Integer.parseInt(dms[0])>0)? 1:-1;
 		if(Integer.parseInt(dms[0]) == 0) sign =  (dms[0].contains("-"))? -1:1; 
-		radValue = 0.0;
 		if(dms.length >=1) radValue+= Integer.parseInt(dms[0])*Constants.deg2Rad; 
 		if(dms.length >=2) radValue+= sign*Integer.parseInt(dms[1])*Constants.deg2Rad/60.0;		
 		if(dms.length >=3) radValue+= sign*Double.parseDouble(dms[2])*Constants.deg2Rad/3600.0;
