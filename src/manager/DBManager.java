@@ -48,6 +48,12 @@ public class DBManager {
 		return toList;
 	}
 	
+	public static List<ObservationTO> getAllObservations(){
+		List<ObservationTO> toList = new ArrayList<>();		
+		for(Observation entity: DBService.getAllObservations()) toList.add(new ObservationTO(entity));
+		return toList;
+	}
+	
 	
 	public static List<PointingTO> getAllUnobservedPointingsOrderByPriority(){
 		List<PointingTO> toList = new ArrayList<>();		
@@ -66,6 +72,11 @@ public class DBManager {
 		if(pointingName.startsWith("J")) return new PointingTO(DBManager.getFluxCalibratorByName(pointingName));
 		else if(pointingName.startsWith("CJ")) return DBManager.getPhaseCalByUniqueName(pointingName);
 		else return new PointingTO(DBService.getPointingByUniqueName(pointingName));
+		
+	}
+	
+	public static Double getDaysSinceObserved(String source_name) {
+		return DBService.getDaysSinceObserved(source_name);
 		
 	}
 
@@ -103,6 +114,7 @@ public class DBManager {
 	}
 
 	public static void makeObservationComplete(ObservationTO observationTO){
+		if(observationTO.getUtc() == null) return;
 		DBService.makeObservationComplete(observationTO);
 	}
 	
