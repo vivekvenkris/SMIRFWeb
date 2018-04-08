@@ -1,5 +1,9 @@
 package bean;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -47,15 +51,24 @@ public class Pointing{
 	@Column(name = "num_obs")
 	private Integer numObs = 0;
 	
+	@Column(name = "least_cadance_days")
+	private Integer leastCadanceInDays;
+	
+	@Column(name = "assoc_psrs")
+	private String associatedPulsars;
+	
 	private Integer tobs;
 	
-	public Pointing(){}
+	public Pointing(){
+				
+	}
 	public Pointing(Angle lat, Angle lon) {
 		SphericalCoordinate sc = JSOFA.jauG2icrs(lon.getRadianValue(), lat.getRadianValue());
 		this.angleLAT = lat; 
 		this.angleLON  = lon ;
 		this.angleRA = new Angle(sc.alpha,Angle.HHMMSS); // (value, print format)
 		this.angleDEC = new Angle(sc.delta,Angle.DDMMSS);
+		this.associatedPulsars = "";
 	}
 	
 	public Pointing(PointingTO pointingTO){
@@ -69,15 +82,37 @@ public class Pointing{
 		this.priority = pointingTO.getPriority();
 		this.numObs = pointingTO.getNumObs();
 		this.tobs = pointingTO.getTobs();
+		this.leastCadanceInDays = pointingTO.getLeastCadanceInDays();
+		
+		this.associatedPulsars = "";
+		if(pointingTO.getAssociatedPulsars() != null)
+		for(int i=0; i< pointingTO.getAssociatedPulsars().size(); i++) {
+			
+			TBSourceTO to = pointingTO.getAssociatedPulsars().get(i);
+			this.associatedPulsars += to.getPsrName();
+			
+			if(i+1 < pointingTO.getAssociatedPulsars().size()) this.associatedPulsars += ";";
+			
+		}
 		
 	}
 	
 	
 	
 	
+	
+	 
+	public Integer getLeastCadanceInDays() {
+		return leastCadanceInDays;
+	}
+	public void setLeastCadanceInDays(Integer leastCadanceInDays) {
+		this.leastCadanceInDays = leastCadanceInDays;
+	}
+	
 	@Override
 	public String toString() {
-		return this.angleLAT.getDegreeValue() + " "+ this.angleLON.getDegreeValue() + " " + this.angleRA + " "+ this.angleDEC + "\n";
+		//return this.angleLAT.getDegreeValue() + " "+ this.angleLON.getDegreeValue() + " " + this.angleRA + " "+ this.angleDEC + "\n";
+		return this.angleRA.getDegreeValue() + " "+ this.angleDEC.getDegreeValue() + " " + this.angleRA + " "+ this.angleDEC + "\n";
 	}
 
 	
@@ -174,6 +209,12 @@ public class Pointing{
 	}
 	public void setNumObs(Integer numObs) {
 		this.numObs = numObs;
+	}
+	public String getAssociatedPulsars() {
+		return associatedPulsars;
+	}
+	public void setAssociatedPulsars(String associatedPulsars) {
+		this.associatedPulsars = associatedPulsars;
 	}
 	
 	

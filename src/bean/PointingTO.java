@@ -1,12 +1,15 @@
 package bean;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.jastronomy.jsofa.JSOFA;
 import org.jastronomy.jsofa.JSOFA.SphericalCoordinate;
 
 import exceptions.ObservationException;
+import manager.PSRCATManager;
 import service.EphemService;
 import util.SMIRFConstants;
 
@@ -24,6 +27,30 @@ public class PointingTO {
 	private Integer numObs = 0;
 	private boolean precessed;
 	private Integer tobs;
+	private Integer leastCadanceInDays;
+	private List<TBSourceTO> associatedPulsars;
+	
+	public Double getMaxUnObservedDays() {
+		return associatedPulsars.stream().mapToDouble(f -> f.getDaysSinceLastObserved()).max().orElse(0.0);
+		
+	}
+	
+	
+	public static void updatePointing(Pointing pointing, PointingTO pointingTO){
+		pointing.setPointingName(pointingTO.getPointingName());
+		pointing.setAngleLAT(pointingTO.getAngleLAT());
+		pointing.setAngleLON(pointingTO.getAngleLON());
+		pointing.setAngleRA(pointingTO.getAngleRA());
+		pointing.setAngleDEC(pointingTO.getAngleDEC());
+		
+		pointing.setType(pointingTO.getType());
+		pointing.setPriority(pointingTO.getPriority());
+		pointing.setNumObs( pointingTO.getNumObs());
+		pointing.setTobs(pointingTO.getTobs());
+		pointing.setLeastCadanceInDays(pointingTO.getLeastCadanceInDays());
+		pointing.setAssociatedPulsars(String.join(";",pointingTO.getAssociatedPulsars().stream().map(f -> f.getPsrName()).collect(Collectors.toList())));
+	}
+	
 	
 	public Integer getTobs() {
 		return tobs;
@@ -32,6 +59,9 @@ public class PointingTO {
 		this.tobs = tobs;
 	}
 	
+	public void addToAssociatedPulsars(TBSourceTO to) {
+		this.associatedPulsars.add(to);
+	}
 	
 	@Override
 	public boolean equals(Object obj) {
@@ -60,7 +90,7 @@ public class PointingTO {
 		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
 		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
 		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
-		
+		this.associatedPulsars = new ArrayList<>();
 		
 	}
 	
@@ -80,6 +110,9 @@ public class PointingTO {
 		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
 		if(this.angleLON.getRadianValue() > Math.PI ) this.angleLON.setRadValue(this.angleLON.getRadianValue() - 2*Math.PI);
 		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
+		
+		this.associatedPulsars = new ArrayList<>();
+
 		
 	}
 	
@@ -103,8 +136,10 @@ public class PointingTO {
 		this.type = pointing.getType();
 		this.numObs = pointing.getNumObs();
 		this.tobs = pointing.getTobs();
-
-
+		this.leastCadanceInDays = pointing.getLeastCadanceInDays();
+		if(pointing.getAssociatedPulsars() != null)
+			this.associatedPulsars = Arrays.asList(pointing.getAssociatedPulsars().split(",")).stream().map(f -> PSRCATManager.getTimingProgrammeSouceByName(f)).filter(f -> f !=null).collect(Collectors.toList());
+		else this.associatedPulsars = new ArrayList<>();
 	}
 	
 	public PointingTO(PhaseCalibratorTO calibratorTO){
@@ -236,6 +271,8 @@ public class PointingTO {
 	public void setNumObs(Integer numObs) {
 		this.numObs = numObs;
 	}
+	
+	
 
 	public boolean isPrecessed() {
 		return precessed;
@@ -245,6 +282,14 @@ public class PointingTO {
 		this.precessed = precessed;
 	}
 	
+	
+	
+	public Integer getLeastCadanceInDays() {
+		return leastCadanceInDays;
+	}
+	public void setLeastCadanceInDays(Integer leastCadanceInDays) {
+		this.leastCadanceInDays = leastCadanceInDays;
+	}
 	public boolean isGalacticPointing() throws ObservationException{
 		try{
 			return this.getType().equals(SMIRFConstants.galacticPointingSymbol);
@@ -292,7 +337,7 @@ public class PointingTO {
 	public boolean isSMIRFPointing() throws ObservationException{
 		try{
 			String type = this.getType();
-			return (SMIRFConstants.smcPointingSymbol + SMIRFConstants.lmcPointingSymbol + SMIRFConstants.galacticPointingSymbol).contains(type);
+			return (SMIRFConstants.smcPointingSymbol + SMIRFConstants.lmcPointingSymbol + SMIRFConstants.galacticPointingSymbol + SMIRFConstants.candidatePointingSymbol).contains(type);
 		}catch(NullPointerException e){
 			throw new ObservationException("Incomplete information on observation type.");
 		}
@@ -300,10 +345,34 @@ public class PointingTO {
 	
 	public boolean isTransitPointing() throws ObservationException{
 		try{
-			return this.equals(SMIRFConstants.transitPointingSymbol);
+			return this.getType().equals(SMIRFConstants.transitPointingSymbol);
 		}catch(NullPointerException e){
 			throw new ObservationException("Incomplete information on observation type.");
 		}
 	}
 
+	
+	public boolean isFRBFollowUpPointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.frbFieldPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	
+	public boolean isPulsarPointing() throws ObservationException{
+		try{
+			return this.getType().equals(SMIRFConstants.pulsarPointingSymbol);
+		}catch(NullPointerException e){
+			throw new ObservationException("Incomplete information on observation type.");
+		}
+	}
+	public List<TBSourceTO> getAssociatedPulsars() {
+		return associatedPulsars;
+	}
+	public void setAssociatedPulsars(List<TBSourceTO> associatedPulsars) {
+		this.associatedPulsars = associatedPulsars;
+	}
+	
+	
 }
