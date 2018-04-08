@@ -4,7 +4,12 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+
 public interface BackendConstants {
+	
+	DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+	
 
 	String backendIP = ConfigManager.getSmirfMap().get("BACKEND_IP");
 	int   backendPort = Integer.parseInt(ConfigManager.getSmirfMap().get("BACKEND_PORT"));
