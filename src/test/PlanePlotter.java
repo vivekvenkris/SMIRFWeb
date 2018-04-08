@@ -5,11 +5,14 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.FontFormatException;
+import java.awt.Paint;
 import java.awt.event.ActionEvent;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -27,15 +30,20 @@ import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.plot.DefaultDrawingSupplier;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.LookupPaintScale;
+import org.jfree.chart.renderer.PaintScale;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import com.sun.javafx.webkit.theme.Renderer;
+
 import bean.FluxCalibratorTO;
 import bean.PhaseCalibratorTO;
 import bean.PointingTO;
 import manager.DBManager;
+import util.SMIRFConstants;
 
 /**
  * @see http://stackoverflow.com/a/13794076/230513
@@ -109,7 +117,7 @@ public class PlanePlotter extends JFrame {
 		
 		if(equatorial) {
 		jfreechart = ChartFactory.createScatterPlot(
-				title, "RA (hours)", "DEC (degrees)", CreateEquatorial(),
+				title, "RA (hours)", "DEC (degrees)", CreateEquatorialGridded(),
 
 				PlotOrientation.VERTICAL, true, true, false);
 		}
@@ -129,21 +137,29 @@ public class PlanePlotter extends JFrame {
 		XYPlot xyPlot = (XYPlot) jfreechart.getPlot();
 		xyPlot.setDomainCrosshairVisible(true);
 		xyPlot.setRangeCrosshairVisible(true);
+		
 
 		XYItemRenderer renderer = xyPlot.getRenderer();
 		
+        SpectrumPaintScale ps = new SpectrumPaintScale(0, xyPlot.getSeriesCount() * 2);
+        
+        for(int i=0; i < xyPlot.getSeriesCount(); i++) {
+        	
+        	renderer.setSeriesPaint(i, ps.getPaint(i* 2));
+    		renderer.setSeriesShape(i,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
+        	
+        }
+
 		
-		renderer.setSeriesPaint(0, Color.GRAY);
-		renderer.setSeriesShape(0,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
 		
-		renderer.setSeriesPaint(1, Color.BLUE);
-		renderer.setSeriesShape(1,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
-		
-		renderer.setSeriesPaint(2, Color.RED);
-		renderer.setSeriesShape(2,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
-		
-		renderer.setSeriesPaint(3, Color.GREEN);
-		renderer.setSeriesShape(3,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
+//		renderer.setSeriesPaint(1, Color.BLUE);
+//		renderer.setSeriesShape(1,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
+//		
+//		renderer.setSeriesPaint(2, Color.RED);
+//		renderer.setSeriesShape(2,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
+//		
+//		renderer.setSeriesPaint(3, Color.GREEN);
+//		renderer.setSeriesShape(3,  DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE[1]);
 
 
 		XYToolTipGenerator xyToolTipGenerator = new XYToolTipGenerator() {
@@ -153,7 +169,6 @@ public class PlanePlotter extends JFrame {
 
 				double x = dataset.getXValue(series, item);
 				double y = dataset.getYValue(series, item);
-
 				return "(" + x + "," + y + ")";
 			}
 		};
@@ -204,6 +219,32 @@ public class PlanePlotter extends JFrame {
 
 		return xySeriesCollection;
 	}
+	
+	private XYDataset CreateEquatorialGridded() {
+		
+		
+
+		
+
+		XYSeriesCollection xySeriesCollection = new XYSeriesCollection();
+		List<PointingTO> tos = DBManager.getAllPointings().stream().filter(f -> SMIRFConstants.SMIRFPointingSymbols.contains(f.getType())).collect(Collectors.toList());
+		Map<Integer, XYSeries> seriesMap = new HashMap<>();
+		
+
+		for(PointingTO to : tos){
+			
+			XYSeries series = seriesMap.getOrDefault(to.getNumObs(), new XYSeries(to.getNumObs()));
+			
+			series.add(to.getAngleRA().getDecimalHourValue(), to.getAngleDEC().getDegreeValue());
+			seriesMap.put(to.getNumObs(), series);
+		}
+
+		seriesMap.entrySet().stream().forEach(f -> xySeriesCollection.addSeries(f.getValue()));
+		
+
+		return xySeriesCollection;
+		
+	}
 
 
 	private XYDataset CreateEquatorial() {
@@ -243,6 +284,37 @@ public class PlanePlotter extends JFrame {
 
 		return xySeriesCollection;
 	}
+	
+	 private static class SpectrumPaintScale implements PaintScale {
+
+	        private static final float H1 = 0f;
+	        private static final float H2 = 1f;
+	        private final double lowerBound;
+	        private final double upperBound;
+
+	        public SpectrumPaintScale(double lowerBound, double upperBound) {
+	            this.lowerBound = lowerBound;
+	            this.upperBound = upperBound;
+	        }
+
+	        @Override
+	        public double getLowerBound() {
+	            return lowerBound;
+	        }
+
+	        @Override
+	        public double getUpperBound() {
+	            return upperBound;
+	        }
+
+	        @Override
+	        public Paint getPaint(double value) {
+	            float scaledValue = (float) (value / (getUpperBound() - getLowerBound()));
+	            float scaledH = H1 + scaledValue * (H2 - H1);
+	            return Color.getHSBColor(scaledH, 1f, 1f);
+	        }
+	    }
+
 
 	public static void main(String args[]) {
 		EventQueue.invokeLater(new Runnable() {
