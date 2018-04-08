@@ -124,16 +124,17 @@ public void pointAndTrackSource(String RA_hhmmss, String DEC_ddmmss, boolean mdT
  * @param NS
  * @throws TCCException 
  */
-public void pointNS(Angle ns) throws TCCException{
+public void pointNS(Angle ns,String arm) throws TCCException{
 	
-	defaultParams.put("units", "\"degrees\"");
-	defaultParams.put("epoch", "\"2000\"");
-	defaultParams.put("system", "\"nsew\"");
-	defaultParams.put("tracking", "\"off\"");
+	defaultParams.put("units", "degrees");
+	defaultParams.put("epoch", "2000");
+	defaultParams.put("system", "nsew");
+	defaultParams.put("tracking", "off");
+	defaultParams.put("ns_east_state", 	(arm.equals(BOTH_ARMS) || arm.equals(EAST))? "auto": "disabled");
+	
+	defaultParams.put("ns_west_state", 	(arm.equals(BOTH_ARMS) || arm.equals(WEST))? "auto": "disabled");
 
-	defaultParams.put("ns_east_state", "auto");
 	defaultParams.put("md_east_state", "disabled");
-	defaultParams.put("ns_west_state", "auto");
 	defaultParams.put("md_west_state", "disabled");
 
 	defaultParams.put("ns_east_offset", "0.0");
