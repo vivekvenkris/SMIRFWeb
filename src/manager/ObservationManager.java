@@ -32,10 +32,12 @@ import bean.Coords;
 import bean.ObservationTO;
 import bean.PointingTO;
 import bean.TBSourceTO;
+import bean.TCCStatus;
 import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.DriveBrokenException;
+import exceptions.DriveIsSlowException;
 import exceptions.EmptyCoordinatesException;
 import exceptions.EphemException;
 import exceptions.InvalidFanBeamNumberException;
@@ -90,13 +92,14 @@ public class ObservationManager {
 					long startTime = System.currentTimeMillis();
 
 					System.err.println("Computing slew time.");
-					long maxSlewTime = (long)2* TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000; // to milliseconds
+					long slewTime = TCCManager.computeSlewTime(coordinates.getRadNS(), coordinates.getRadMD())*1000;
+					long maxSlewTime = (long)4* slewTime; // to milliseconds
+					
+					
 					System.err.println(" max slew time = " + maxSlewTime/1000.0 + "seconds = " + maxSlewTime/60000.0 + "minutes");
-
 
 					long elapsedTime = 0L;
 					Thread.sleep(5000);
-
 					int weeCount = 0;
 
 					while(true){
@@ -114,18 +117,19 @@ public class ObservationManager {
 
 						if(elapsedTime > maxSlewTime) {
 							if(!tccStatusService.isTelescopeDriving()) break;
-							throw new DriveBrokenException("Drive taking longer than expected to go to source.");
+							throw new DriveIsSlowException("Drive taking longer than expected to go to source. nominal slew Time = " + (int)(slewTime/1000.0) + " seconds, but it has already "
+									+ "taken " + (int)(elapsedTime/1000) + " seconds.");
 						}
 						
 						try{
 						Thread.sleep(2000);
 						}catch (InterruptedException e) {
 							tccService.stopTelescope();
-							Mailer.sendEmail(e);
 							return false;
 						}
 						
 						if(Control.isTerminateCall()){
+							System.err.println("Terminate call initated. Exiting TCC wait");
 							tccService.stopTelescope();
 							return false;
 						}
@@ -180,8 +184,9 @@ public class ObservationManager {
 		}
 
 		if(backendEnabled) {
+			Boolean backendResult  = null;
 			try {
-				Boolean backendResult = backendReady.get();
+				backendResult = backendReady.get();
 			} catch (InterruptedException | ExecutionException e) {
 				Throwable t = e.getCause();
 				if(t instanceof BackendException){
@@ -191,25 +196,35 @@ public class ObservationManager {
 				Mailer.sendEmail(e);
 
 			}
+			//if(backendResult == null || backendResult.equals(false)) return;
+
 		}
 		System.err.println("Backend Ready");
 
 		if(tccEnabled)  { 
+			Boolean tccResult = null;
 			try {
-				Boolean tccResult = tccReady.get();
+				 tccResult = tccReady.get();
 			} catch (InterruptedException | ExecutionException e) {
 				Throwable t = e.getCause();
-				if(t instanceof TCCException){
+				if(t instanceof DriveBrokenException) {
+					System.err.println("Caught Drive Broken Exception on observation manager");
+					throw (DriveBrokenException)t;
+				}
+				else if(t instanceof TCCException){
 					throw (TCCException)t;
 				}
 				e.printStackTrace();
 				Mailer.sendEmail(e);
 			}
+			//if(tccResult == null || tccResult.equals(false)) return;
+
 		}
 		
 		System.err.println("TCC Ready");
 
 		if(Control.isTerminateCall()){
+			System.err.println("Terminate call initated. Exiting Observation Manager");
 			return;
 		}
 		
@@ -228,14 +243,35 @@ public class ObservationManager {
 
 
 	
-	public synchronized void waitForObservationCompletion(ObservationTO observation) throws InterruptedException{
+	public synchronized void waitForObservationCompletion(ObservationTO observation) throws InterruptedException, DriveBrokenException{
 		
 		long obsTime = observation.getTobs()*1000;
 		long startTime = observation.getUtcDate().getTime();
 		while(true) {
 			if( (new Date().getTime() - startTime) > obsTime || Control.isTerminateCall()) break; 
-			Thread.sleep(200);
+			Thread.sleep(2000);
 			if(Thread.currentThread().isInterrupted()) break;
+			/**
+			 * This will throw a Drive Broken Exception if not tracking.
+			 */
+			
+			DriveBrokenException exception = null;
+			for(int i=0; i<10; i++ ){
+				
+				try{
+					
+					Control.getTccStatus().isTelescopeTracking();
+					exception = null;
+					break;
+				}catch (DriveBrokenException e) {
+					System.err.println("Telescope not tracking target.Wee count = " + i);
+					System.err.println(e.getMessage());
+					exception = e;
+				}
+				Thread.sleep(2000);
+				
+			}
+			if(exception != null) throw exception;
 		}
 		
 	} 
@@ -346,9 +382,9 @@ public class ObservationManager {
 		System.err.println("Getting TB sources for observation");
 		
 		//List<TBSourceTO> tbSources = PSRCATManager.getTbSources();
-/**
- *  As if 14 Jan 2018, we will use only the Timing programme list of pulsars.
- */
+	/**
+	 *  As if 14 Jan 2018, we will use only the Timing programme list of pulsars.
+	 */
 		List<TBSourceTO> tbSources = PSRCATManager.getTimingProgrammeSources();
 		List<TBSourceTO> shortListed = new ArrayList<>();
 		
@@ -358,7 +394,10 @@ public class ObservationManager {
 		double radPTDEC = pointingCoords.getPointingTO().getAngleDEC().getRadianValue();
 		
 		/**
-		 * If it is a flux cal observation, make sure we add the flux cal as a TB source. 
+		 * If it is a flux cal observation, make sure we add the flux cal as a TB source. Or else what is the point?
+		 * But what is the point of anything? what is the length of a piece of string?
+		 * In the end, everything will be engulfed by the sun anyway, including this brilliantly written code.
+		 * 
 		 */
 		if(observation.getCoords().getPointingTO().getType().equals(SMIRFConstants.fluxCalibratorSymbol)){
 			
@@ -366,6 +405,25 @@ public class ObservationManager {
 			shortListed.add(tbSourceTO);
 			
 		}
+		
+		if(observation.getCoords().getPointingTO().getType().equals(SMIRFConstants.pulsarPointingSymbol)) {
+			TBSourceTO tbSourceTO = PSRCATManager.getTBSouceByName(observation.getCoords().getPointingTO().getPointingName().replaceAll("PSR_", ""));
+			
+			if(tbSourceTO == null) {
+				System.err.println("Cannot find the pulsar for pointing " + observation.getCoords().getPointingTO().getPointingName());
+				Mailer.sendEmail("INFO: Tried to put TB for " + observation.getCoords().getPointingTO().getPointingName() + " and failed");
+			}
+			shortListed.add(tbSourceTO);
+		}
+		
+		
+		List<TBSourceTO> associatedPulsars = observation.getCoords().getPointingTO().getAssociatedPulsars();
+		
+		if(associatedPulsars != null && !associatedPulsars.isEmpty()) {
+			shortListed.addAll(associatedPulsars);
+		}
+		
+		
 		/**
 		 * Refresh coordinates for LST = now
 		 */
@@ -414,7 +472,7 @@ public class ObservationManager {
 						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), 
 						Constants.RadMolongloNSBeamWidth/2.0, Constants.RadMolongloMDBeamWidth/2.0);
 				
-				//System.err.println( tbSourceTO.getPsrName() + " " + withinNS + " " + withinMD + " " + withinEllipse);
+				System.err.println( tbSourceTO.getPsrName() + " " + withinNS + " " + withinMD + " " + withinEllipse);
 				
 				if( withinNS && withinMD && withinEllipse){
 					
@@ -430,12 +488,13 @@ public class ObservationManager {
 
 				
 			}
+			
 		}
 
 		System.err.println("TB sources in the beam: " + shortListed);
 		
 		shortListed.sort(Comparator.comparing(TBSourceTO::getPriority).reversed()
-						.thenComparing(Comparator.comparing(TBSourceTO::getFluxAt843MHz).reversed())
+						//.thenComparing(Comparator.comparing(TBSourceTO::getFluxAt843MHz).reversed())
 						.thenComparing(Comparator.comparing(f -> {
 							TBSourceTO t = ((TBSourceTO)f);
 							Coords c = null;
@@ -480,6 +539,8 @@ public class ObservationManager {
 
 			String hostname = nepenthesServer.getKey();
 			
+			boolean mailed = false;
+			
 			for(Entry<Integer, Integer> bsEntry : nepenthesServer.getValue().entrySet()){
 				
 				int size = 0;
@@ -503,8 +564,31 @@ public class ObservationManager {
 				out.close();
 				in.close();
 				socket.close();
+				if(size > maxUtcOnQueue && !mailed){
+					
+					String mail = "Problem with Nepenthes server: BS" + nepenthesServer.getValue()
+							+ "\n";
+					
+					socket = new Socket();
+					socket.connect(new InetSocketAddress(nepenthesServer.getKey(), bsEntry.getValue()),10000);	
+					out = new PrintWriter(socket.getOutputStream(), true);
+					in = new BufferedReader( new InputStreamReader(socket.getInputStream()));	
+					out.println(ConfigManager.getSmirfMap().get("NEPENTHES_UTC_LIST_PREFIX"));
+					mail += in.readLine() + "\n";
+					
+					System.err.println("Sending email about problem.");
+					
+					Mailer.sendEmail(mail);
+					
+					out.flush();
+					out.close();
+					in.close();
+					socket.close();
+					
+					mailed = true;
+				}
 				
-				if(size > maxUtcOnQueue) Thread.sleep(2000);
+				if(size > maxUtcOnQueue) Thread.sleep(30000);
 				
 				}while( size > maxUtcOnQueue );
 				
@@ -528,7 +612,10 @@ public class ObservationManager {
 		Map<Integer, Set<Integer>> fanbeamsToTransfer = new HashMap<>();
 		Set<Integer> edgeBeams = new HashSet<>();
 		
-		if(Control.isTerminateCall()) return false;
+		if(Control.isTerminateCall()) {
+			System.err.println("Terminate call initated. Exiting Observation Manager");
+			return false;
+		}
 
 
 		for(Point p: points){
