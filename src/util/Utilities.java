@@ -15,6 +15,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -61,6 +62,12 @@ public class Utilities {
 	}
 
 	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
+		
+		
+		System.err.println(putSpacesBetweenWords("HrlloMisterEthirKatchi"));
+		
+		System.exit(0);
+
 		for(int i=-60;i<60; i++){
 			double beam = 4.0*Constants.deg2Rad/ Math.cos(i*Constants.deg2Rad);
 			double deltaMD = beam/ 352;
@@ -99,6 +106,11 @@ public class Utilities {
 	}
 
 	public static String getTextFromXpath(String xmlString, String xpathExpr) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException{
+		
+		return getNodeFromXpath(xmlString,xpathExpr).getTextContent();
+	}
+	
+	public static Node getNodeFromXpath(String xmlString, String xpathExpr) throws ParserConfigurationException, SAXException, IOException, XPathExpressionException{
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();  
 		DocumentBuilder builder;  
 
@@ -109,8 +121,10 @@ public class Utilities {
 		XPathExpression expr = xpath.compile(xpathExpr);
 		Object result = expr.evaluate(document, XPathConstants.NODE);
 		Node node = (Node)result;
-		return node.getTextContent();
+		return node;
 	}
+	
+	
 
 	public static String talkToServer(String xmlMessage, String ip, int port) throws IOException{
 		try {
@@ -162,7 +176,7 @@ public class Utilities {
 
 		// cause this process to stop until process p is terminated
 		BufferedReader in = new BufferedReader(
-				new InputStreamReader(p.getErrorStream()));
+				new InputStreamReader(p.getInputStream()));
 		String str = "";
 		String line = null;
 		while ((line = in.readLine()) != null) {
@@ -222,7 +236,7 @@ public class Utilities {
 	}
 
 	public static boolean isWithinEllipse(double x1, double y1, double x2, double y2, double a, double b){
-		double xdist = Math.abs(x2 - x1);
+		double xdist = Math.abs(x2 - x1)* Math.cos(0.5*Math.abs(y1+y2));
 		double ydist = Math.abs(y2 - y1);
 
 		return ( ( xdist*xdist/(a*a) + ydist*ydist/(b*b)) <= 1.0);
@@ -245,7 +259,16 @@ public class Utilities {
 	}
 
 	public static LocalDateTime getUTCLocalDateTime(String utc){
+		if(!utc.contains(".")) utc += ".000";
 		return LocalDateTime.parse(utc, DateTimeFormatter.ofPattern(BackendConstants.backendUTCFormatOfPattern));
+	}
+	
+	public static double getTimeDifferenceInDays(LocalDateTime init, LocalDateTime fin) {
+		
+		Duration duration = Duration.between(init, fin);
+		
+		return duration.getSeconds()  * Constants.sec2Hrs * Constants.hrs2Day;
+		
 	}
 
 
@@ -306,12 +329,19 @@ public class Utilities {
 	}
 	
 	public static String buildEmailBodyTextFromException(CustomException e) {
-		String body = " SMIRF threw a " + e.getClass().getSimpleName() + " during operation. \n";
+		String body = "<h2>SMIRF threw a " + putSpacesBetweenWords(e.getClass().getSimpleName()) + " during operation.<h2>";
 		
-		body += " <h1> Message:" + e.getMessage() + "</h1> <br/>";
+		body += "<h2>Message:" + e.getMessage() + "</h2> <br/>";
 		
-		body += " exception stack trace:" + e.getTrace() + "<br/><br/>";
+		body += "<span style='font-size:medium'>Here is a stacktrace: <br/>" + e.getTrace().replaceAll("\n", "<br/>") + "</span><br/><br/>";
 		return body;
 	}
+	
+	public static String putSpacesBetweenWords(String text) {
+		
+		return text.replaceAll("\\d+", "").replaceAll("(.)([A-Z])", "$1 $2");
+		
+	}
+	
 
 }
