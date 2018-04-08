@@ -1,8 +1,9 @@
 package bean;
 
+import java.time.LocalDateTime;
+
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
-import util.SMIRFConstants;
 import util.Utilities;
 
 public class TBSourceTO {
@@ -57,6 +58,9 @@ public class TBSourceTO {
 	Integer priority;
 	Double fluxAt843MHz;
 	boolean precessed;
+	
+	LocalDateTime lastObserved;
+	double daysSinceLastObserved;
 	
 	Double DM;
 	Double F0;
@@ -204,6 +208,22 @@ public class TBSourceTO {
 
 	public void setPrecessed(boolean precessed) {
 		this.precessed = precessed;
+	}
+
+	public LocalDateTime getLastObserved() {
+		return lastObserved;
+	}
+
+	public void setLastObserved(LocalDateTime lastObserved) {
+		this.lastObserved = lastObserved;
+	}
+
+	public double getDaysSinceLastObserved() {
+		return daysSinceLastObserved;
+	}
+
+	public void setDaysSinceLastObserved(double daysSinceLastObserved) {
+		this.daysSinceLastObserved = daysSinceLastObserved;
 	}
 
 	
