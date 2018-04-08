@@ -11,7 +11,7 @@
 		<class>bean.ObservingSession</class>
 		 <properties>
 		 
-         <property name="javax.persistence.jdbc.url" value="jdbc:mysql://192.168.5.10:3306/mpsr_ksp_survey"/>
+         <property name="javax.persistence.jdbc.url" value="jdbc:mysql://172.17.228.204:3306/mpsr_ksp_survey"/>
          <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
          
          <property name="eclipselink.logging.parameters" value="false"/>
@@ -23,3 +23,4 @@
       </properties>
 	</persistence-unit>
 </persistence>
+ 
