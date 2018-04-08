@@ -4,19 +4,24 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.xml.sax.SAXException;
+
 import bean.Angle;
-import bean.CoordinateTO;
 import bean.Coords;
-import bean.ObservationSessionTO;
 import bean.ObservationTO;
+import bean.Pointing;
 import bean.PointingTO;
 import bean.TBSourceTO;
 import bean.UserInputs;
-import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
@@ -30,60 +35,187 @@ import listeners.StatusPooler;
 import mailer.Mailer;
 import manager.DBManager;
 import manager.DynamicTransitScheduler;
-import manager.MolongloCoordinateTransforms;
 import manager.ObservationManager;
 import manager.PSRCATManager;
 import manager.Schedulable;
-import manager.TransitScheduleManager;
 import manager.TransitScheduler;
+import service.DBService;
 import service.EphemService;
+import service.TCCService;
+import service.TCCStatusService;
 import util.BackendConstants;
+import util.ConfigManager;
 import util.Constants;
 import util.SMIRFConstants;
 import util.TCCConstants;
 import util.Utilities;
 
 public class Main {
-	public static void main(String[] args) throws InterruptedException, TCCException, BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, PointingException, NoSourceVisibleException, SchedulerException, ObservationException, EphemException {
+	
+	
+
+
+	static double distance(TBSourceTO tb, PointingTO smirf) {
+		return Math.abs(tb.getAngleDEC().getDegreeValue() - smirf.getAngleDEC().getDegreeValue());
+	}
+	public static void main(String[] args) throws InterruptedException, TCCException,
+	BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, 
+	PointingException, NoSourceVisibleException, SchedulerException, ObservationException, 
+	EphemException, ParserConfigurationException, SAXException, ParseException {
+		String utc = "";
 
 		
+		utc = "2018-04-04-13:56:54";
 		
-		
-		ObservationTO tot = new ObservationTO(new Coords(DBManager.getPointingByUniqueName("PSR_J0151-0635"),
-				Utilities.getUTCLocalDateTime("2018-01-22-07:42:10.000")),
+		ObservationTO tot = new ObservationTO(new Coords(DBManager.getPointingByUniqueName("SMIRF_1257-6651"),
+				Utilities.getUTCLocalDateTime(utc)),
 				null, 360, "VVK", BackendConstants.tiedArrayFanBeam,SMIRFConstants.pulsarPointingPrefix, "P000", 0.0, true, false, false, true, true);
-		
+
 		new ObservationManager().getTBSourcesForObservation(tot, 4);
-		
+
 		System.err.println(tot.getTiedBeamSources());
+
+		
+		System.exit(0);
+	
+		PointingTO to12 = new PointingTO(new Angle("17:05:37.7", Angle.HHMMSS), new Angle("-53:50:16.00", Angle.DDMMSS), "CAN_1705-5350", SMIRFConstants.candidatePointingSymbol);
+		Pointing pointing = new Pointing(to12);
+		DBService.addPointingsToDB(Arrays.asList(new Pointing[] {pointing}));
+		System.exit(0);
+		
+		BackendException e = new BackendException("testing screenshots of buffers. please ignore this email.");
+
+		Mailer.sendEmail(e);
+
+		System.exit(0);
+		
+		List<PointingTO> pointingTOs = DBManager.getAllPointings().stream().filter(f -> f.getAngleRA().getDecimalHourValue() > 8 
+				&& f.getAngleRA().getDecimalHourValue()<19 && f.getPointingName().startsWith("PSR") ).collect(Collectors.toList());
+
+		System.err.println(pointingTOs.size());
+		
+		pointingTOs.forEach(f -> f.setNumObs(f.getNumObs() + 2));
+		
+		DBService.updatePointingsToDB(pointingTOs);
+		
+		System.err.println(pointingTOs.stream().mapToDouble(f -> f.getNumObs()).sum()/pointingTOs.size());
+		
+		
 		
 		System.exit(0);
 		
-		StatusPooler poller = new StatusPooler();
-		poller.startPollingThread();
+		Pointing pto = new Pointing(new PointingTO(PSRCATManager.getTBSouceByName("J1038+0032")));
+		pto.setPointingID(null);
+		pto.setPointingName("PSR_"+pto.getPointingName());;
+		pto.setType(SMIRFConstants.pulsarPointingSymbol);
+		pto.setPriority(SMIRFConstants.highestPriority);
+		pto.setNumObs(0);
+		pto.setTobs(SMIRFConstants.tobs);
+		DBService.addPointingsToDB(new ArrayList<>(Arrays.asList(new Pointing[] {pto})));
+		System.err.println(pto);
+		System.exit(0);
+		String a = "";
+		System.err.println("-"+String.join(",",new ArrayList<TBSourceTO>().stream().map(f -> f.getPsrName()).collect(Collectors.toList())));
+		System.exit(0);
+
+		Angle dec2 = PSRCATManager.getTimingProgrammeSouceByName("J2033+0042").getAngleDEC();
+		System.err.println(dec2.toDDMMSS());
+		System.exit(0);
+
+		List<PointingTO> smirfPointings = DBManager.getAllPointings().stream().filter(f -> f.getPointingName().contains("SMIRF_")).collect(Collectors.toList());
+		List<TBSourceTO> timingProgramme = PSRCATManager.getTimingProgrammeSources();
 		
-		Thread.sleep(3000);
+		DBService.updatePulsarLastObservedTimes();
+
 		
-		TCCException tccE = new TCCException("The telescope is on FIRE!");
+		List<String> values = new ArrayList<>();
+		for(TBSourceTO tb : timingProgramme) {
+			
+			if(tb.getDaysSinceLastObserved() < 10 ) continue;
+
+			PointingTO minTO = null;
+			double minDist = 0.0;
+
+			for(PointingTO smirf : smirfPointings ) {
+				if(!Utilities
+						.isWithinCircle(tb.getAngleRA().getRadianValue(), tb.getAngleDEC().getRadianValue(),
+								smirf.getAngleRA().getRadianValue(), smirf.getAngleDEC().getRadianValue(), 1 * Constants.deg2Rad)) continue;
+				double dist = distance(tb, smirf);
+				if(minTO == null || minDist > dist ) {
+					minTO = smirf;
+					minDist = dist;
+				}
+			}
+
+			values.add(tb.getPsrName() + " " +  tb.getDaysSinceLastObserved() + " " + minTO + " " + minDist);		
+		}
+
 		
-		Mailer.sendEmail(tccE);
+		values.stream().forEach(f -> System.err.println(f));
 		
 		System.exit(0);
 
-		
-		BackendException e = new BackendException("test exception");
-		
-		Mailer.sendEmail(e);
-		
+		List<String> timingProgrammePulsars = Files.readAllLines(Paths.get(ConfigManager.getSmirfMap().get("TIMING_PROGRAMME")));
+
+		DBService.updatePulsarLastObservedTimes();
+
+		PSRCATManager.getTimingProgrammeSources().stream().filter(f -> (((TBSourceTO)f).getDaysSinceLastObserved() > 10 
+				&& Math.abs(new PointingTO(f).getAngleLAT().getDegreeValue()) > 4 )).forEach( f -> {
+					System.err.println(f.getPsrName() + " " + new PointingTO(f).getAngleLAT().getDegreeValue() + " "  );
+					//System.err.println(DBManager.getPointingByUniqueName("PSR_"+f.getPsrName()));
+				});
+
+		System.err.println(timingProgrammePulsars.size() + " " + PSRCATManager.getTimingProgrammeSources().size());
+
+		timingProgrammePulsars.stream().forEach(f -> {
+
+			if (!PSRCATManager.getTimingProgrammeSources().contains(new TBSourceTO(f))) {
+				System.err.println(f);
+			}
+		});
+
+		TCCService tccService = TCCService.createTccInstance();
+
 		System.exit(0);
+
+		tccService.pointNS(new Angle("25.0", Angle.DEG, Angle.DEG),TCCConstants.BOTH_ARMS);
+
+		TCCStatusService tccStatusService = new TCCStatusService();
+		while(tccStatusService.isTelescopeDriving()) {
+			System.err.println("still driving...");
+			Thread.sleep(10000);
+		}
+
+
+		System.exit(0);
+
 		
-		String utc = EphemService.getUtcStringNow();
-		
+
+
+	
+		System.exit(0);
+
+		StatusPooler poller = new StatusPooler();
+		poller.startPollingThreads();
+
+		Thread.sleep(3000);
+
+		TCCException tccE = new TCCException("The telescope is on FIRE!");
+
+		Mailer.sendEmail(tccE);
+
+		System.exit(0);
+
+
+
+
+		utc = EphemService.getUtcStringNow();
+
 		String command = "cd /home/vivek/SMIRF/screenshots/; "
 				+ "/home/vivek/.npm-global/bin/pageres -d 5 --filename='"+ utc + "' 'http://mpsr-srv0/mopsr/control.lib.php?single=true'";
-		
+
 		Utilities.runShellProcess(command, true);
-		
+
 		System.exit(0);
 
 		InetAddress inet;
@@ -116,7 +248,7 @@ public class Main {
 		System.exit(0);
 
 		//StatusPooler poller = new StatusPooler();
-		poller.startPollingThread();
+		poller.startPollingThreads();
 
 		TransitScheduler s2 = new DynamicTransitScheduler();
 
