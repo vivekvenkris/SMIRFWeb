@@ -1,5 +1,11 @@
 package control;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -11,7 +17,11 @@ import javax.servlet.annotation.WebListener;
 import bean.BackendStatus;
 import bean.ObservationTO;
 import bean.TCCStatus;
+import exceptions.SchedulerException;
+import mailer.Mailer;
 import manager.Schedulable;
+import util.ConfigManager;
+import util.SMIRFConstants;
 
 @WebListener
 public class Control implements ServletContextListener {
@@ -19,9 +29,11 @@ public class Control implements ServletContextListener {
 	private static boolean finishCall = false;
 	private static boolean terminateCall = false;
 	private static ObservationTO currentObservation = null;
+
 	private static Schedulable scheduler = null;
-	private static Integer lock = 1;
-	private static Integer lock2 = 1;
+	private static Integer schedulerLock = 1;
+
+	private static Integer observationLock = 1;
 	
 	private static BackendStatus backendStatus;
 	private static Integer backendLock = 2;
@@ -29,10 +41,15 @@ public class Control implements ServletContextListener {
 	private static TCCStatus tccStatus;
 	private static Integer tccLock = 3;
 	
+	private static String machineSummary = "";
+	private static Integer machineSummaryLock = 4;
+	
 	private static String allMessages = "";
 	private static String messages = "";
 	
 	private static Boolean polling = false;
+	
+	private static String emulateForUTC = null;
 	
 	private static ExecutorService executorService = Executors.newFixedThreadPool(24);
 	
@@ -93,13 +110,13 @@ public class Control implements ServletContextListener {
 	
 	public static synchronized ObservationTO getCurrentObservation() {
 		
-		synchronized (lock) {
+		synchronized (observationLock) {
 			return currentObservation;
 		}
 	}
 	
 	public static synchronized void setCurrentObservation(ObservationTO currentObservation) {
-		synchronized (lock) {
+		synchronized (observationLock) {
 			Control.currentObservation = currentObservation;
 
 		}
@@ -130,13 +147,13 @@ public class Control implements ServletContextListener {
 	}
 
 	public static Schedulable getScheduler() {
-		synchronized (lock2) {
+		synchronized (schedulerLock) {
 		return scheduler;
 		}
 	}
 
 	public static void setScheduler(Schedulable scheduler) {
-		synchronized (lock2) {
+		synchronized (schedulerLock) {
 			Control.scheduler = scheduler;
 		}
 	}
@@ -168,8 +185,23 @@ public class Control implements ServletContextListener {
 	public static ExecutorService getExecutorService() {
 			return executorService;
 	}
+	
+	
 
 	
+	public static String getMachineSummary() {
+		synchronized (machineSummaryLock) {
+			return machineSummary;
+		}
+	}
+
+	public static void setMachineSummary(String machineSummary) {
+		synchronized (machineSummaryLock) {
+			Control.machineSummary = machineSummary;
+	
+		}
+	}
+
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
 		System.err.println("Context destroy called. Shutting down executors.");
@@ -193,6 +225,67 @@ public class Control implements ServletContextListener {
 			Control.polling = true;
 		}
 	}
+
+	public static String getEmulateForUTC() {
+		return emulateForUTC;
+	}
+
+	public static void setEmulateForUTC(String emulateForUTC) {
+		Control.emulateForUTC = emulateForUTC;
+	}
+	
+	
+	
+	
+	public static boolean otherSchedulers() throws IOException {
+		
+		String str = readControlFile();
+		
+		if(str == null  || str.equals("") ) return false;
+		
+				
+		System.err.println("Another scheduler already running : " + str);
+		
+		Mailer.sendEmail(new SchedulerException("Another scheduler already running : " + str, SMIRFConstants.levelFatal, null ));
+		
+		
+		return true;
+		
+	}
+	
+	public static String readControlFile() throws IOException {
+		
+		File file = new File(ConfigManager.getSmirfMap().get("CONTROL_FILE"));
+		if(!file.exists()) return null;
+		
+		Path myPath = Paths.get(file.getAbsolutePath());
+		List<String> lines =  Files.readAllLines(myPath);
+		
+		if(lines.isEmpty()) return "";
+		
+		return lines.get(0);
+
+
+	}
+	
+	public static void writeControlFile() throws IOException {
+		
+		
+        Files.write(Paths.get(ConfigManager.getSmirfMap().get("CONTROL_FILE")), "SMIRF".getBytes());
+        System.err.println("Control file written");
+		
+	}
+	
+	public static void deleteControlFile() throws IOException {
+		
+		String str = readControlFile();
+
+		if(str.equals("SMIRF")) new File(ConfigManager.getSmirfMap().get("CONTROL_FILE")).delete();	
+		
+		else Mailer.sendEmail(new SchedulerException("obs.running file changed by "+ str + " while SMIRF was running. Possible bug in " + str + "." , SMIRFConstants.levelFatal, null ));
+
+	}
+		
 	
 	
 	
