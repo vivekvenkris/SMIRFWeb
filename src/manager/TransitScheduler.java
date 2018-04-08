@@ -1,6 +1,7 @@
 package manager;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -16,6 +17,7 @@ import bean.UserInputs;
 import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
+import exceptions.DriveBrokenException;
 import exceptions.EmptyCoordinatesException;
 import exceptions.EphemException;
 import exceptions.NoSourceVisibleException;
@@ -23,6 +25,7 @@ import exceptions.ObservationException;
 import exceptions.ScheduleEndedException;
 import exceptions.SchedulerException;
 import exceptions.TCCException;
+import mailer.Mailer;
 import service.EphemService;
 import util.BackendConstants;
 import util.Constants;
@@ -39,6 +42,8 @@ import util.SMIRFConstants;
  */
 public abstract class TransitScheduler extends AbstractScheduler {
 	
+
+	
 public static Schedulable createInstance(String schedulerType) throws SchedulerException{
 	
 		Schedulable	scheduler = Control.getScheduler();
@@ -49,6 +54,10 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		
 			else throw new SchedulerException("Scheduler already running. Type: " + scheduler.getType());
 		}
+		
+		/**
+		 * Added this in case we will get the type of scheduler to use from the user, in the future.
+		 */
 		
 		switch (schedulerType) {
 		
@@ -72,18 +81,23 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			scheduler = new PulsarDynamicTransitScheduler();
 			break;
 			
+		case interfacedDynamicScheduler:
+			
+			scheduler = new InterfacedDynamicScheduler();
+			break;	
+			
 		default:
 			throw new SchedulerException("No such scheduler type.");
 			
 		}
 		
-		Control.setScheduler(scheduler);
+		//Control.setScheduler(scheduler);
 		
 		return scheduler;
 	}
 	
 	@Override
-	public void start() {
+	public void start() throws TCCException, CoordinateOverrideException, EmptyCoordinatesException, InterruptedException, ExecutionException, ObservationException, IOException, NoSourceVisibleException, SchedulerException, BackendException, EphemException {
 		try {
 			
 			Control.setScheduler(this);
@@ -119,6 +133,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				 next = next();
 				}catch (ScheduleEndedException e) {
 					System.err.println(e.getMessage());
+					Mailer.sendEmail(e);
 					end = true;
 					break;
 				}
@@ -149,9 +164,16 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				System.err.println("Wait time in hours:" + waitTimeInHours);
 				System.err.println("Should wait " + waitTimeInHours * Constants.hrs2Sec + "seconds for this to start");
 				
-				if(waitTimeInHours > minObsGapinHours) doInterimFRBTransit( (int) (waitTimeInHours * Constants.hrs2Sec), next.getAngleDEC());
+				if(waitTimeInHours > 1) {
+					Mailer.sendEmail("Warning: Performing Interim FRB transits for  " + waitTimeInHours + " while waiting for the pointing" + next.getPointingName());
+					System.err.println("Sent warning email");
+				}
+				
+				if(waitTimeInHours > minObsGapinHours) doInterimFRBTransit( (int) (waitTimeInHours * Constants.hrs2Sec), next);
 				else if(waitTimeInHours > 0) 	{
+					
 					System.err.println("Waiting for pointing to enter the beam. Sleeping for " + waitTimeInHours*Constants.hrs2Sec*1000 );
+					
 					Thread.sleep((long) (waitTimeInHours*Constants.hrs2Sec*1000));
 				}
 				
@@ -160,19 +182,49 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				Coords coords = new Coords(next, EphemService.getAngleLMSTForMolongloNow());
 				
 				if(coords.getAngleMD().getRadianValue() > Constants.radMDToEndObs){
+					
 					System.err.println("Skipping pointing " + coords.getPointingTO().getPointingName() + " as it is already gone out of beam.");
+					
+					String mailText = "Skipping pointing " + coords.getPointingTO().getPointingName() + 
+							"as md_start " + coords.getAngleMD().getRadianValue() + ">" + Constants.radMDToEndObs + "\n"
+							+ "This happened when lst = " + EphemService.getAngleLMSTForMolongloNow() + "\n";
+					Mailer.sendEmail(new SchedulerException(mailText));
+					
 					continue;
 				}
 				
-				ObservationTO observation = new ObservationTO(coords, userInputs,BackendConstants.smirfBackend,BackendConstants.tiedArrayFanBeam, SMIRFConstants.PID);
+				/**
+				 * Set PID and pulsar search flag from the source type and name.
+				 */
+				String pid = SMIRFConstants.PID;
+				userInputs.setDoPulsarSearching(true);
+				if(!coords.getPointingTO().isSMIRFPointing()) {
+					/**
+					 * Altering user input is bad. change this at some point, future Vivek.
+					 */
+					userInputs.setDoPulsarSearching(false);
+					
+					if(coords.getPointingTO().isPulsarPointing()) pid = SMIRFConstants.nonSMIRFPointingPID;
+					else if(coords.getPointingTO().isTransitPointing()) pid = SMIRFConstants.interimFRBTransitPID;
+					else if(coords.getPointingTO().isFRBFollowUpPointing()) pid = SMIRFConstants.frbFollowUpPID;
+					
+				}
+				
+				ObservationTO observation = new ObservationTO(coords, userInputs,BackendConstants.smirfBackend,BackendConstants.tiedArrayFanBeam, pid);
 				Control.setCurrentObservation(observation);
 		
 				if(userInputs.getDoPulsarSearching()) observationManager.waitForPreviousSMIRFSoups();
 				observationManager.startObserving(observation);
-				if(Control.isTerminateCall()) break;
+				
+				if(Control.isTerminateCall()) {
+					System.err.println("Terminate call initated. Exiting Transit Scheduler");
+
+					break;
+				}
 
 				DBManager.addObservationToDB(observation);
-				
+				addToSession(observation.getCoords().getPointingTO());
+
 
 				
 				/**
@@ -184,40 +236,17 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				previousObservation = Control.getExecutorService().submit(manageObservation);
 
 			}
-			/**
-			 * Reset control flags -- finish and terminate to false.
-			 */
-			Control.reset();
+			
 			System.err.println(" Dynamic transit ended.");
 			
-		} catch (TCCException | CoordinateOverrideException | EmptyCoordinatesException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			e.printStackTrace();
-		} catch (ObservationException e) {
-			e.printStackTrace();
-		} catch (BackendException e) {
-			e.printStackTrace();
-		} catch (EphemException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (NoSourceVisibleException e) {
-			e.printStackTrace();
-		} catch (SchedulerException e) {
-			e.printStackTrace();
-		}finally {
-			Control.reset();
-			Control.setScheduler(null);
+		} finally {
 			Control.setCurrentObservation(null);
-			System.err.println("Controls reset");
+			System.err.println("current observation set to null");
 		}
-		
+		System.err.println("Exiting transit scheduler");
 	}
 	
-	private void doInterimFRBTransit(Integer tobs, Angle angleDEC) throws ObservationException, EmptyCoordinatesException, CoordinateOverrideException, 
+	private void doInterimFRBTransit(Integer tobs, PointingTO next) throws ObservationException, EmptyCoordinatesException, CoordinateOverrideException, 
 	InterruptedException, TCCException, BackendException, EphemException{
 		
 		Integer numObs = (int) (tobs*1.0 / SMIRFConstants.maxFRBTrtansitTOBS);
@@ -231,25 +260,35 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			System.err.println("Attempting FRB transit obs:" + obs);
 			
 			Integer thisTobs = SMIRFConstants.maxFRBTrtansitTOBS - BackendConstants.minTimeBetweenObsInSecs;
-			doInterimFRBTransit(thisTobs,obs,angleDEC);
+			doInterimFRBTransit(thisTobs,obs,next);
 			
-			System.err.println("Please rest for 60 seconds, my dear backend.");
+			if(Control.isFinishCall() || Control.isTerminateCall()) break;
+
+			
+			System.err.println("Backend rest for 60 seconds.");
 			Thread.sleep(BackendConstants.minTimeBetweenObsInSecs * 1000);
+			
 			
 		}
 		
-		if(tobsDifference > BackendConstants.minTobs ) doInterimFRBTransit(tobsDifference,obs,angleDEC);
+		if(tobsDifference > BackendConstants.minTobs ) doInterimFRBTransit(tobsDifference,obs,next);
 		else Thread.sleep(tobsDifference * 1000);
 
 		
 	}
 	
-	private void doInterimFRBTransit(Integer tobs,Integer obsNo, Angle angleDEC) 
+	private void doInterimFRBTransit(Integer tobs,Integer obsNo, PointingTO next) 
 			throws ObservationException, EmptyCoordinatesException, CoordinateOverrideException, 
 					InterruptedException, TCCException, BackendException, EphemException{
 		
-		PointingTO pointingTO = new PointingTO(EphemService.getAngleLMSTForMolongloNow(), angleDEC,"FRBTransit_"+obsNo,transitPointingSymbol);
-		ObservationTO observation = new ObservationTO(new Coords(pointingTO, EphemService.getAngleLMSTForMolongloNow()),null,
+		PointingTO pointingTO = new PointingTO(EphemService.getAngleLMSTForMolongloNow(), next.getAngleDEC(),"IFTB_"+ next.getPointingName() +"_" +obsNo,transitPointingSymbol);
+		Coords coordsNow = new Coords(pointingTO, EphemService.getAngleLMSTForMolongloNow());
+		int slewTime = TCCManager.computeNSSlewTime(Control.getTccStatus().getCoordinates().getNs(),coordsNow.getAngleNS());
+		System.err.println("Slew time to FRB transit: " + slewTime);
+		ObservationTO observation = 
+				new ObservationTO(
+						new Coords(pointingTO, 
+								EphemService.getAngleLMSTForMolongloNow().addSolarSeconds(slewTime)),null,
 				tobs, "IFTM", BackendConstants.smirfBackend,
 				BackendConstants.tiedArrayFanBeam, SMIRFConstants.interimFRBTransitPID, 0.0, 
 				true, true, false, true, true);
@@ -271,7 +310,11 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		Control.setCurrentObservation(null);
 
 		
-		if(Control.isTerminateCall()) return;
+		if(Control.isTerminateCall()) {
+			System.err.println("Terminate call initated. Exiting IFTM");
+
+			return;
+		}
 
 		DBManager.makeObservationComplete(observation);
 	}
@@ -281,11 +324,18 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		System.err.println("Calculating wait time for " + pointingTO.getPointingName());
 		
 		/**
-		 * 1. Get local coordinates of the next pointing for LST = now.
-		 * 2. Get the corresponding HA for MD = 2 degrees. 
-		 * 3. if HA_Now - HA_2deg > a minute, then do FRB transit for (HA_Now - HA_2Deg)
+		 * 1. Get local coordinates of the next pointing for LST = now + slew time. Call it HA_reach.
+		 * 2. Get the corresponding HA for MD = x degrees. 
+		 * 3. if HA_Reach - HA_2deg > a minute, then do FRB transit for (HA_Now - HA_2Deg)
+		 * 
 		 */
+				
 		Coords coords = new Coords(pointingTO, EphemService.getAngleLMSTForMolongloNow());
+		
+		int slewTime = TCCManager.computeNSSlewTime(Control.getTccStatus().getCoordinates().getNs(), coords.getAngleNS());
+		
+		coords = new Coords(pointingTO, EphemService.getAngleLMSTForMolongloNow().addSolarSeconds(slewTime));
+		
 		/**
 		 * Get HA coordinates for MD ~ -1 deg ( so that the fan beams are all within the primary beam of 2 by 2 degrees ) .
 		 */
@@ -293,10 +343,10 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		MolongloCoordinateTransforms.telToSky(coordinateTO);
 		
 		double halfPowerHA = coordinateTO.getAngleHA().getDecimalHourValue();
-		double haNow = coords.getAngleHA().getDecimalHourValue();
+		double haReach = coords.getAngleHA().getDecimalHourValue();
 				
-		if(haNow < 0 && Math.abs(halfPowerHA) < Math.abs(haNow)){
-			double differenceHours =  Math.abs(Math.abs(haNow) - Math.abs(halfPowerHA));
+		if(haReach < 0 && Math.abs(halfPowerHA) < Math.abs(haReach)){
+			double differenceHours =  Math.abs(Math.abs(haReach) - Math.abs(halfPowerHA));
 			return differenceHours;
 		}
 		
@@ -373,7 +423,8 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			
 			lst.addSolarSeconds( TCCManager.computeNSSlewTime(c.getAngleNS(), initTelPosition.getAngleNS(), nsSpeed ));
 			
-			double ha = lst.getDecimalHourValue() - c.getPointingTO().getAngleRA().getDecimalHourValue();
+			
+			double ha = EphemService.getHA(lst, c.getPointingTO().getAngleRA()).getDecimalHourValue();
 									
 			return ha < 0;
 		})
@@ -390,7 +441,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 
 
 	
-	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException {
+	public static void main(String[] args) throws Exception {
 		TransitScheduler scheduler = new TransitScheduler() {
 			
 			@Override
