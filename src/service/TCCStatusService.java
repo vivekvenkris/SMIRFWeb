@@ -38,7 +38,7 @@ public class TCCStatusService implements TCCConstants {
 	
 	
 	public boolean isTelescopeDriving() throws TCCException, InterruptedException {
-		Exception exception = null;
+		TCCException exception = null;
 		TCCStatus status = null;
 		for(int i=0; i<10; i++ ){
 			status = getTelescopeStatus();
@@ -46,7 +46,7 @@ public class TCCStatusService implements TCCConstants {
 				
 			return status.isTelescopeDriving();
 			
-			}catch (Exception e) {
+			}catch (DriveBrokenException e) {
 				System.err.println("Telescope not driving, disabled or on target.Wee count = " + i);
 				System.err.println(e.getMessage());
 				exception = e;
@@ -54,7 +54,7 @@ public class TCCStatusService implements TCCConstants {
 			Thread.sleep(2000);
 			
 		}
-		throw new DriveBrokenException("Drive seems to be broken:",ExceptionUtils.getStackTrace(exception), status);
+		throw exception;
 		
 	}
 	
