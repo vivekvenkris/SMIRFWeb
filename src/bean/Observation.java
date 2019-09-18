@@ -41,11 +41,15 @@ public class Observation {
 	@Column(name = "complete")
 	private Boolean complete;
 	
+	@Column(name = "management_status")
+	private Integer managementStatus;
+	
 	public static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss.SSS");
 
 	
 	public Observation() {	}
 	public Observation(ObservationTO observationTO) {
+		
 		this.sourceName = observationTO.getName();
 		this.utc = observationTO.getUtc();
 		this.tobs = observationTO.getTobs();
@@ -53,6 +57,42 @@ public class Observation {
 		this.observationType = observationTO.getObsType();
 		if(observationTO.getObservingSession()!=null)
 			this.observingSession = new ObservingSession(observationTO.getObservingSession());
+		
+		this.complete = observationTO.getComplete();
+		this.managementStatus = observationTO.getManagementStatus();
+	}
+	
+	
+	public static void updateObservtion(Observation from, Observation to) {
+		
+		to.setSourceName(from.getSourceName());
+		to.setUtc( from.getUtc());
+		to.setTobs(from.getTobs());
+		to.setTiedBeamSources(from.getTiedBeamSources());
+		to.setObservationType(from.getObservationType());
+		to.setObservingSession(from.getObservingSession());
+		
+		to.setComplete(from.getComplete());
+		to.setManagementStatus(from.getManagementStatus());
+		
+		
+	}
+	
+	
+	public static void updateObservtion(ObservationTO from, Observation to) {
+		
+		to.setSourceName(from.getName());
+		to.setUtc( from.getUtc());
+		to.setTobs(from.getTobs());
+		to.setTiedBeamSources(from.getTiedBeamSources().toString());
+		to.setObservationType(from.getObsType());
+		
+		if(from.getObservingSession()!=null)
+				to.setObservingSession(new ObservingSession(from.getObservingSession()));
+		
+		to.setComplete(from.getComplete());
+		to.setManagementStatus(from.getManagementStatus());
+		
 		
 	}
 
@@ -116,8 +156,17 @@ public class Observation {
 	public void setComplete(Boolean complete) {
 		this.complete = complete;
 	}
+	public Integer getManagementStatus() {
+		return managementStatus;
+	}
+	public void setManagementStatus(Integer managementStatus) {
+		this.managementStatus = managementStatus;
+	}
 
 	
 	
-	
+	@Override
+	public String toString() {
+		return this.getSourceName() + " " + this.getUtc()+ "\n";
+	}
 }
