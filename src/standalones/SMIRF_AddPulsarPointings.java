@@ -19,7 +19,7 @@ public class SMIRF_AddPulsarPointings {
 	
 	public static void main(String[] args) throws IOException {
 		
-		List<String> psrNames = Files.readAllLines(Paths.get("/home/vivek/SMIRF/temp.psrs"));
+		List<String> psrNames = Files.readAllLines(Paths.get("/home/vivek/SMIRF/additional.psrs"));
 	
 		List<PointingTO> pointings = DBManager.getAllPointings();
 		
@@ -39,11 +39,15 @@ public class SMIRF_AddPulsarPointings {
 			if(to==null) return null;
 			PointingTO pto = new PointingTO(to);
 			pto.setPointingID(null);
-			pto.setPointingName("PSR_"+pto.getPointingName());;
+			pto.setPointingName("PSR_"+pto.getPointingName());
 			pto.setType(SMIRFConstants.pulsarPointingSymbol);
 			pto.setPriority(SMIRFConstants.highestPriority);
-			pto.setNumObs(0);
+			pto.setNumObs(10);
 			pto.setTobs(SMIRFConstants.tobs);
+			pto.setLeastCadanceInDays(4);
+			pto.setEndMDInPercent(-5);
+			pto.setStartMDInPercent(-30);
+			pto.addToAssociatedPulsars(to);
 			return pto;
 		}).filter(f->f !=null).collect(Collectors.toList());
 		

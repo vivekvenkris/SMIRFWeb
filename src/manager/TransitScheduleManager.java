@@ -190,7 +190,6 @@ public class TransitScheduleManager extends ScheduleManager{
 						}
 					}
 					
-
 					ObservationTO observation = new ObservationTO(coords,observationSessionTO,tobs, observer,
 							BackendConstants.smirfBackend,BackendConstants.tiedArrayFanBeam, SMIRFConstants.PID,nsOffsetDeg,
 							true, true, doPulsarSearch, true, true);

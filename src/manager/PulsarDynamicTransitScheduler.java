@@ -6,7 +6,7 @@ import bean.PointingTO;
 import bean.UserInputs;
 import exceptions.SchedulerException;
 import util.SMIRFConstants;
-
+@Deprecated
 public class PulsarDynamicTransitScheduler extends DynamicTransitScheduler{
 		
 	@Override

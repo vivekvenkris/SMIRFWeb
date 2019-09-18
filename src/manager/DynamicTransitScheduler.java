@@ -25,7 +25,7 @@ import service.TCCStatusService;
 import standalones.SMIRFTransitSimulator;
 import util.Constants;
 import util.SMIRFConstants;
-
+@Deprecated
 public class DynamicTransitScheduler extends TransitScheduler{
 
 	List<PointingTO> today = new ArrayList<PointingTO>();

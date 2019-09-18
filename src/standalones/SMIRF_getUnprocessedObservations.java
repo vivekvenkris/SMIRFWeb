@@ -7,6 +7,9 @@ import java.io.ObjectInputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -17,12 +20,14 @@ import java.util.Map.Entry;
 import bean.ObservationTO;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import mailer.Mailer;
 import manager.DBManager;
 import manager.ObservationManager;
 import util.BackendConstants;
 import util.ConfigManager;
+import util.Utilities;
 
 public class SMIRF_getUnprocessedObservations {
 	
@@ -58,7 +63,12 @@ public class SMIRF_getUnprocessedObservations {
 				Map<String, Set<String>> utcBpSetMap = (Map<String, Set<String>>) mapInputStream.readObject();
 				
 				utcBpSetMap.entrySet().stream().forEach(f -> {
-					
+					String key = f.getKey();
+					key = key.replaceAll("BP", "");
+					if(Integer.parseInt(key) > 24) {
+						System.err.println("skipping" + f.getKey());
+						return;
+					}
 					if(utcMap.containsKey(f.getKey())) {
 						utcMap.get(f.getKey()).addAll(f.getValue());
 					}
@@ -81,13 +91,16 @@ public class SMIRF_getUnprocessedObservations {
 		utcMap.entrySet().stream().forEach( f -> System.err.println( f.getKey() + ": " + f.getValue()));
 		
 		Set<String> finalSet = new LinkedHashSet<>();
-
+		List<String> y = new ArrayList<>(utcs);
+		Collections.sort(y);
+		System.err.println(String.join("\n", y));
+		
 		for(String utc: utcs) {
 			
 			boolean all = true;
-			
 			for(Entry<String, Set<String>> entry : utcMap.entrySet()) {
 				if(!entry.getValue().contains(utc)) {
+					
 					System.err.println(entry.getKey() + " does not contain " + utc );
 					all = false;
 				}
@@ -99,12 +112,14 @@ public class SMIRF_getUnprocessedObservations {
 		}
 		
 		for(String utc : finalSet) {
+			System.err.println("Checking utc " + utc);
 			ObservationTO to = DBManager.getObservationByUTC(utc);
 			if(to == null) System.err.println(utc + " is not SMIRF obs");
 			else System.err.println(to.getCoords().getPointingTO().getPointingName() + " " + utc);
 		}
-		
-		System.err.println(String.join("\n", finalSet));
+		List<String> x = new ArrayList<>(finalSet);
+		 Collections.sort(x);
+		System.err.println(String.join("\n", x));
 
 	}
 

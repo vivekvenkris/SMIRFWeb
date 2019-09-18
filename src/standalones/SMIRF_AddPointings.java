@@ -20,12 +20,14 @@ import util.SMIRFConstants;
 public class SMIRF_AddPointings {
 	
 	public static void main(String[] args) throws IOException {
-		// file of the form NAME RA DEC TYPE
+		// file of the form NAME RA DEC TYPE"/home/observer/schedule/FRBs_list.txt"
+		// List<String> list = Files.readAllLines(Paths.get("/home/vivek/SMIRF/new.txt"));
 		List<String> list = Files.readAllLines(Paths.get("/home/observer/schedule/FRBs_list.txt"));
 		
 		List<PointingTO> existing = DBManager.getAllPointings();
 		
-		List<Pointing> pointings = new ArrayList<>();
+		List<Pointing> newPointings = new ArrayList<>();
+		List<Pointing> updatedPointings = new ArrayList<>();
 		list.forEach( f -> {
 			System.err.println("Considering " + f);
 			
@@ -54,8 +56,35 @@ public class SMIRF_AddPointings {
 			
 			if(existing.contains(new PointingTO(pointing))) {
 				
-				System.err.println("Skipping existing pointing: " + f);
+				
+				PointingTO existingPointingTO = existing.get( existing.indexOf(new PointingTO(pointing)));
+				
+				System.err.println(existingPointingTO.getPointingID() + " " 
+						+ (existingPointingTO.getAngleRA().getRadianValue() + " " + pointing.getAngleRA().getRadianValue()) + " " +
+								(existingPointingTO.getAngleDEC().getRadianValue() + " " + pointing.getAngleDEC().getRadianValue()));
+				
+				if( !(existingPointingTO.getAngleRA().getRadianValue().equals(pointing.getAngleRA().getRadianValue())) ||
+					!(existingPointingTO.getAngleDEC().getRadianValue().equals(pointing.getAngleDEC().getRadianValue()))) {
+				
+					System.err.println("updating existing pointing: " + existingPointingTO.getPointingID());;
+					
+					existingPointingTO.setAngleRA(pointing.getAngleRA());
+					existingPointingTO.setAngleDEC(pointing.getAngleDEC());
+					
+					SphericalCoordinate sc = JSOFA.jauIcrs2g(pointing.getAngleRA().getRadianValue(),  pointing.getAngleDEC().getRadianValue());
+					existingPointingTO.setAngleLON(new Angle(sc.alpha, Angle.DDMMSS));
+					existingPointingTO.setAngleLAT(new Angle(sc.delta, Angle.DDMMSS));
+					
+					updatedPointings.add(new Pointing(existingPointingTO));
+					
+				}
+				
+				else {
+					System.err.println("Skipping existing pointing: " + f);
+				}
+				
 				return;
+
 				
 			}
 			
@@ -63,20 +92,25 @@ public class SMIRF_AddPointings {
 			pointing.setAngleLON(new Angle(sc.alpha, Angle.DDMMSS));
 			pointing.setAngleLAT(new Angle(sc.delta, Angle.DDMMSS));
 			
-			pointing.setNumObs(0);
+			pointing.setNumObs(10);
 			pointing.setPriority(10);
 			pointing.setType(chunks[3]);
-			pointing.setTobs(SMIRFConstants.tobs);
-			pointing.setLeastCadanceInDays(null);
+			pointing.setTobs(900);
+			pointing.setLeastCadanceInDays(4);
+			pointing.setEndMDInPercent(-5);
+			pointing.setStartMDInPercent(-30);
 		
-			pointings.add(pointing);
+			newPointings.add(pointing);
 			
 			
 		});
 		
-		System.err.println("will add the following pointings: " + pointings.stream().map(f -> f.getPointingName()).collect(Collectors.toList()) );
-		//DBService.addPointingsToDB(pointings);
-		
+		System.err.println("will add the following pointings: " + newPointings.stream().map(f -> f.getPointingName()).collect(Collectors.toList()) );
+		System.err.println("will update the following pointings: " + updatedPointings.stream().map(f -> f.getPointingName()).collect(Collectors.toList()) );
+		//System.exit(0);
+		if(!newPointings.isEmpty()) DBService.addPointingsToDB(newPointings);
+		if(!updatedPointings.isEmpty()) DBService.updatePointingsToDB(
+				updatedPointings.stream().map(f-> new PointingTO(f)).collect(Collectors.toList()));
 		System.err.println("Done.");
 	}
 
