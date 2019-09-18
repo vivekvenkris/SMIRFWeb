@@ -61,6 +61,8 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 				exception = e;
 			}
 			
+			previousObservation = null; 
+			
 			if(exception instanceof ExecutionException) {
 				Throwable t = ((ExecutionException)exception).getCause();
 				
@@ -74,6 +76,7 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 			if(Control.isFinishCall() || Control.isTerminateCall()) break;
 
 			if(exception instanceof DriveBrokenException) {
+				
 				
 				TCCStatusService tccStatusService = new TCCStatusService();
 				
@@ -103,7 +106,7 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 				
 				Angle initialPositionNS = status.getNSPosition(dbe.getArm());
 				double position = initialPositionNS.getRadianValue();
-				double increment = 2 * Constants.deg2Rad;
+				double increment = 1 * Constants.deg2Rad;
 				double newPosition = (position + increment) > SMIRFConstants.maxRadNS ? position - increment : position + increment;
 				
 				System.err.println("Trying to move " + dbe.getArm()  + " arm to " + newPosition * Constants.rad2Deg + "degrees");
@@ -125,9 +128,20 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 						}
 					}
 					
-					extra += "Done. Final position of arm: " + Control.getTccStatus().getNSPosition(dbe.getArm()).getDegreeValue() + "<br/>";
-					extra += "Okay that seem to have worked. Hmmm, weird. Anyway, I am going to count this"
-							+ " as a false positive and move on.<br/>";
+					Double finalPosition = Control.getTccStatus().getNSPosition(dbe.getArm()).getDegreeValue();
+					
+					extra += "Done. Final position of arm: " + finalPosition + "<br/>";
+
+					
+					if( Math.abs(newPosition - Control.getTccStatus().getNSPosition(dbe.getArm()).getDegreeValue()) <TCCConstants.OnSourceThresholdRadNS ) {
+						extra += "Okay that seem to have worked. Hmmm, weird. Anyway, I am going to count this"
+								+ " as a false positive and move on.<br/>";
+					}
+					else {
+						extra += "Hmm, that did not go all the way to the new position but did not give an error either.  "
+								+ "I am going to give the observations another try.<br/>";
+					}
+					
 					extra += "decreasing severity of exception from FATAL to WARN. Continuing observations. <br/>";
 					dbe.setLevel(SMIRFConstants.levelWarn);
 					System.err.println("Success, restarting observations and sending warning mail.");
@@ -144,6 +158,7 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 					
 					dbe.setExtra(extra);
 					System.err.println("Failure, Drive is actually broken. Aborting all operations.");
+					dbe.setLevel(SMIRFConstants.levelFatal);
 
 					Mailer.sendEmail(dbe);
 					break;
@@ -151,7 +166,7 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 				} 
 				catch (TCCException | InterruptedException e) {
 					
-					extra += "Some other error now" + e.getMessage() + "<br/>";
+					extra += "Some other error now:" + e.getMessage() + "<br/>";
 					extra += "I need a human to look at this. <br/>";
 					extra += "I am stopping telescope operations. <br/>";
 					
@@ -172,6 +187,12 @@ public abstract class AbstractScheduler implements Schedulable, SMIRFConstants {
 				
 				exception.printStackTrace();
 				Mailer.sendEmail(exception);
+				try {
+					tccService.stopTelescope();
+				} catch (TCCException e) {
+					e.printStackTrace();
+					Mailer.sendEmail(exception);
+				}
 				break;
 			} 
 			
