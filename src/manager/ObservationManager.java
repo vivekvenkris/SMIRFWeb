@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,6 +26,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.jfree.data.time.Millisecond;
 
 import bean.Angle;
 import bean.CoordinateTO;
@@ -84,7 +87,7 @@ public class ObservationManager {
 			Callable<Boolean> getTCCReady = new Callable<Boolean>() {
 
 				@Override
-				public Boolean call() throws TCCException, InterruptedException{
+				public Boolean call() throws TCCException, InterruptedException, ObservationException{
 
 					System.err.println("Starting TCC.");
 					tccService.pointAndTrackSource(observation);
@@ -135,6 +138,10 @@ public class ObservationManager {
 						}
 					}
 					System.err.println("TCC reached.");
+					if(!observation.isSurveyPointing()) {
+						System.err.println("Stopping the telescope as the observation is not a SMIRF obs.");
+						tccService.stopTelescope();
+					}
 					return true;
 				}
 
@@ -228,14 +235,19 @@ public class ObservationManager {
 			return;
 		}
 		
+		Double dec = observation.getAngleDEC().getRadValue();
 		
-		if(!observation.getCoords().getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol)) {
+		Double transitTime = Math.abs(Constants.RadMolongloMDBeamWidth * Constants.rad2Hrs /Math.cos(dec) * Constants.hrs2Sec);
+		System.err.println("Transit time at this dec=" + dec * Constants.rad2Deg + " is ~" + transitTime/60.0 + " minutes. tobs requested: " + observation.getTobs() );
+
+		
+		if(!observation.getCoords().getPointingTO().getType().equals(SMIRFConstants.phaseCalibratorSymbol) && transitTime > observation.getTobs()/3.0) {
 			observation.setTiedBeamSources(getTBSourcesForObservation(observation,BackendConstants.maximumNumberOfTB));
 		}
 		System.err.println(observation.getTiedBeamSources());
 		if(backendEnabled) {
 			System.err.println("starting backend..");
-			BackendService   backendService = BackendService.createBackendInstance();
+			BackendService   backendService = BackendService.createBackendInstance(); 
 			backendService.startBackend(observation);
 		}
 		System.err.println("starting observing..");
@@ -243,20 +255,48 @@ public class ObservationManager {
 
 
 	
-	public synchronized void waitForObservationCompletion(ObservationTO observation) throws InterruptedException, DriveBrokenException{
+	public synchronized void waitForObservationCompletion(ObservationTO observation) throws InterruptedException, TCCException, BackendException, ObservationException{
+		
+		long startTime = observation.getUtcDate().getTime();
+
+		if(observation != null) {
+			
+			System.err.println("Checking for backend safety = 60 seconds into observation");
+			
+			String utc = observation.getUtc();
+			LocalDateTime now = EphemService.getUTCTimestamp();
+			LocalDateTime utcStart = Utilities.getUTCLocalDateTime(utc);
+			
+			
+			
+			long milliSeconds = 60 * 1000 - (long)(Utilities.getTimeDifferenceInDays(now, utcStart) * Constants.day2Hrs * Constants.hrs2Sec * 1000.0);
+			
+
+			if (milliSeconds > 0) {
+				Thread.sleep(milliSeconds);
+			}
+			
+			
+		}
+		
+
 		
 		long obsTime = observation.getTobs()*1000;
-		long startTime = observation.getUtcDate().getTime();
 		while(true) {
+			
 			if( (new Date().getTime() - startTime) > obsTime || Control.isTerminateCall()) break; 
 			Thread.sleep(2000);
+			
 			if(Thread.currentThread().isInterrupted()) break;
+			
+			if(!observation.isSurveyPointing()) continue;
+			
 			/**
 			 * This will throw a Drive Broken Exception if not tracking.
 			 */
 			
 			DriveBrokenException exception = null;
-			for(int i=0; i<10; i++ ){
+			for(int i=0; i<20; i++ ){
 				
 				try{
 					
@@ -271,7 +311,13 @@ public class ObservationManager {
 				Thread.sleep(2000);
 				
 			}
-			if(exception != null) throw exception;
+			if(exception != null) {
+				System.err.println("I think the telescope is not tracking. Stopping observation to check.");
+				this.stopObserving();
+				System.err.println("Backend cool down.");
+				Thread.sleep(BackendConstants.minTimeBetweenObsInSecs * 1000);
+				throw exception;
+			}
 		}
 		
 	} 
@@ -368,13 +414,10 @@ public class ObservationManager {
 		}
 	}
 
-	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, EphemException {
+	public static void main(String[] args) throws EmptyCoordinatesException, CoordinateOverrideException, EphemException, DriveBrokenException, InterruptedException {
 	
-	ObservationTO observationTO = new ObservationTO(
-			new Coords(DBManager.getPointingByUniqueName("SMIRF_1705-4442"), Utilities.getUTCLocalDateTime("2017-08-10-09:42:56.000")), 360);
-	observationTO.setMdTransit(true);
-	
-	new ObservationManager().getTBSourcesForObservation(observationTO, null);
+		ObservationTO to = new ObservationTO();
+		to.setUtc(Utilities.getUTCString(EphemService.getUTCTimestamp().plusSeconds(120)));
 	}
 
 	public List<TBSourceTO> getTBSourcesForObservation(ObservationTO observation, Integer max) throws EmptyCoordinatesException, CoordinateOverrideException, EphemException{
@@ -413,14 +456,18 @@ public class ObservationManager {
 				System.err.println("Cannot find the pulsar for pointing " + observation.getCoords().getPointingTO().getPointingName());
 				Mailer.sendEmail("INFO: Tried to put TB for " + observation.getCoords().getPointingTO().getPointingName() + " and failed");
 			}
-			shortListed.add(tbSourceTO);
+			if(!shortListed.contains(tbSourceTO))shortListed.add(tbSourceTO);
 		}
 		
 		
 		List<TBSourceTO> associatedPulsars = observation.getCoords().getPointingTO().getAssociatedPulsars();
 		
-		if(associatedPulsars != null && !associatedPulsars.isEmpty()) {
-			shortListed.addAll(associatedPulsars);
+		System.err.println("Associated pulsars of this pointing"+ observation.getCoords().getPointingTO().getPointingName() +":"  + associatedPulsars);
+		
+		if(associatedPulsars != null ) {
+			for(TBSourceTO f: associatedPulsars) {
+				if(!shortListed.contains(f)) shortListed.add(f);
+			}
 		}
 		
 		
@@ -472,7 +519,6 @@ public class ObservationManager {
 						tbCoordinateTO.getAngleNS().getRadianValue(), tbCoordinateTO.getAngleMD().getRadianValue(), 
 						Constants.RadMolongloNSBeamWidth/2.0, Constants.RadMolongloMDBeamWidth/2.0);
 				
-				System.err.println( tbSourceTO.getPsrName() + " " + withinNS + " " + withinMD + " " + withinEllipse);
 				
 				if( withinNS && withinMD && withinEllipse){
 					
@@ -517,10 +563,7 @@ public class ObservationManager {
 		
 		
 		
-//		if(shortListed.contains(PSRCATManager.getTBSouceByName("J1243-6423"))){
-//			shortListed.remove(PSRCATManager.getTBSouceByName("J1243-6423"));
-//		}
-//		shortListed.add(0, PSRCATManager.getTBSouceByName("J1243-6423"));
+
 		System.err.println("Sorted TB sources in the beam: " + shortListed);
 		if(max !=null) {
 			System.err.println("Chosen TB sources:  " + shortListed.subList(0, Math.min(BackendConstants.maximumNumberOfTB, shortListed.size())));

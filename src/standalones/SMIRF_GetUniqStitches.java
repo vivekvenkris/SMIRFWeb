@@ -61,6 +61,8 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 	public List<Point> getPointForPulsars(ObservationTO observation)throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException{
 		
+		Long fft_size = Utilities.largestPowerOf2((long) (observation.getTobs()/Constants.tsamp));
+		
 		return observation.getTiedBeamSources().stream().map(t -> {
 			try {
 				if(t == null) return null;
@@ -68,7 +70,9 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 				
 				
 				return getPointForSkyPosition(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), 
-						observation.getCoords().getPointingTO().getAngleDEC(), t.getAngleRA(), t.getAngleDEC(), fft_size, Constants.tsamp);
+						observation.getCoords().getPointingTO().getAngleDEC(), t.getAngleRA(), t.getAngleDEC(), 
+						fft_size,
+						Constants.tsamp);
 				
 			} catch (EmptyCoordinatesException e) {
 				e.printStackTrace();
@@ -89,14 +93,20 @@ public class SMIRF_GetUniqStitches implements SMIRFConstants, Constants {
 
 
 	public List<Point> generateUniqStitches(ObservationTO observation) throws EmptyCoordinatesException, CoordinateOverrideException, InvalidFanBeamNumberException {
+		
+		Long fft_size = Utilities.largestPowerOf2((long) (observation.getTobs()/Constants.tsamp));
+		System.err.println("Generating stitches for tobs = " + observation.getTobs() + " --> fft size: " + fft_size );
+		
 		try {
 			List<Point> points =  generateUniqStitches(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), 
 					observation.getCoords().getPointingTO().getAngleDEC(), 
-					SMIRFConstants.thresholdPercent, fft_size, Constants.tsamp);
+					SMIRFConstants.thresholdPercent, 
+					fft_size, Constants.tsamp);
 
 			for(TBSourceTO to : observation.getTiedBeamSources()) {
 				Point point = getPointForSkyPosition(observation.getUtc(), observation.getCoords().getPointingTO().getAngleRA(), 
-						observation.getCoords().getPointingTO().getAngleDEC(), to.getAngleRA(), to.getAngleDEC(), fft_size, Constants.tsamp);
+						observation.getCoords().getPointingTO().getAngleDEC(), to.getAngleRA(), to.getAngleDEC(),
+						Utilities.largestPowerOf2((long) (observation.getTobs()/Constants.tsamp)), Constants.tsamp);
 				
 				if(point!=null) points.add(point);
 			}

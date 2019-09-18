@@ -55,6 +55,13 @@ public class DBManager {
 	}
 	
 	
+	public static List<ObservationTO> getShortlistedSMIRFObservations(Boolean complete, Integer managementStatus){
+		List<ObservationTO> toList = new ArrayList<>();		
+		for(Observation entity: DBService.getShortlistedSMIRFObservations(complete, managementStatus)) toList.add(new ObservationTO(entity));
+		return toList;
+	}
+
+	
 	public static List<PointingTO> getAllUnobservedPointingsOrderByPriority(){
 		List<PointingTO> toList = new ArrayList<>();		
 		for(Pointing entity: DBService.getAllUnobservedPointingsOrderByPriority()) toList.add(new PointingTO(entity));
@@ -71,7 +78,10 @@ public class DBManager {
 		
 		if(pointingName.startsWith("J")) return new PointingTO(DBManager.getFluxCalibratorByName(pointingName));
 		else if(pointingName.startsWith("CJ")) return DBManager.getPhaseCalByUniqueName(pointingName);
-		else return new PointingTO(DBService.getPointingByUniqueName(pointingName));
+		else {
+			Pointing p = DBService.getPointingByUniqueName(pointingName);
+			return p== null? null : new PointingTO(p);
+		}
 		
 	}
 	
@@ -128,8 +138,8 @@ public class DBManager {
 	}
 	
 	public static ObservationTO getObservationByUTC(String utc){
-		
-		return new ObservationTO(DBService.getObservationByUTC(utc));
+		Observation o = DBService.getObservationByUTC(utc);
+		return o != null? new ObservationTO(o): null;
 		
 	}
 

@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.NoResultException;
 import javax.persistence.Persistence;
 import javax.persistence.TypedQuery;
 
@@ -25,6 +27,7 @@ import bean.PhaseCalibrator;
 import bean.Pointing;
 import bean.PointingTO;
 import bean.TBSourceTO;
+import manager.DBManager;
 import manager.PSRCATManager;
 import util.SMIRFConstants;
 import util.Utilities;
@@ -43,12 +46,34 @@ public class DBService implements SMIRFConstants {
 		entityManager.close();
 	}
 	
+	public static void deletePointingsFromDB(List<Pointing> gridPoints){
+
+		for(Pointing pointing: gridPoints){
+			deletePointingFromDB(pointing);
+		}
+	}
 	
+	public static void deletePointingFromDB(Pointing p){
+
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction( ).begin( );
+		if(!entityManager.contains(p)) {
+			p = entityManager.merge(p);
+		}
+		entityManager.remove(p);
+		entityManager.getTransaction().commit();
+		entityManager.close();
+	}
+
+
+
+
 	public static void updatePointingsToDB(List<PointingTO> gridPoints){
 
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction( ).begin( );
 		for(PointingTO pointingTO: gridPoints){
+			System.err.println(pointingTO +  " " + pointingTO.getPointingID());
 			Pointing pointing = entityManager.find(Pointing.class, pointingTO.getPointingID());
 			PointingTO.updatePointing(pointing, pointingTO);
 			entityManager.persist(pointing);
@@ -70,10 +95,15 @@ public class DBService implements SMIRFConstants {
 
 
 	public static Pointing getPointingByUniqueName(String pointingName){
-		EntityManager entityManager = emFactory.createEntityManager( );
-		TypedQuery<Pointing> query = entityManager.createQuery("FROM Pointing t where t.pointingName =?1",Pointing.class);
-		Pointing result = query.setParameter(1, pointingName).getSingleResult();
-		return result;
+		try {
+			EntityManager entityManager = emFactory.createEntityManager( );
+			TypedQuery<Pointing> query = entityManager.createQuery("FROM Pointing t where t.pointingName =?1",Pointing.class);
+			Pointing result = query.setParameter(1, pointingName).getSingleResult();
+			return result;
+		}catch(NoResultException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 
@@ -101,8 +131,8 @@ public class DBService implements SMIRFConstants {
 		return pointings;
 
 	}
-	
-	
+
+
 	public static List<Observation> getAllObservations(){
 		EntityManager entityManager = emFactory.createEntityManager( );
 		entityManager.getTransaction().begin();
@@ -113,21 +143,56 @@ public class DBService implements SMIRFConstants {
 		return Observations;
 
 	}
-	
-	
+
+	public static List<Observation> getShortlistedSMIRFObservations(Boolean complete, Integer managementStatus){
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction().begin();
+		@SuppressWarnings("unchecked")
+		TypedQuery<Observation> query = entityManager
+		.createQuery(
+				"SELECT p FROM Observation p where p.complete = ?1 "
+						+ "and p.managementStatus = ?2 "
+						+ "and p.sourceName LIKE '" + SMIRFConstants.SMIRFPointingPrefix + "%'",
+						Observation.class);
+		query.setParameter(1, complete);
+		query.setParameter(2, managementStatus);
+		List<Observation> observations = query.getResultList();
+
+		entityManager.getTransaction().commit();
+		entityManager.close();
+		return observations;
+
+	}
+
+
+	public static void updateObservations(List<ObservationTO> observationTOs){
+
+		EntityManager entityManager = emFactory.createEntityManager( );
+		entityManager.getTransaction( ).begin( );
+		for(ObservationTO observation: observationTOs){
+			Observation observationFromDB = entityManager.find(Observation.class, observation.getObservationID());
+			Observation.updateObservtion(observation, observationFromDB);
+			entityManager.persist(observation);
+		}
+		entityManager.getTransaction().commit();
+		entityManager.close();
+	}
+
+
 	public static Double getDaysSinceObserved(String source_name) {
-		
+
 		EntityManager entityManager = emFactory.createEntityManager( );
 		TypedQuery<Observation> query = entityManager.createQuery("FROM Observation t where t.sourceName =?1 ORDER BY t.utc DESC ",Observation.class);
-		Observation t =  query.setParameter(1, source_name).setMaxResults(1).getSingleResult();
-		
-		Double difference =
-				t != null ? 
-				Utilities.getTimeDifferenceInDays(
-						Utilities.getUTCLocalDateTime(new ObservationTO(t).getUtc()),
-							Utilities.getUTCLocalDateTime(EphemService.getUtcStringNow())) 
-				: null;
-		
+		Observation t =  null;
+		List<Observation> list  = query.setParameter(1, source_name).setMaxResults(1).getResultList();
+		if(list != null && ! list.isEmpty()) t = list.get(0);
+		else return null;
+
+		Double difference = Utilities.getTimeDifferenceInDays(
+				Utilities.getUTCLocalDateTime(new ObservationTO(t).getUtc()),
+				Utilities.getUTCLocalDateTime(EphemService.getUtcStringNow())); 
+
+
 		return difference; 
 	}
 
@@ -310,11 +375,15 @@ public class DBService implements SMIRFConstants {
 
 
 	public static Observation getObservationByUTC(String utc){
-
-		EntityManager entityManager = emFactory.createEntityManager( );
-		TypedQuery<Observation> query = entityManager.createQuery("select t from Observation t where t.utc =?1",Observation.class);
-		Observation result = query.setParameter(1, utc).getSingleResult();
-		return result;
+		try {
+			EntityManager entityManager = emFactory.createEntityManager( );
+			TypedQuery<Observation> query = entityManager.createQuery("select t from Observation t where t.utc =?1",Observation.class);
+			Observation result = query.setParameter(1, utc).getSingleResult();
+			return result;
+		}catch(NoResultException e) {
+			e.printStackTrace();
+			return null;
+		}
 
 	}
 
@@ -329,7 +398,9 @@ public class DBService implements SMIRFConstants {
 			conn = DriverManager.getConnection(DB_URL,USER,PASS); 
 			stmt = conn.createStatement();
 
-			String sql = "SELECT Pulsars.name, MAX(UTCs.utc) FROM TB_Obs LEFT JOIN UTCs ON (TB_Obs.utc_id = UTCs.id) LEFT JOIN Pulsars ON TB_Obs.psr_id = Pulsars.id  WHERE Pulsars.observe = 1 GROUP BY Pulsars.name";
+			//String sql = "SELECT Pulsars.name, MAX(UTCs.utc) FROM TB_Obs LEFT JOIN UTCs ON (TB_Obs.utc_id = UTCs.id) LEFT JOIN Pulsars ON TB_Obs.psr_id = Pulsars.id  WHERE Pulsars.observe = 1 GROUP BY Pulsars.name";
+
+			String sql = "SELECT Pulsars.name, MAX(UTCs.utc) FROM  Pulsars LEFT JOIN TB_Obs ON TB_Obs.psr_id = Pulsars.id LEFT JOIN UTCs ON (TB_Obs.utc_id = UTCs.id)   WHERE Pulsars.observe = 1 GROUP BY Pulsars.name";
 
 			ResultSet rs = stmt.executeQuery(sql);
 
@@ -339,18 +410,24 @@ public class DBService implements SMIRFConstants {
 				String maxUTC = rs.getString("MAX(UTCs.utc)");
 
 				TBSourceTO to = PSRCATManager.getTimingProgrammeSouceByName(name);
-				
+
 				if(to == null) {
 					System.err.println("Last obs updater: Cannot find " + name  + " in observable list");
 					continue;
 				}
-				
-				LocalDateTime utcLastObserved = Utilities.getUTCLocalDateTime(maxUTC);
-				double daysSinceLastObserved = Utilities.getTimeDifferenceInDays(utcLastObserved, EphemService.getUTCTimestamp());
-				to.setLastObserved(utcLastObserved);
-				
-				to.setDaysSinceLastObserved(daysSinceLastObserved);
-								
+
+				if(maxUTC == null) {
+					to.setLastObserved(null);
+					to.setDaysSinceLastObserved(null);
+				}
+				else {
+					LocalDateTime utcLastObserved = Utilities.getUTCLocalDateTime(maxUTC);
+					double daysSinceLastObserved = Utilities.getTimeDifferenceInDays(utcLastObserved, EphemService.getUTCTimestamp());
+					to.setLastObserved(utcLastObserved);
+
+					to.setDaysSinceLastObserved(daysSinceLastObserved); 
+				}
+
 			}
 
 			//System.err.println(" ** Last observed values updated  ** ");
@@ -370,7 +447,143 @@ public class DBService implements SMIRFConstants {
 
 	}
 
+	public static Double getPulsarSNRForObs(String utc, String source_name) {
 
+		if(utc.contains(".")) utc = utc.replaceAll(".000", "");
+
+		Connection conn = null;
+		Statement stmt = null;
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			conn = DriverManager.getConnection(DB_URL,USER,PASS); 
+			stmt = conn.createStatement();
+
+			String sql = "select t.snr from TB_Obs t "
+					+ "inner join UTCs u on  u.id = t.utc_id "
+					+ "inner join Pulsars p on p.id = t.psr_id "
+					+ "where u.utc='" + utc + "' and p.name='"+source_name+"'";
+
+
+			ResultSet rs = stmt.executeQuery(sql);
+
+
+			while (rs.next()) {
+
+				String snr = rs.getString("snr");
+
+				System.err.println("snr=" + snr);
+
+				return Double.parseDouble(snr);
+
+
+			}
+
+			return -1.0;
+
+		} catch (SQLException | ClassNotFoundException e) {
+			e.printStackTrace();
+			return -1.0;
+		}
+		finally{
+			try{
+				if(stmt!=null) conn.close();
+			}catch (SQLException e) {
+				e.printStackTrace();
+				return -1.0;
+			}
+
+
+		}
+
+
+	}
+
+	public static Integer getDesiredCadence(String name) {
+		Connection conn = null;
+		Statement stmt = null;
+
+		List<String> psrNames = new ArrayList<String>();
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			conn = DriverManager.getConnection(DB_URL,USER,PASS); 
+			stmt = conn.createStatement();
+
+			String sql = "select p.desired_cadence from Pulsars p "
+					+ "where  p.name='"+ name+"'";
+
+
+			ResultSet rs = stmt.executeQuery(sql);
+
+
+			rs.next();
+			return rs.getInt(1);
+
+		} catch (SQLException | ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
+		finally{
+			try{
+				if(stmt!=null) conn.close();
+			}catch (SQLException e) {
+				e.printStackTrace();
+				return null;
+			}
+
+
+		}
+
+		
+	}
+
+
+	public static List<String> getTimingProgrammeSources() {
+
+		Connection conn = null;
+		Statement stmt = null;
+
+		List<String> psrNames = new ArrayList<String>();
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			conn = DriverManager.getConnection(DB_URL,USER,PASS); 
+			stmt = conn.createStatement();
+
+			String sql = "select p.name from Pulsars p "
+					+ "where  p.observe=1";
+
+
+			ResultSet rs = stmt.executeQuery(sql);
+
+
+			while (rs.next()) {
+
+				String name = rs.getString("name");
+
+				psrNames.add(name);
+
+
+
+			}
+
+			return psrNames;
+
+		} catch (SQLException | ClassNotFoundException e) {
+			e.printStackTrace();
+			return null;
+		}
+		finally{
+			try{
+				if(stmt!=null) conn.close();
+			}catch (SQLException e) {
+				e.printStackTrace();
+				return null;
+			}
+
+
+		}
+
+
+	}
 
 
 
@@ -380,7 +593,15 @@ public class DBService implements SMIRFConstants {
 
 
 
-		updatePulsarLastObservedTimes();
+		//System.err.println(getPulsarSNRForObs("2018-04-15-04:11:50.000", "J0401-7608"));
+
+//		for(TBSourceTO to: PSRCATManager.getTimingProgrammeSources()) {
+//			System.err.println(getDesiredCadence(to.getPsrName()) + " " + to.getPsrName());
+//		}
+		
+		for(PointingTO pto: DBManager.getAllPointings()) {
+			System.err.println(pto.getPointingName() + " "+ pto.getLeastCadanceInDays());
+		}
 
 	}
 

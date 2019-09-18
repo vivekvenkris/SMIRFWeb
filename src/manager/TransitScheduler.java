@@ -13,6 +13,7 @@ import bean.CoordinateTO;
 import bean.Coords;
 import bean.ObservationTO;
 import bean.PointingTO;
+import bean.TBSourceTO;
 import bean.UserInputs;
 import control.Control;
 import exceptions.BackendException;
@@ -30,6 +31,7 @@ import service.EphemService;
 import util.BackendConstants;
 import util.Constants;
 import util.SMIRFConstants;
+import util.TCCConstants;
 
 /**
  * A base level implementation of the scheduling algorithm for transit observations. Any new scheduler should override the next() and init() method
@@ -126,8 +128,8 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				 * quit if obs will take more than session time.
 				 */
 				// To do: Add t_slew to this calculation 
-				long timeElapsedAtObsEnd = (new Date().getTime() - startTime)/1000 + userInputs.getTobsInSecs();
-				if(userInputs.getSessionTimeInSecs() != null && timeElapsedAtObsEnd > userInputs.getSessionTimeInSecs() ) break;
+//				long timeElapsedAtObsEnd = (new Date().getTime() - startTime)/1000 + userInputs.getTobsInSecs();
+//				if(userInputs.getSessionTimeInSecs() != null && timeElapsedAtObsEnd > userInputs.getSessionTimeInSecs() ) break;
 				
 				try {
 				 next = next();
@@ -245,35 +247,149 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		}
 		System.err.println("Exiting transit scheduler");
 	}
-	
-	private void doInterimFRBTransit(Integer tobs, PointingTO next) throws ObservationException, EmptyCoordinatesException, CoordinateOverrideException, 
+	 
+	private void doInterimFRBTransit(Integer totalTOBS, PointingTO next) throws ObservationException, EmptyCoordinatesException, CoordinateOverrideException, 
 	InterruptedException, TCCException, BackendException, EphemException{
 		
-		Integer numObs = (int) (tobs*1.0 / SMIRFConstants.maxFRBTrtansitTOBS);
-		Integer tobsDifference = tobs - numObs*SMIRFConstants.maxFRBTrtansitTOBS;
 		
 		System.err.println("Doing FRB transits in the mean time.");
+
 		
-		int obs = 1; 
-		for(;obs <= numObs; obs++ ){
+		Angle pointingDEC = next.getAngleDEC();
+		Angle pointingRA = next.getAngleRA();
+
+		// This should ideally be done in NS-MD space but I think it is okay at the meridian.
+		Angle minDEC = new Angle(pointingDEC.getRadianValue() - pointingDEC.getSign() * Constants.RadMolongloNSBeamWidth/2.0, Angle.DDMMSS);
+		
+		Angle maxDEC = new Angle(pointingDEC.getRadianValue() +  pointingDEC.getSign() * Constants.RadMolongloNSBeamWidth/2.0, Angle.DDMMSS);
+		
+		Angle pointingHA = EphemService.getHA(EphemService.getAngleLMSTForMolongloNow(), pointingRA);
+		
+		List<TBSourceTO> tbs = PSRCATManager.getTimingProgrammeSources()
+									.stream()
+									.filter(f -> {
+												Angle dec = f.getAngleDEC();
+												Angle ha = EphemService.getHA(((TBSourceTO)f).getAngleRA());
+									
+												if( dec.getSign() * dec.getDegreeValue() >= pointingDEC.getSign() * minDEC.getDegreeValue() 
+														&& dec.getSign() * dec.getDegreeValue() <= pointingDEC.getSign() * maxDEC.getDegreeValue()
+														&& ha.getDecimalHourValue() < 0 
+														&& pointingHA.getRadianValue() < ha.getRadianValue()) return true;
+												
+												
+												return false;
+												})
+									.sorted(Comparator.comparing(f -> {
+															return EphemService.getHA(((TBSourceTO)f).getAngleRA()).getRadianValue();
+														})
+											.reversed())
+									.collect(Collectors.toList());
+		
+		System.err.println("TBs in this FoV" + tbs);
+		
+		Integer remainingTobs = totalTOBS;
+		
+		List<Integer> tobses = new ArrayList<>();
+		
+		Angle lst = EphemService.getAngleLMSTForMolongloNow();
+
+		for(TBSourceTO f: tbs) {
+			
+			  Integer totalForTB = 0;
+			
+			  Angle ha = EphemService.getHA(lst, f.getAngleRA());
+			  
+			  Integer seconds = (int)  Math.abs(ha.getDecimalHourValue() * Constants.hrs2Sec);
+			  
+			  if(seconds > SMIRFConstants.maxFRBTrtansitTOBS ) {
+				  
+					Integer nobs = (int) (seconds*1.0 / SMIRFConstants.maxFRBTrtansitTOBS);
+					
+					for(int obs = 0;obs < nobs; obs++ )	{
+						
+						if( (remainingTobs - SMIRFConstants.maxFRBTrtansitTOBS) > 0) {
+							
+							tobses.add(SMIRFConstants.maxFRBTrtansitTOBS);
+							remainingTobs -= SMIRFConstants.maxFRBTrtansitTOBS;
+							
+							totalForTB += SMIRFConstants.maxFRBTrtansitTOBS;
+						}
+						
+						else break;
+						
+					}
+					
+					seconds = seconds - nobs*SMIRFConstants.maxFRBTrtansitTOBS;
+					
+					
+			  }
+			  
+			  if( (remainingTobs - seconds) > 0 && seconds > 120) {
+					
+					tobses.add(seconds);
+					remainingTobs -= seconds;
+					totalForTB += seconds;
+
+
+				}
+			  
+			  
+			  
+			  Integer secondsInBeam = (int) (Math.cos(f.getAngleDEC().getRadianValue())
+					  	* Constants.RadMolongloMDBeamWidth * Constants.hrs2Sec /Constants.hrs2Rad);
+			  
+			  if( (remainingTobs - (secondsInBeam + BackendConstants.minTimeBetweenObsInSecs)) > 0 && secondsInBeam > 120 ) {
+				  
+				  tobses.add(secondsInBeam + BackendConstants.minTimeBetweenObsInSecs);
+				  remainingTobs -= (secondsInBeam + BackendConstants.minTimeBetweenObsInSecs);
+				  totalForTB += secondsInBeam + BackendConstants.minTimeBetweenObsInSecs;
+
+			  }
+			  
+			  lst.addSolarSeconds(totalForTB);
+			  
+			
+		}
+		
+		
+		
+		Integer numObs = (int) (remainingTobs*1.0 / SMIRFConstants.maxFRBTrtansitTOBS);
+		Integer tobsDifference = remainingTobs - numObs*SMIRFConstants.maxFRBTrtansitTOBS;
+		 
+		for(int obs = 1;obs <= numObs; obs++ ){
 			
 			System.err.println("Attempting FRB transit obs:" + obs);
 			
 			Integer thisTobs = SMIRFConstants.maxFRBTrtansitTOBS - BackendConstants.minTimeBetweenObsInSecs;
-			doInterimFRBTransit(thisTobs,obs,next);
 			
-			if(Control.isFinishCall() || Control.isTerminateCall()) break;
-
-			
-			System.err.println("Backend rest for 60 seconds.");
-			Thread.sleep(BackendConstants.minTimeBetweenObsInSecs * 1000);
-			
+			tobses.add(thisTobs);
 			
 		}
 		
-		if(tobsDifference > BackendConstants.minTobs ) doInterimFRBTransit(tobsDifference,obs,next);
-		else Thread.sleep(tobsDifference * 1000);
+		tobses.add(tobsDifference);
 
+		
+		System.err.println("Tobs list: " + tobses);
+
+		int obs = 1;
+		for(Integer tobs: tobses) {
+			
+			System.err.println("Attempting FRB transit obs:" + obs);
+			Integer thisTobs = tobs - BackendConstants.minTimeBetweenObsInSecs;
+			
+			if(thisTobs < BackendConstants.minTimeBetweenObsInSecs ) Thread.sleep(tobsDifference * 1000);
+			else doInterimFRBTransit(thisTobs,obs++,next);
+
+			if(Control.isFinishCall() || Control.isTerminateCall()) break;
+			
+			System.err.println("Backend rest for 60 seconds.");
+			Thread.sleep(BackendConstants.minTimeBetweenObsInSecs * 1000);
+
+			
+		}
+		
+
+	
 		
 	}
 	
@@ -292,6 +408,7 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 				tobs, "IFTM", BackendConstants.smirfBackend,
 				BackendConstants.tiedArrayFanBeam, SMIRFConstants.interimFRBTransitPID, 0.0, 
 				true, true, false, true, true);
+		
 		
 		if(Control.isTerminateCall()) return;
 		
@@ -336,10 +453,13 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 		
 		coords = new Coords(pointingTO, EphemService.getAngleLMSTForMolongloNow().addSolarSeconds(slewTime));
 		
+		System.err.println("Slew time is:" + slewTime);
+		
 		/**
 		 * Get HA coordinates for MD ~ -1 deg ( so that the fan beams are all within the primary beam of 2 by 2 degrees ) .
 		 */
-		CoordinateTO coordinateTO = new CoordinateTO(null, null, coords.getAngleNS(), new Angle(getRadStartMDPosition(), Angle.DEG));
+		CoordinateTO coordinateTO = new CoordinateTO(null, null, coords.getAngleNS(), 
+				new Angle(pointingTO.getStartMDInPercent() * Constants.RadMolongloMDBeamWidth / 100.0, Angle.DEG));
 		MolongloCoordinateTransforms.telToSky(coordinateTO);
 		
 		double halfPowerHA = coordinateTO.getAngleHA().getDecimalHourValue();
@@ -418,14 +538,13 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 			
 			Coords c = ((Coords)coord);
 			
-			
 			Angle lst = new Angle(initLST.getRadianValue(), Angle.HHMMSS);
 			
 			lst.addSolarSeconds( TCCManager.computeNSSlewTime(c.getAngleNS(), initTelPosition.getAngleNS(), nsSpeed ));
 			
 			
 			double ha = EphemService.getHA(lst, c.getPointingTO().getAngleRA()).getDecimalHourValue();
-									
+			
 			return ha < 0;
 		})
 		
@@ -442,38 +561,11 @@ public static Schedulable createInstance(String schedulerType) throws SchedulerE
 
 	
 	public static void main(String[] args) throws Exception {
-		TransitScheduler scheduler = new TransitScheduler() {
-			
-			@Override
-			public PointingTO next() throws CoordinateOverrideException, EmptyCoordinatesException, TCCException,
-					NoSourceVisibleException, SchedulerException {
-				// TODO Auto-generated method stub
-				return null;
-			}
-			
-			@Override
-			public void init(UserInputs userInputs) throws SchedulerException {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public double getRadStartMDPosition() {
-				
-				return Constants.radMDEastHPBW;
-			}
-
-
-			@Override
-			public List<PointingTO> getDefaultPointings() {
-				// TODO Auto-generated method stub
-				return null;
-			}
-		};
-		double waitTimeInHours = scheduler.getWaitTimeInHours(DBManager.getPointingByUniqueName("SMIRF_0025-7249"));
 		
-		System.err.println("Wait time in hours:" + waitTimeInHours);
-		System.err.println("Should wait " + waitTimeInHours * Constants.hrs2Sec + "seconds for this to start");
+		Angle lst = new Angle("23:48:42.96",Angle.HHMMSS);
+		
+		List<Coords> coords = TransitScheduler.getCoordsListForLST(DBManager.getAllPointings(), lst, new CoordinateTO(null, null, 0.0, 0.0), TCCConstants.slewRateNSFast);
+		System.err.println(coords);
 	}
 
 }

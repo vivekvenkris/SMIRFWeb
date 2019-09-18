@@ -86,6 +86,8 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 		 */
 		List<PointingTO> gridPoints = (!userInputs.getPointingTOs().isEmpty())? userInputs.getPointingTOs() : getDefaultPointings(); 
 
+		
+		
 		/**
 		 * Sort the pointings based on num observations already done
 		 */
@@ -117,7 +119,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 		 */
 
 		Angle initLST = EphemService.getAngleLMSTForMolongloNow();
-		if(Control.isThereAnActiveObservation()) initLST.addSolarSeconds(userInputs.getTobsInSecs());
+		if(Control.isThereAnActiveObservation()) initLST.addSolarSeconds(Control.getCurrentObservation().getTobs());
 
 		System.err.println("Getting coords for LST = " + initLST);
 
@@ -197,7 +199,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 					.filter(f -> f.getPointingTO().getNumObs().equals(nobs))
 					.sorted(Comparator.comparing(f -> Math.abs(((Coords)f).getAngleHA().getDecimalHourValue())))
 					.collect(Collectors.toList());
-			System.err.println(nobs + " " + temp);
+			System.err.println("min nobs: " + nobs + " " + temp);
 			if(!temp.isEmpty()) groupedCoordsMap.put(nobs, temp.get(0));
 		}
 
@@ -314,7 +316,9 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 					/**
 					 * While we are computing all this, if this source has actually transited and gone beyond MD = MD_FoV/4, choose the next
 					 */
-					if(coordHA.getDecimalHourValue() > 0 && coordHA.getDecimalHourValue() > getHAForCoordTransitAtMD(coord, Constants.radMDToEndObs).getDecimalHourValue()) {
+					if(coordHA.getDecimalHourValue() > 0 
+							&& coordHA.getDecimalHourValue() > getHAForCoordTransitAtMD(coord, 
+									coord.getPointingTO().getEndMDInPercent() * Constants.RadMolongloMDBeamWidth/100.0 ).getDecimalHourValue()) {
 						System.err.println(coord.getPointingTO().getPointingName() + " is out of beam. HA=" + coordHA.getDecimalHourValue() );
 						break;
 					}
@@ -368,7 +372,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 		System.err.println(
 				" max_HA that least observed can be observed = " +   
 						getHAForCoordTransitAtMD((Coords)leastObserved,  
-								Constants.radMDToEndObs).getDecimalHourValue());
+								leastObserved.getPointingTO().getEndMDInPercent() * Constants.RadMolongloMDBeamWidth/100.0).getDecimalHourValue());
 
 
 		System.err.println(coords.size() + " interims to coose from");
@@ -510,7 +514,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 							totalDeadTime = (int) ((startHAInHours - tempCoord.getAngleHA().getDecimalHourValue()) * Constants.hrs2Sec);
 
 
-						int timeToDetour =  totalSlewTime + totalDeadTime + SMIRFConstants.tobs;
+						int timeToDetour =  totalSlewTime + totalDeadTime + tempCoord.getPointingTO().getTobs();
 
 
 						/**
@@ -520,7 +524,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 						double finalHAInHours = finalLeastObserved.getAngleHA().clone().addSolarSeconds(timeToDetour).getDecimalHourValue(); 
 
 						System.err.println(tempCoord.getPointingTO().getPointingName() 
-								+ " DT=" +  totalDeadTime + " ST=" + totalSlewTime + " TOBS=" + SMIRFConstants.tobs + "Final HA after LOP = " + finalHAInHours );
+								+ " DT=" +  totalDeadTime + " ST=" + totalSlewTime + " TOBS=" + tempCoord.getPointingTO().getTobs() + "Final HA after LOP = " + finalHAInHours );
 
 
 						return finalHAInHours 
@@ -589,7 +593,8 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 				.stream()
 				.filter(f ->  f.getAngleHA().getDecimalHourValue() > -0.5 
 						&& f.getAngleHA().getDecimalHourValue() < 0 
-						&& f.getPointingTO().getMaxUnObservedDays() > 10 )
+						&& f.getPointingTO().getLeastCadanceInDays() > f.getPointingTO().getMaxUnObservedDays()
+						&& f.getPointingTO().getMaxUnObservedDays() > 8 )
 				.sorted(Comparator.comparing(f -> {
 
 					Coords c = (Coords)f;
@@ -620,6 +625,26 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 				System.err.println("Choosing the most appropriate interim");
 				next = shortlistedInterims.get(0);
 			}
+			
+			double interimHA = next.getAngleHA().getDecimalHourValue();
+			System.err.println("This interim is " + interimHA + " hours away");
+			System.err.println("Checking if I need to panic about any pulsar inbetween");
+			Coords panic = coords
+					.stream()
+					.filter(f ->  f.getAngleHA().getDecimalHourValue() > interimHA 
+							&& f.getAngleHA().getDecimalHourValue() < 0 
+							&& f.getPointingTO().getLeastCadanceInDays() > f.getPointingTO().getMaxUnObservedDays() + 8 )
+					.sorted(Comparator.comparing(f -> {
+
+						Coords c = (Coords)f;
+						return c.getPointingTO().getMaxUnObservedDays()/c.getPointingTO().getLeastCadanceInDays();
+					}
+							).reversed())
+					.findFirst().orElse(null);
+			if(panic != null) {
+				System.err.println("Need to panic about: "+panic);
+				next=panic;
+			}
 
 		}
 		else next = leastObserved;
@@ -629,7 +654,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 		return next.getPointingTO();
 	}
 
-
+	@Deprecated
 	public  Coords checkInterim(List<Coords> coords,final Coords finalLeastObserved, Coords interim , Coords initTelPosition) {
 
 
@@ -724,10 +749,10 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 				totalDeadTime = (int) ((startHAInHours - tempCoord.getAngleHA().getDecimalHourValue()) * Constants.hrs2Sec);
 
 
-			int timeToDetour =  totalSlewTime + totalDeadTime + SMIRFConstants.tobs;
+			int timeToDetour =  totalSlewTime + totalDeadTime + tempCoord.getPointingTO().getTobs();
 
 			System.err.print(tempCoord.getPointingTO().getPointingName() 
-					+ " DT=" +  totalDeadTime + " ST=" + totalSlewTime + " TOBS=" + SMIRFConstants.tobs);
+					+ " DT=" +  totalDeadTime + " ST=" + totalSlewTime + " TOBS=" + tempCoord.getPointingTO().getTobs());
 
 			/**
 			 * This is the coords of the least observed pointing after observing interim
@@ -784,10 +809,9 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 //			return DBManager.getAllPointings().stream().filter(f -> f.getPointingName().contains(SMIRFConstants.SMIRFPointingPrefix)).collect(Collectors.toList());		
 //		}
 //		
-		System.err.println("Providing all pointings as default.");
+		System.err.println("Providing all pointings as default."); 
 
-		
-		return DBManager.getAllPointings();//.stream().filter(f -> !f.getPointingName().contains(SMIRFConstants.SMIRFPointingPrefix)).collect(Collectors.toList());		
+		return DBManager.getAllPointings().stream().filter(f -> !f.getPointingName().contains(SMIRFConstants.SMIRFPointingPrefix)).collect(Collectors.toList());		
 	} 
 
 	public PointingTO getPointingFromExternalInterface() throws EmptyCoordinatesException, CoordinateOverrideException {
@@ -797,7 +821,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 		 *  
 		 */	
 
-		if(external == null) return null;
+		if(external == null) return null; 
 
 		Angle HA = new Coords(external, EphemService.getAngleLMSTForMolongloNow()).getAngleHA();
 
@@ -824,59 +848,7 @@ public class InterfacedDynamicScheduler extends TransitScheduler{
 
 	public static void main(String[] args) throws CoordinateOverrideException, EmptyCoordinatesException, TCCException, NoSourceVisibleException, SchedulerException, InterruptedException {
 
-		StatusPooler poller = new StatusPooler();
-		poller.startPollingThreads();
-		Thread.sleep(2000);
-		UserInputs inputs = new UserInputs();
-
-		inputs.setSchedulerType(SMIRFConstants.interfacedDynamicScheduler);
-
-		inputs.setUtcStart("2018-02-14-05:06:39");
 		
-		Control.setEmulateForUTC(inputs.getUtcStart());
-		
-		inputs.setTobsInSecs(360);
-		inputs.setSessionTimeInSecs( 3600 );
-
-		inputs.setDoPulsarSearching(true);
-		inputs.setDoPulsarTiming(true);
-		inputs.setEnableTCC(true);
-		inputs.setEnableBackend(true);
-		inputs.setMdTransit(true);
-		inputs.setObserver("VVK");
-		inputs.setNsOffsetInDeg(0.0);
-		inputs.setNsSpeed(TCCConstants.slewRateNSFast  );
-		
-		List<PointingTO> tos =DBManager.getAllPointingsForPointingType("G");
-		
-		InterfacedDynamicScheduler ids1 = new InterfacedDynamicScheduler();
-		ids1.init(inputs);
-		
-		for(PointingTO to: tos) {
-			ids1.addToSession(to);
-			System.err.println(ids1.thisSession.size() + " " + ids1.thisSession);
-		}
-		
-		System.exit(0);
-	
-		
-		System.err.println(tos);
-		
-		for(int i=0; i< 1; i++) {
-		
-		inputs.setPointingTOs(tos);
-				
-		InterfacedDynamicScheduler ids = new InterfacedDynamicScheduler();
-		ids.init(inputs);
-		PointingTO to = ids.next();
-		System.err.println(to);		
-		to.setNumObs(to.getNumObs() + 1);
-
-		}
-
-		poller.contextDestroyed(null);
-		Control.terminate();
-		Control.getExecutorService().shutdown();
 		
 	}
 
