@@ -47,6 +47,14 @@ public class ObservationTO {
 	Boolean backendEnabled;
 	Boolean tccEnabled;
 	
+	Boolean isFRBTransit;
+	
+	
+
+	private Integer managementStatus;
+	private Boolean complete;
+
+	
 	@Override
 	public String toString() {
 		return "name: " + name + "\n" 
@@ -69,6 +77,9 @@ public class ObservationTO {
 		
 		mdTransit = doTiming = doPulsarSearch = true;
 		
+		complete = false;
+		managementStatus = 0;
+		
 	}
 	
 	public ObservationTO(Coords coords, Integer tobs){
@@ -77,6 +88,9 @@ public class ObservationTO {
 		this.tobs = tobs;
 		this.angleRA = coords.getPointingTO().getAngleRA();
 		this.angleDEC = coords.getPointingTO().getAngleDEC();
+		
+		complete = false;
+		managementStatus = 0;
 	}
 	
 	public ObservationTO(Coords coords, UserInputs ui, String backendType, String obsType,String projectID) throws ObservationException{
@@ -91,7 +105,7 @@ public class ObservationTO {
 		PointingTO pointingTO = coords.getPointingTO();
 		
 		this.observingSession = observationSessionTO;
-		this.tobs = tobs;
+		this.tobs = tobs == null ? pointingTO.getTobs(): tobs;
 		this.observer = observer;
 		this.backendType = backendType;
 		this.obsType = obsType;
@@ -111,6 +125,10 @@ public class ObservationTO {
 		this.doPulsarSearch = doPulsarSearch;
 		this.backendEnabled  = backendEnabled;
 		this.tccEnabled = tccEnabled;
+		this.isFRBTransit = isFRBTransit;
+		
+		complete = false;
+		managementStatus = 0;
 		
 	}
 	
@@ -155,8 +173,10 @@ public class ObservationTO {
 		}
 		
 		
-		
+		this.complete = observation.getComplete();
+		this.managementStatus = observation.getManagementStatus();
 	}
+	
 	
 	
 	private double computeHAForMJD(double mjd){ 
@@ -462,6 +482,30 @@ public class ObservationTO {
 		this.tccEnabled = tccEnabled;
 	}
 
+	public Integer getManagementStatus() {
+		return managementStatus;
+	}
+
+	public void setManagementStatus(Integer managementStatus) {
+		this.managementStatus = managementStatus;
+	}
+
+	public Boolean getComplete() {
+		return complete;
+	}
+
+	public void setComplete(Boolean complete) {
+		this.complete = complete;
+	}
+
+	
+	public Boolean getIsFRBTransit() {
+		return isFRBTransit;
+	}
+
+	public void setIsFRBTransit(Boolean isFRBTransit) {
+		this.isFRBTransit = isFRBTransit;
+	}
 
 	
 	
