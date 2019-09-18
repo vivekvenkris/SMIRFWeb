@@ -14,6 +14,8 @@ public class Angle{
 	Double radValue; // always in radians
 	String toStringUnits;
 	
+	Integer sign = 0;
+	
 	public Angle clone() {
 		return new Angle(this.radValue,this.toStringUnits);
 	}
@@ -108,7 +110,7 @@ public class Angle{
 
 		
 		String[] dms = ddmmss.split(":");
-		int sign = (Integer.parseInt(dms[0])>0)? 1:-1;
+		sign = (Integer.parseInt(dms[0])>0)? 1:-1;
 		if(Integer.parseInt(dms[0]) == 0) sign =  (dms[0].contains("-"))? -1:1; 
 		if(dms.length >=1) radValue+= Integer.parseInt(dms[0])*Constants.deg2Rad; 
 		if(dms.length >=2) radValue+= sign*Integer.parseInt(dms[1])*Constants.deg2Rad/60.0;		
@@ -177,6 +179,14 @@ public class Angle{
 	}
 	public void setRadValue(Double radValue) {
 		this.radValue = radValue;
+	}
+
+	public Integer getSign() {
+		return sign;
+	}
+
+	public void setSign(Integer sign) {
+		this.sign = sign;
 	}
 	
 	
