@@ -4,7 +4,7 @@ import javax.annotation.Generated;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.StaticMetamodel;
 
-@Generated(value="Dali", date="2017-02-27T15:42:24.711+1100")
+@Generated(value="Dali", date="2018-04-15T18:48:01.760+1000")
 @StaticMetamodel(Observation.class)
 public class Observation_ {
 	public static volatile SingularAttribute<Observation, Integer> observationID;
@@ -15,4 +15,5 @@ public class Observation_ {
 	public static volatile SingularAttribute<Observation, String> tiedBeamSources;
 	public static volatile SingularAttribute<Observation, String> observationType;
 	public static volatile SingularAttribute<Observation, Boolean> complete;
+	public static volatile SingularAttribute<Observation, Integer> managementStatus;
 }

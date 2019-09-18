@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public interface PSRCATConstants {
-	List<String> psrcatDBs = Arrays.asList( ConfigManager.getSmirfMap().get("PSRCAT"));
+	List<String> psrcatDBs = Arrays.asList( ConfigManager.getSmirfMap().get("PSRCAT").split(","));
 	
 	String PSRJ = "PSRJ";
 	String RAJ = "RAJ";

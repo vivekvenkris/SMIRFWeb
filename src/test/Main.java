@@ -8,11 +8,14 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.logging.log4j.util.Strings;
 import org.xml.sax.SAXException;
 
 import bean.Angle;
@@ -22,6 +25,7 @@ import bean.Pointing;
 import bean.PointingTO;
 import bean.TBSourceTO;
 import bean.UserInputs;
+import control.Control;
 import exceptions.BackendException;
 import exceptions.CoordinateOverrideException;
 import exceptions.EmptyCoordinatesException;
@@ -35,10 +39,12 @@ import listeners.StatusPooler;
 import mailer.Mailer;
 import manager.DBManager;
 import manager.DynamicTransitScheduler;
+import manager.InterfacedDynamicScheduler;
 import manager.ObservationManager;
 import manager.PSRCATManager;
 import manager.Schedulable;
 import manager.TransitScheduler;
+import service.BackendService;
 import service.DBService;
 import service.EphemService;
 import service.TCCService;
@@ -46,6 +52,7 @@ import service.TCCStatusService;
 import util.BackendConstants;
 import util.ConfigManager;
 import util.Constants;
+import util.PSRCATConstants;
 import util.SMIRFConstants;
 import util.TCCConstants;
 import util.Utilities;
@@ -62,45 +69,31 @@ public class Main {
 	BackendException, IOException, EmptyCoordinatesException, CoordinateOverrideException, 
 	PointingException, NoSourceVisibleException, SchedulerException, ObservationException, 
 	EphemException, ParserConfigurationException, SAXException, ParseException {
-		String utc = "";
-
 		
-		utc = "2018-04-04-13:56:54";
 		
-		ObservationTO tot = new ObservationTO(new Coords(DBManager.getPointingByUniqueName("SMIRF_1257-6651"),
-				Utilities.getUTCLocalDateTime(utc)),
-				null, 360, "VVK", BackendConstants.tiedArrayFanBeam,SMIRFConstants.pulsarPointingPrefix, "P000", 0.0, true, false, false, true, true);
-
-		new ObservationManager().getTBSourcesForObservation(tot, 4);
-
-		System.err.println(tot.getTiedBeamSources());
-
+		BackendService backendService = BackendService.createBackendInstance();
+		
+		ObservationTO observationTO = new ObservationTO(DBService.getObservationByUTC("2019-09-18-07:24:25"));
+		//backendService.setUpBackendForObservation(observationTO);
+		
 		
 		System.exit(0);
+		
+		System.err.println(PSRCATManager.getTimingProgrammeSouceByName("J1402-5124").getAngleRA());
+		System.err.println(DBService.getPointingByUniqueName("PSR_J1402-5124").getAngleRA());
+		System.exit(0);
+		
+		System.err.println(DBManager.getPointingByUniqueName("PSR_J1809-1943").getAssociatedPulsars().get(0).getEphemerides());
+		
+		System.err.println(PSRCATManager.getTimingProgrammeSouceByName((DBManager.getPointingByUniqueName("PSR_J1809-1943").getAssociatedPulsars().get(0).getPsrName())));
+		System.exit(0);
+
+		
+		System.err.println(PSRCATManager.getTimingProgrammeSources().size());
+
+		DBService.updatePulsarLastObservedTimes();
 	
-		PointingTO to12 = new PointingTO(new Angle("17:05:37.7", Angle.HHMMSS), new Angle("-53:50:16.00", Angle.DDMMSS), "CAN_1705-5350", SMIRFConstants.candidatePointingSymbol);
-		Pointing pointing = new Pointing(to12);
-		DBService.addPointingsToDB(Arrays.asList(new Pointing[] {pointing}));
-		System.exit(0);
-		
-		BackendException e = new BackendException("testing screenshots of buffers. please ignore this email.");
-
-		Mailer.sendEmail(e);
-
-		System.exit(0);
-		
-		List<PointingTO> pointingTOs = DBManager.getAllPointings().stream().filter(f -> f.getAngleRA().getDecimalHourValue() > 8 
-				&& f.getAngleRA().getDecimalHourValue()<19 && f.getPointingName().startsWith("PSR") ).collect(Collectors.toList());
-
-		System.err.println(pointingTOs.size());
-		
-		pointingTOs.forEach(f -> f.setNumObs(f.getNumObs() + 2));
-		
-		DBService.updatePointingsToDB(pointingTOs);
-		
-		System.err.println(pointingTOs.stream().mapToDouble(f -> f.getNumObs()).sum()/pointingTOs.size());
-		
-		
+		System.err.println(PSRCATManager.getTimingProgrammeSouceByName("J2241-5236"));
 		
 		System.exit(0);
 		
@@ -209,7 +202,7 @@ public class Main {
 
 
 
-		utc = EphemService.getUtcStringNow();
+		String utc = EphemService.getUtcStringNow();
 
 		String command = "cd /home/vivek/SMIRF/screenshots/; "
 				+ "/home/vivek/.npm-global/bin/pageres -d 5 --filename='"+ utc + "' 'http://mpsr-srv0/mopsr/control.lib.php?single=true'";

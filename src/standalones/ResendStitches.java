@@ -41,10 +41,11 @@ public class ResendStitches {
 	//	List<String> utcs = Arrays.asList( new String[]{ "2017-05-29-12:46:48", "2017-05-29-12:59:28" , "2017-05-29-13:12:12" } );
 		
 		File file = new File("/home/vivek/SMIRF/jars/utcs_to_rerun.txt");
+		//File file = new File("/home/vivek/failed.utcs");
 		List<String> utcs = java.nio.file.Files.readAllLines(file.toPath());
 		
 		
-		utcs = Arrays.asList( new String[]{ "2018-03-21-19:03:46" } );
+		//utcs = Arrays.asList( new String[]{ "2018-05-15-22:41:18"} );
 		
 		System.err.println(utcs);
 

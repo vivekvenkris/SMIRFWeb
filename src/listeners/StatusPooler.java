@@ -193,7 +193,7 @@ public class StatusPooler implements ServletContextListener {
 
 		poller = Control.getExecutorService().submit(pollingThread);
 		tbSourceUpdater = Control.getExecutorService().submit(tbSourceUpdateThread); 
-		machineSummaryPooler = Control.getExecutorService().submit(machineSummaryThread);
+		//machineSummaryPooler = Control.getExecutorService().submit(machineSummaryThread);
 		
 		Control.setPolling();
 

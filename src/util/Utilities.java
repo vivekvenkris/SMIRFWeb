@@ -343,5 +343,9 @@ public class Utilities {
 		
 	}
 	
+	
+	public static long largestPowerOf2(long n) {
+	    return (long)Math.pow(2, Math.floor(Math.log(n) / Math.log(2)));
+	}
 
 }
