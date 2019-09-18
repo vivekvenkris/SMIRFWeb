@@ -59,9 +59,17 @@ public class Pointing{
 	
 	private Integer tobs;
 	
+	@Column(name = "start_md_percent")
+	private Integer startMDInPercent;
+	
+	@Column(name = "end_md_percent")
+	private Integer endMDInPercent;
+	
+	
 	public Pointing(){
 				
 	}
+	
 	public Pointing(Angle lat, Angle lon) {
 		SphericalCoordinate sc = JSOFA.jauG2icrs(lon.getRadianValue(), lat.getRadianValue());
 		this.angleLAT = lat; 
@@ -69,9 +77,12 @@ public class Pointing{
 		this.angleRA = new Angle(sc.alpha,Angle.HHMMSS); // (value, print format)
 		this.angleDEC = new Angle(sc.delta,Angle.DDMMSS);
 		this.associatedPulsars = "";
+		this.endMDInPercent = 25;
+		this.startMDInPercent = -25;
 	}
 	
 	public Pointing(PointingTO pointingTO){
+		if(pointingTO.getPointingID() != null ) this.pointingID = pointingTO.getPointingID();
 		this.pointingName = pointingTO.getPointingName();
 		this.angleLAT = pointingTO.getAngleLAT();
 		this.angleLON = pointingTO.getAngleLON();
@@ -83,6 +94,9 @@ public class Pointing{
 		this.numObs = pointingTO.getNumObs();
 		this.tobs = pointingTO.getTobs();
 		this.leastCadanceInDays = pointingTO.getLeastCadanceInDays();
+		
+		this.startMDInPercent = pointingTO.getStartMDInPercent();
+		this.endMDInPercent = pointingTO.getEndMDInPercent();
 		
 		this.associatedPulsars = "";
 		if(pointingTO.getAssociatedPulsars() != null)
@@ -215,6 +229,22 @@ public class Pointing{
 	}
 	public void setAssociatedPulsars(String associatedPulsars) {
 		this.associatedPulsars = associatedPulsars;
+	}
+
+	public Integer getStartMDInPercent() {
+		return startMDInPercent;
+	}
+
+	public void setStartMDInPercent(Integer startMDInPercent) {
+		this.startMDInPercent = startMDInPercent;
+	}
+
+	public Integer getEndMDInPercent() {
+		return endMDInPercent;
+	}
+
+	public void setEndMDInPercent(Integer endMDInPercent) {
+		this.endMDInPercent = endMDInPercent;
 	}
 	
 	
