@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import bean.Angle;
 import bean.TBSourceTO;
 import mailer.Mailer;
+import service.DBService;
 import util.ConfigManager;
 import util.PSRCATConstants;
 
@@ -39,7 +40,7 @@ public class PSRCATManager implements PSRCATConstants{
 	
 	public static  List<TBSourceTO> loadDB() throws IOException{
 		
-		List<String> timingProgrammePulsars = Files.readAllLines(Paths.get(ConfigManager.getSmirfMap().get("TIMING_PROGRAMME")));
+		List<String> timingProgrammePulsars =DBService.getTimingProgrammeSources();
 
 		
 		for(String psrcatDB: psrcatDBs){
@@ -57,11 +58,25 @@ public class PSRCATManager implements PSRCATConstants{
 					if(name.equals(PSRJ)) {
 						if(tbSourceTO != null 
 								&& tbSourceTO.getAngleRA() !=null && tbSourceTO.getAngleDEC() !=null){
-								tbSources.add(tbSourceTO);
-								
-								if(timingProgrammePulsars.contains(tbSourceTO.getPsrName())) {
-									timingProgramme.add(tbSourceTO);
+							
+								if(!tbSources.contains(tbSourceTO)) { // updating from new DB
+									tbSources.add(tbSourceTO);
+									
+									if(timingProgrammePulsars.contains(tbSourceTO.getPsrName())) {
+										timingProgramme.add(tbSourceTO);
+									}
 								}
+								else {
+									tbSources.remove(tbSourceTO);
+									tbSources.add(tbSourceTO);
+									if(timingProgrammePulsars.contains(tbSourceTO.getPsrName())) {
+										timingProgramme.remove(tbSourceTO);
+										timingProgramme.add(tbSourceTO);
+									}
+									
+								}
+								
+								
 						}
 						tbSourceTO = new TBSourceTO();
 						tbSourceTO.setPsrName(value);
@@ -78,6 +93,15 @@ public class PSRCATManager implements PSRCATConstants{
 
 
 				}
+				
+				if(tbSourceTO != null && tbSourceTO.getAngleRA() !=null && tbSourceTO.getAngleDEC() !=null) {
+					tbSources.add(tbSourceTO);
+					
+					if(timingProgrammePulsars.contains(tbSourceTO.getPsrName())) {
+						timingProgramme.add(tbSourceTO);
+					}
+				}
+				
 			} catch ( IOException e) {
 				e.printStackTrace();
 				System.err.println("line:" + count);
@@ -191,6 +215,7 @@ public class PSRCATManager implements PSRCATConstants{
 	}
 	
 	public static void main(String[] args) throws IOException {
+		System.err.println(psrcatDBs);
 		List<String> timingProgrammePulsars = Files.readAllLines(Paths.get(ConfigManager.getSmirfMap().get("TIMING_PROGRAMME")));
 
 		timingProgramme.stream().map(t-> (t.getPsrName() + " " + t.getFluxAt843MHz())).collect(Collectors.toList());

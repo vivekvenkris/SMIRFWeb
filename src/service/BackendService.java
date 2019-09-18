@@ -9,9 +9,12 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -25,13 +28,16 @@ import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.DomNodeList;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
+import bean.Furby;
 import bean.ObservationTO;
 import bean.TBSourceTO;
 import exceptions.BackendException;
 import exceptions.BackendInInvalidStateException;
 import exceptions.UnexpectedBackendReplyException;
 import mailer.Mailer;
+import manager.FurbyManager;
 import util.BackendConstants;
+import util.ConfigManager;
 import util.SMIRFConstants;
 import util.Utilities;
 
@@ -70,6 +76,7 @@ public class BackendService implements BackendConstants {
 		template += westArmParams;
 		template += eastArmParams;
 		template += boresightParams;
+		
 		populateDefaultParameters();
 		defaultParams.put("tobs", observation.getTobs().toString());
 
@@ -81,7 +88,84 @@ public class BackendService implements BackendConstants {
 		defaultParams.put("boresight_ra", observation.getCoords().getPointingTO().getAngleRA().toHHMMSS());
 		defaultParams.put("boresight_dec", observation.getCoords().getPointingTO().getAngleDEC().toDDMMSS());
 		defaultParams.put("boresight_proc_file", "mopsr.aqdsp.hires.gpu");
+		
+		Integer tObs = observation.getTobs();
 
+		
+		if( Boolean.parseBoolean(ConfigManager.getSmirfMap().get("ADD_FURBIES"))) {
+						
+			List<Furby>  allFurbies =  FurbyManager.getFurbies();
+			
+
+			
+			Integer maxFurbies = Integer.parseInt(ConfigManager.getSmirfMap().get("MAX_FURBIES"));
+			
+			
+			maxFurbies = maxFurbies < allFurbies.size() ? maxFurbies : allFurbies.size();
+			Double furbySpacing = Double.parseDouble(ConfigManager.getSmirfMap().get("FURBY_SPACING"));
+
+			maxFurbies = (int) (maxFurbies < tObs/furbySpacing ? maxFurbies: Math.floor(tObs/furbySpacing));
+
+			//Integer numFurbies = (int) Math.abs(new Random().nextGaussian() * Double.parseDouble(ConfigManager.getSmirfMap().get("FURBY_NUM_SD"))
+					//+ Double.parseDouble(ConfigManager.getSmirfMap().get("FURBY_NUM_MEAN")));
+			//numFurbies = numFurbies < maxFurbies ? numFurbies : maxFurbies;
+
+			
+			Double timePerFurby =  Double.parseDouble(ConfigManager.getSmirfMap().get("NUM_SECS_PER_FURBY"));
+			
+			
+			if(timePerFurby < 2*furbySpacing) {
+				
+				timePerFurby = 2*furbySpacing;
+				System.err.println("Changing NUM_SECS_PER_FURBY to " + timePerFurby + " after checking for future vegemite foolishness");
+
+			}
+			
+			
+			Double furbyTimeStart = furbySpacing;
+			
+
+			
+			Integer numFurbies = (int)Math.floor(tObs/timePerFurby);
+			numFurbies = numFurbies < maxFurbies ? numFurbies : maxFurbies;
+		
+			System.err.println("Adding a total of " + numFurbies + " furbies");
+			
+			List<Furby> selectedFurbies = new ArrayList<>();
+			
+			
+			for(int  i=0; i< numFurbies; i++) {
+				
+				Furby randomFurby = allFurbies.get(new Random().nextInt(allFurbies.size())).clone();
+				
+				randomFurby.setBeam(Furby.getRandomBeamNumber());
+				
+				double timeStamp = i*timePerFurby + Math.random()*(timePerFurby - furbySpacing) ;
+				
+				if(timeStamp<=furbyTimeStart) timeStamp += furbyTimeStart;
+								
+				Furby.addTimeStamp(randomFurby,timeStamp);
+				
+				System.err.println("adding " + randomFurby );
+				
+				selectedFurbies.add(randomFurby);
+				
+			}
+			System.err.println(selectedFurbies);
+			
+			String furbyIDs = String.join(",",selectedFurbies.stream().map(f -> f.getFurbyID().toString()).collect(Collectors.toList()));
+			String furbyBeams = String.join(",",selectedFurbies.stream().map(f -> f.getBeam().toString()).collect(Collectors.toList()));
+			String furbyTimestamps=String.join(",",selectedFurbies.stream().map(f -> String.format("%.1f",f.getTimeStamp())).collect(Collectors.toList()));
+			
+			template += furbyParams;
+
+			defaultParams.put("num_furbies",numFurbies.toString());
+			defaultParams.put("furby_ids", furbyIDs);
+			defaultParams.put("furby_beams",furbyBeams);
+			defaultParams.put("furby_tstamps", furbyTimestamps);
+			
+		}
+		
 		switch (observation.getObsType()) {
 		case correlation:
 			defaultParams.put("corr_project_id", SMIRFConstants.PID);
@@ -98,7 +182,12 @@ public class BackendService implements BackendConstants {
 				defaultParams.put(tbStr + "_project_id", observation.getProjectID());
 				defaultParams.put(tbStr + "_mode", "PSR");
 				defaultParams.put("antenna_weights", "true");
-				defaultParams.put(tbStr + "_proc_file", "mopsr.dspsr.cpu");
+				// This is a temporary hack by SO/CF, need a better solution, like custom proc files in the db or some file.
+				if (tbs.getPsrName().equals("J2251-3711")) {
+					defaultParams.put(tbStr + "_proc_file", "mopsr_2kbins_25s.dspsr.cpu");
+				} else {
+					defaultParams.put(tbStr + "_proc_file", "mopsr.dspsr.cpu");
+				}
 				defaultParams.put(tbStr + "_source_name", tbs.getPsrName());
 				defaultParams.put(tbStr + "_ra", tbs.getAngleRA().toHHMMSS());
 				defaultParams.put(tbStr + "_dec", tbs.getAngleDEC().toDDMMSS());
@@ -141,6 +230,29 @@ public class BackendService implements BackendConstants {
 		prepareBackend(template);
 
 	}
+	@Deprecated
+	private Double getFurbyTimestamp(Integer tobs, List<Furby> selectedFurbies) {
+		Double furbyTimeStart = Double.parseDouble(ConfigManager.getSmirfMap().get("FURBY_TIME_START"));
+		Double furbySpacing = Double.parseDouble(ConfigManager.getSmirfMap().get("FURBY_SPACING"));
+		
+		Double randomTimeStamp = null;
+		while(true) {
+			randomTimeStamp = Math.random() * (tobs -furbyTimeStart) + furbyTimeStart;
+			
+			boolean flag = true;
+			for(Furby selectedFurby: selectedFurbies) {
+				
+				if(Math.abs(selectedFurby.getTimeStamp() - randomTimeStamp) < furbySpacing ) {
+					flag = false;
+				}
+				
+			}
+			if(flag)  break;
+		}
+		
+		return randomTimeStamp;
+		
+	}
 
 	private void prepareBackend(String template) throws BackendException {
 		if (!isON())
@@ -158,6 +270,9 @@ public class BackendService implements BackendConstants {
 
 	}
 
+	
+	
+	
 	public void startBackend(ObservationTO observation) throws BackendException {
 		if (this.statusService)
 			throw new BackendException(invalidInstance);
@@ -257,8 +372,10 @@ public class BackendService implements BackendConstants {
 		StrSubstitutor paramSubstitutor = new StrSubstitutor(defaultParams);
 		String params = paramSubstitutor.replace(parameterTemplate);
 		messageMap.put("parameters", params);
-
+		
 		String message = messageSubstitutor.replace(messageWrapper);
+
+
 
 		try {
 			String xmlResponseStr = talkToBackend(message);
@@ -515,7 +632,10 @@ public class BackendService implements BackendConstants {
 		defaultParams.put("rfi_mitigation", "true");
 		defaultParams.put("antenna_weights", "true");
 		defaultParams.put("delay_tracking", "true");
-		defaultParams.put("", "");
+//		defaultParams.put("num_furbies", "");
+//		defaultParams.put("furby_ids", "");
+//		defaultParams.put("furby_beams", "");
+//		defaultParams.put("furby_tstamps", "");
 		defaultParams.put("", "");
 		defaultParams.put("", "");
 
@@ -540,5 +660,6 @@ public class BackendService implements BackendConstants {
 		// defaultParams.put("dec","-65:45:19");
 
 	}
+
 
 }

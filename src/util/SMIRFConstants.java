@@ -45,8 +45,6 @@ public interface SMIRFConstants {
 	int phaseCalibrationTobs = Integer.parseInt(ConfigManager.getSmirfMap().get("PHASE_CAL_TOBS"));
 	int fluxCalibrationTobs = Integer.parseInt(ConfigManager.getSmirfMap().get("FLUX_CAL_TOBS"));
 	
-	Long fft_size = Long.parseLong(ConfigManager.getSmirfMap().get("FFT_SIZE"));
-
 
 
 	Integer highestPriority=1;
@@ -75,7 +73,7 @@ public interface SMIRFConstants {
 	/* JDBC & JPA constants */
 
 	String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	String DB_URL = "jdbc:mysql://localhost/observations";
+	String DB_URL = "jdbc:mysql://172.17.228.204/observations";
 
 	String USER = "vivek";
 	String PASS = "4&.S1kz5";

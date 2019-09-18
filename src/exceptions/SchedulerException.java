@@ -29,6 +29,8 @@ public class SchedulerException extends CustomException {
 	public SchedulerException(String message, String level, String trace){
 		super();
 		this.level = level;
+		this.message = message;
+		this.trace = trace;
 
 	}
 

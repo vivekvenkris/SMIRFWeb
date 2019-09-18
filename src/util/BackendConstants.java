@@ -221,6 +221,13 @@ public interface BackendConstants {
 			"<beam_spacing units='${fb_spacing_units}'>${fb_spacing}</beam_spacing>" +
 			"</fan_beams_parameters>";
 	
+	String furbyParams = "<furbies> "
+			+ "<num_furbies>${num_furbies}</num_furbies>"
+			+ "<furby_ids>${furby_ids}</furby_ids>"
+			+ "<furby_beams>${furby_beams}</furby_beams>"
+			+ "<furby_tstamps>${furby_tstamps}</furby_tstamps>"
+			+ "</furbies>";
+	
 	
 	
 	String messageWrapper ="<?xml version='1.0' encoding='ISO-8859-1'?>" +
