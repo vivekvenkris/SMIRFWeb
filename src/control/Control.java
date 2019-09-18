@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -243,21 +246,20 @@ public class Control implements ServletContextListener {
 		
 		if(str == null  || str.equals("") ) return false;
 		
-				
 		System.err.println("Another scheduler already running : " + str);
 		
-		Mailer.sendEmail(new SchedulerException("Another scheduler already running : " + str, SMIRFConstants.levelFatal, null ));
+		Mailer.sendEmail(new SchedulerException("Another scheduler already running : " + str, SMIRFConstants.levelFatal, "" ));
 		
 		
 		return true;
 		
+		
 	}
-	
 	public static String readControlFile() throws IOException {
 		
 		File file = new File(ConfigManager.getSmirfMap().get("CONTROL_FILE"));
 		if(!file.exists()) return null;
-		
+		System.err.println("Reading " +file.getAbsolutePath() );
 		Path myPath = Paths.get(file.getAbsolutePath());
 		List<String> lines =  Files.readAllLines(myPath);
 		
@@ -272,6 +274,19 @@ public class Control implements ServletContextListener {
 		
 		
         Files.write(Paths.get(ConfigManager.getSmirfMap().get("CONTROL_FILE")), "SMIRF".getBytes());
+        Set<PosixFilePermission> perms = new HashSet<>();
+        perms.add(PosixFilePermission.OWNER_READ);
+        perms.add(PosixFilePermission.OWNER_WRITE);
+        perms.add(PosixFilePermission.OWNER_EXECUTE);
+
+        perms.add(PosixFilePermission.OTHERS_READ);
+        perms.add(PosixFilePermission.OTHERS_WRITE);
+
+        perms.add(PosixFilePermission.GROUP_READ);
+        perms.add(PosixFilePermission.GROUP_WRITE);
+
+
+        Files.setPosixFilePermissions(Paths.get(ConfigManager.getSmirfMap().get("CONTROL_FILE")), perms);
         System.err.println("Control file written");
 		
 	}
