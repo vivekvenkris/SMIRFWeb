@@ -5,11 +5,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.persistence.Column;
+
 import org.jastronomy.jsofa.JSOFA;
 import org.jastronomy.jsofa.JSOFA.SphericalCoordinate;
 
 import exceptions.ObservationException;
+import manager.DBManager;
 import manager.PSRCATManager;
+import service.DBService;
 import service.EphemService;
 import util.SMIRFConstants;
 
@@ -30,8 +34,19 @@ public class PointingTO {
 	private Integer leastCadanceInDays;
 	private List<TBSourceTO> associatedPulsars;
 	
+	private Integer startMDInPercent;
+	
+	private Integer endMDInPercent;
+	
 	public Double getMaxUnObservedDays() {
-		return associatedPulsars.stream().mapToDouble(f -> f.getDaysSinceLastObserved()).max().orElse(0.0);
+		try {
+			return (associatedPulsars != null && !associatedPulsars.isEmpty())? 
+					associatedPulsars.stream().filter(f->f.getDaysSinceLastObserved() != null ).mapToDouble(f -> f.getDaysSinceLastObserved()).max().orElse(0.0):
+						(this.isSMIRFPointing()? DBManager.getDaysSinceObserved(pointingName):0.0);
+		} catch (ObservationException e) {
+			e.printStackTrace();
+			return 0.0;
+		}
 		
 	}
 	
@@ -49,6 +64,9 @@ public class PointingTO {
 		pointing.setTobs(pointingTO.getTobs());
 		pointing.setLeastCadanceInDays(pointingTO.getLeastCadanceInDays());
 		pointing.setAssociatedPulsars(String.join(";",pointingTO.getAssociatedPulsars().stream().map(f -> f.getPsrName()).collect(Collectors.toList())));
+		pointing.setStartMDInPercent(pointingTO.getStartMDInPercent());
+		pointing.setEndMDInPercent(pointingTO.getEndMDInPercent());
+	
 	}
 	
 	
@@ -60,7 +78,8 @@ public class PointingTO {
 	}
 	
 	public void addToAssociatedPulsars(TBSourceTO to) {
-		this.associatedPulsars.add(to);
+		if(this.associatedPulsars == null) this.associatedPulsars = new ArrayList<>();
+			this.associatedPulsars.add(to);
 	}
 	
 	@Override
@@ -76,23 +95,24 @@ public class PointingTO {
 		 return "("+this.type+") "+this.pointingName;
 	}
 	
-	public PointingTO(Integer pointingID, String PointingName, String raStr, String decStr){
-		this.pointingID = pointingID;
-		this.pointingName = PointingName;
-		this.angleRA = new Angle(raStr,Angle.HHMMSS);
-		this.angleDEC = new Angle(decStr, Angle.DDMMSS);
-		
-		this.priority =10;
-		this.type = SMIRFConstants.randomPointingSymbol;
-		this.numObs = 0;
-		this.tobs = SMIRFConstants.tobs;
-		
-		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
-		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
-		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
-		this.associatedPulsars = new ArrayList<>();
-		
-	}
+//	public PointingTO(Integer pointingID, String PointingName, String raStr, String decStr){
+//		this.pointingID = pointingID;
+//		this.pointingName = PointingName;
+//		this.angleRA = new Angle(raStr,Angle.HHMMSS);
+//		this.angleDEC = new Angle(decStr, Angle.DDMMSS);
+//		
+//		this.priority =10;
+//		this.type = SMIRFConstants.randomPointingSymbol;
+//		this.numObs = 0;
+//		this.tobs = -1;
+//		
+//		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
+//		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
+//		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
+//		this.associatedPulsars = new ArrayList<>();
+//	
+//		
+//	}
 	
 	public PointingTO(Angle RA, Angle DEC){
 		
@@ -104,7 +124,7 @@ public class PointingTO {
 		this.type = SMIRFConstants.randomPointingSymbol;
 		this.priority = SMIRFConstants.lowestPriority;
 		this.numObs = 0;
-		this.tobs = SMIRFConstants.tobs;
+		this.tobs = -1;
 
 		SphericalCoordinate sc = JSOFA.jauIcrs2g(angleRA.getRadianValue(), angleDEC.getRadianValue());
 		this.angleLON = new Angle(sc.alpha, Angle.DDMMSS);
@@ -112,6 +132,9 @@ public class PointingTO {
 		this.angleLAT = new Angle(sc.delta, Angle.DDMMSS);
 		
 		this.associatedPulsars = new ArrayList<>();
+		
+		this.startMDInPercent = -25;
+		this.endMDInPercent = 25;
 
 		
 	}
@@ -140,6 +163,12 @@ public class PointingTO {
 		if(pointing.getAssociatedPulsars() != null)
 			this.associatedPulsars = Arrays.asList(pointing.getAssociatedPulsars().split(",")).stream().map(f -> PSRCATManager.getTimingProgrammeSouceByName(f)).filter(f -> f !=null).collect(Collectors.toList());
 		else this.associatedPulsars = new ArrayList<>();
+		
+		this.startMDInPercent = pointing.getStartMDInPercent();
+		this.endMDInPercent = pointing.getEndMDInPercent();
+		if(this.associatedPulsars != null && !this.associatedPulsars.isEmpty())
+		this.leastCadanceInDays = this.associatedPulsars.stream().map(f-> DBService.getDesiredCadence(f.getPsrName())).min(Integer::compare).get();
+		
 	}
 	
 	public PointingTO(PhaseCalibratorTO calibratorTO){
@@ -373,6 +402,27 @@ public class PointingTO {
 	public void setAssociatedPulsars(List<TBSourceTO> associatedPulsars) {
 		this.associatedPulsars = associatedPulsars;
 	}
+
+
+	public Integer getStartMDInPercent() {
+		return startMDInPercent;
+	}
+
+
+	public void setStartMDInPercent(Integer startMDInPercent) {
+		this.startMDInPercent = startMDInPercent;
+	}
+
+
+	public Integer getEndMDInPercent() {
+		return endMDInPercent;
+	}
+
+
+	public void setEndMDInPercent(Integer endMDInPercent) {
+		this.endMDInPercent = endMDInPercent;
+	}
+	
 	
 	
 }

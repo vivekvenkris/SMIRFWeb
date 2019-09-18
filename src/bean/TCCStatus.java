@@ -11,6 +11,7 @@ import control.Control;
 import exceptions.DriveBrokenException;
 import exceptions.TCCException;
 import service.TCCStatusService;
+import util.Constants;
 import util.TCCConstants;
 import util.Utilities;
 @XmlRootElement(name="tcc_status")
@@ -284,23 +285,29 @@ public class TCCStatus {
 
 		double eastRadNS = this.ns.getEast().getTilt().getRadianValue();
 		if(Math.abs(eastRadNS - sourceRadNS) > TCCConstants.OnSourceThresholdRadNS 
-				&& !this.ns.getEast().getDisabled())
+				&& !this.ns.getEast().getDisabled()) {
+			System.err.println(eastRadNS * Constants.rad2Deg + "-" + sourceRadNS * Constants.rad2Deg + ">" +  TCCConstants.OnSourceThresholdRadNS * Constants.rad2Deg);
 			throw new DriveBrokenException("East NS seems to have been broken while tracking",TCCConstants.EAST, TCCConstants.NS);
+		}
 
 		double westRadNS = this.ns.getWest().getTilt().getRadianValue();
 		if(Math.abs(westRadNS - sourceRadNS) > TCCConstants.OnSourceThresholdRadNS
-				&& !this.ns.getWest().getDisabled())
+				&& !this.ns.getWest().getDisabled()) {
+			System.err.println(westRadNS * Constants.rad2Deg + "-" + sourceRadNS * Constants.rad2Deg + ">" +  TCCConstants.OnSourceThresholdRadNS * Constants.rad2Deg);
 			throw new DriveBrokenException("West NS seems to have been broken while tracking",TCCConstants.WEST, TCCConstants.NS);
+		}
 
 		double eastRadMD = this.md.getEast().getTilt().getRadianValue();
 		if(Math.abs(eastRadMD - sourceRadMD) > TCCConstants.OnSourceThresholdRadMD
-				&& !this.md.getEast().getDisabled()) 
+				&& !this.md.getEast().getDisabled()) {
 			throw new DriveBrokenException("East MD seems to have been broken while tracking",TCCConstants.EAST, TCCConstants.MD);
+		}
 
 		double westRadMD = this.md.getWest().getTilt().getRadianValue();
 		if(Math.abs(westRadMD - sourceRadMD) > TCCConstants.OnSourceThresholdRadMD
-				&& !this.md.getWest().getDisabled())
+				&& !this.md.getWest().getDisabled()) {
 			throw new DriveBrokenException("West MD seems to have been broken while tracking",TCCConstants.WEST, TCCConstants.MD);
+		}
 		 
 		return true;
 

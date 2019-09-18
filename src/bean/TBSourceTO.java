@@ -60,7 +60,7 @@ public class TBSourceTO {
 	boolean precessed;
 	
 	LocalDateTime lastObserved;
-	double daysSinceLastObserved;
+	Double daysSinceLastObserved;
 	
 	Double DM;
 	Double F0;
@@ -218,13 +218,14 @@ public class TBSourceTO {
 		this.lastObserved = lastObserved;
 	}
 
-	public double getDaysSinceLastObserved() {
+	public Double getDaysSinceLastObserved() {
 		return daysSinceLastObserved;
 	}
 
-	public void setDaysSinceLastObserved(double daysSinceLastObserved) {
+	public void setDaysSinceLastObserved(Double daysSinceLastObserved) {
 		this.daysSinceLastObserved = daysSinceLastObserved;
 	}
+
 
 	
 	

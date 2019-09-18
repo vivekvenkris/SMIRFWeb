@@ -126,7 +126,7 @@ public class TransitMB extends BaseMB {
 //		System.err.println("Added SMIRF pointing lsit");
 		inputs.setPointingTOs(new ArrayList<>());
 		
-		inputs.setTobsInSecs(SMIRFConstants.tobs);
+		inputs.setTobsInSecs(null);
 
 		Callable<Boolean> schedulerCallable = new Callable<Boolean>() {
 
